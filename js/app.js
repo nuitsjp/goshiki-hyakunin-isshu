@@ -1,5 +1,5 @@
 (() => {
-  const APP_VERSION = 'v0.0.2';
+  const APP_VERSION = 'v0.0.4';
   const CSV_URL = new URL('data/hyakunin_isshu_with_ruby.csv', window.location.href).toString();
   const CSV_FALLBACK_URL = 'https://nuitsjp.github.io/goshiki-hyakunin-isshu/data/hyakunin_isshu_with_ruby.csv';
   const QUESTIONS_PER_COLOR = 20;
@@ -209,14 +209,22 @@
     if (result.errors && result.errors.length) {
       console.warn('CSV parse errors', result.errors);
     }
+    const cleanKey = key => key ? key.replace(/^\uFEFF/, '').trim() : '';
+    const pickField = (row, candidates) => {
+      for (const name of candidates) {
+        const val = row[name] ?? row[cleanKey(name)];
+        if (val) return val;
+      }
+      return '';
+    };
     quizState.allPoems = result.data.map(row => ({
-      color: row['色'],
-      kamiNoKu: row['上の句'],
-      shimoNoKu: row['下の句'],
-      kamiReading: row['上の句読み'],
-      shimoReading: row['下の句読み'],
-      kimarijiLong: row['決まり字（競技かるた）'],
-      kimarijiShort: row['決まり字（五色百人一首）'],
+      color: pickField(row, ['色', '\uFEFF色']),
+      kamiNoKu: pickField(row, ['上の句']),
+      shimoNoKu: pickField(row, ['下の句']),
+      kamiReading: pickField(row, ['上の句読み']),
+      shimoReading: pickField(row, ['下の句読み']),
+      kimarijiLong: pickField(row, ['決まり字（競技かるた）']),
+      kimarijiShort: pickField(row, ['決まり字（五色百人一首）']),
     })).filter(p => p.color && p.shimoNoKu && (p.kimarijiLong || p.kimarijiShort));
     if (!quizState.allPoems.length) {
       throw new Error('CSVから有効なデータを読み込めませんでした。');
