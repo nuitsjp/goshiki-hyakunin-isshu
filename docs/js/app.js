@@ -24,10 +24,12 @@
     questionCount: document.getElementById('question-count'),
     hintType: document.getElementById('hint-type'),
     displayMode: document.getElementById('display-mode'),
+    orderMode: document.getElementById('order-mode'),
     colorButtons: document.querySelectorAll('.color-button'),
     progressText: document.getElementById('progress-text'),
     progressBar: document.getElementById('progress-bar'),
     kimariji: document.getElementById('kimariji'),
+    mainDisplayLabel: document.getElementById('main-display-label'),
     toggleKimariji: document.getElementById('toggle-kimariji'),
     options: document.querySelectorAll('#options-container .option-button'),
     feedback: document.getElementById('feedback'),
@@ -55,7 +57,9 @@
     isAnswered: false,
     isAnswered: false,
     hintType: 'shoku',
+    hintType: 'shoku',
     displayMode: 'kana',
+    orderMode: 'normal',
   };
 
   let advanceTimerId = null;
@@ -99,9 +103,18 @@
 
   function generateOptions(correctPoem, pool) {
     const wrong = shuffle(pool.filter(p => p !== correctPoem)).slice(0, 3);
+    const isReverse = quizState.orderMode === 'reverse';
     const options = [
-      { text: correctPoem.shimoNoKu, textReading: correctPoem.shimoReading, isCorrect: true },
-      ...wrong.map(poem => ({ text: poem.shimoNoKu, textReading: poem.shimoReading, isCorrect: false })),
+      {
+        text: isReverse ? correctPoem.kamiNoKu : correctPoem.shimoNoKu,
+        textReading: isReverse ? correctPoem.kamiReading : correctPoem.shimoReading,
+        isCorrect: true
+      },
+      ...wrong.map(poem => ({
+        text: isReverse ? poem.kamiNoKu : poem.shimoNoKu,
+        textReading: isReverse ? poem.kamiReading : poem.shimoReading,
+        isCorrect: false
+      })),
     ];
     return shuffle(options);
   }
@@ -198,7 +211,39 @@
 
   function renderKimariji(question) {
     if (!question) return;
+    const isReverse = quizState.orderMode === 'reverse';
     const hintLabel = quizState.hintType === 'shoku' ? '初句' : '上の句';
+
+    if (elements.mainDisplayLabel) {
+      elements.mainDisplayLabel.textContent = isReverse ? '下の句 (問題)' : '決まり字';
+    }
+
+    if (isReverse) {
+      // Reverse Mode: Question is Shimo-no-ku. Toggle shows Kami-no-ku.
+      if (quizState.showKami) {
+        // Show Answer (Kami)
+        const text = quizState.displayMode === 'kana'
+          ? (question.kamiReading || '')
+          : (question.kamiNoKu || '');
+        elements.kimariji.innerHTML = toRubyHtml(text);
+      } else {
+        // Show Question (Shimo)
+        const text = quizState.displayMode === 'kana'
+          ? (question.correctShimoReading || '')
+          : (question.correctShimo || '');
+        elements.kimariji.innerHTML = toRubyHtml(text);
+      }
+
+      if (elements.toggleKimariji) {
+        const showingKami = quizState.showKami;
+        elements.toggleKimariji.textContent = showingKami ? '⇆ 下の句表示' : '⇆ 上の句表示';
+        elements.toggleKimariji.setAttribute('aria-pressed', showingKami ? 'true' : 'false');
+        elements.toggleKimariji.disabled = false;
+      }
+      return;
+    }
+
+    // Normal Mode
     if (quizState.showKami) {
       if (quizState.hintType === 'shoku') {
         elements.kimariji.textContent = question.hint || '';
@@ -229,6 +274,15 @@
     quizState.isAnswered = false;
     quizState.showKami = false;
     renderKimariji(question);
+
+    // Update "Give option" instruction
+    const instructionDiv = elements.kimariji.nextElementSibling;
+    if (instructionDiv && instructionDiv.classList.contains('text-muted')) {
+      instructionDiv.textContent = quizState.orderMode === 'reverse'
+        ? '上の句を選んでください'
+        : '下の句を選んでください';
+    }
+
     resetOptionButtons();
     updateNextButton(false);
     elements.feedback.textContent = '';
@@ -281,7 +335,12 @@
       elements.feedback.style.color = 'var(--color-correct)';
     } else {
       btn.classList.add('btn-danger');
-      const correctText = quizState.displayMode === 'kana' ? question.correctShimoReading : question.correctShimo;
+      let correctText = '';
+      if (quizState.orderMode === 'reverse') {
+        correctText = quizState.displayMode === 'kana' ? question.kamiReading : question.kamiNoKu;
+      } else {
+        correctText = quizState.displayMode === 'kana' ? question.correctShimoReading : question.correctShimo;
+      }
       elements.feedback.innerHTML = `不正解。正解: ${toRubyHtml(correctText)}`;
       elements.feedback.style.color = 'var(--color-incorrect)';
     }
@@ -372,6 +431,9 @@
       }
       if (elements.displayMode) {
         quizState.displayMode = elements.displayMode.value || 'kana';
+      }
+      if (elements.orderMode) {
+        quizState.orderMode = elements.orderMode.value || 'normal';
       }
       quizState.currentQuestions = buildQuestions(color);
       quizState.currentIndex = 0;
@@ -469,7 +531,13 @@
     if (elements.giveUp) elements.giveUp.disabled = true;
 
     // Show feedback (Always show correct answer for 'Give Up')
-    const correctText = quizState.displayMode === 'kana' ? question.correctShimoReading : question.correctShimo;
+    // Show feedback (Always show correct answer for 'Give Up')
+    let correctText = '';
+    if (quizState.orderMode === 'reverse') {
+      correctText = quizState.displayMode === 'kana' ? question.kamiReading : question.kamiNoKu;
+    } else {
+      correctText = quizState.displayMode === 'kana' ? question.correctShimoReading : question.correctShimo;
+    }
     elements.feedback.innerHTML = `残念。正解: ${toRubyHtml(correctText)}`;
     elements.feedback.style.color = 'var(--color-incorrect)';
 
@@ -500,6 +568,15 @@
         quizState.displayMode = elements.displayMode.value || 'kana';
         try {
           localStorage.setItem('goshiki_display_mode', quizState.displayMode);
+        } catch (e) { console.warn(e); }
+      });
+    }
+
+    if (elements.orderMode) {
+      elements.orderMode.addEventListener('change', () => {
+        quizState.orderMode = elements.orderMode.value || 'normal';
+        try {
+          localStorage.setItem('goshiki_order_mode', quizState.orderMode);
         } catch (e) { console.warn(e); }
       });
     }
@@ -562,6 +639,14 @@
       } catch (e) { console.warn(e); }
       quizState.displayMode = savedMode;
       elements.displayMode.value = savedMode;
+    }
+    if (elements.orderMode) {
+      let savedOrder = 'normal';
+      try {
+        savedOrder = localStorage.getItem('goshiki_order_mode') || 'normal';
+      } catch (e) { console.warn(e); }
+      quizState.orderMode = savedOrder;
+      elements.orderMode.value = savedOrder;
     }
     initEventHandlers();
     resetQuizView();

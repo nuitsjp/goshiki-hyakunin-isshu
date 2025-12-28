@@ -27,12 +27,6 @@
           <h2 class="h4 mb-3">色を選んでください</h2>
           <div class="mb-3 d-flex flex-wrap gap-3 align-items-center">
             <div class="d-flex gap-2 align-items-center">
-              <label for="question-count" class="form-label mb-0">出題数</label>
-              <select id="question-count" class="form-select w-auto">
-                <!-- options filled by JS -->
-              </select>
-            </div>
-            <div class="d-flex gap-2 align-items-center">
               <label for="hint-type" class="form-label mb-0">ヒント</label>
               <select id="hint-type" class="form-select w-auto">
                 <option value="shoku" selected>初句</option>
@@ -44,6 +38,19 @@
               <select id="display-mode" class="form-select w-auto">
                 <option value="kana" selected>よみがな</option>
                 <option value="kanji">漢字</option>
+              </select>
+            </div>
+            <div class="d-flex gap-2 align-items-center">
+              <label for="order-mode" class="form-label mb-0">出題順</label>
+              <select id="order-mode" class="form-select w-auto">
+                <option value="normal" selected>正順</option>
+                <option value="reverse">逆順</option>
+              </select>
+            </div>
+            <div class="d-flex gap-2 align-items-center ms-auto">
+              <label for="question-count" class="form-label mb-0">出題数</label>
+              <select id="question-count" class="form-select w-auto">
+                <!-- options filled by JS -->
               </select>
             </div>
           </div>
@@ -83,7 +90,7 @@
           <div class="card quiz-card">
             <div class="card-body">
               <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
-                <div class="text-muted small mb-0">決まり字</div>
+                <div id="main-display-label" class="text-muted small mb-0">決まり字</div>
                 <button id="toggle-kimariji" class="btn btn-sm btn-outline-secondary ms-auto" type="button"
                   aria-pressed="false">⇆ ヒント表示</button>
               </div>
