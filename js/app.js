@@ -1,0 +1,262 @@
+(() => {
+  const CSV_URL = 'data/hyakunin_isshu_with_ruby.csv';
+  const QUESTIONS_PER_COLOR = 20;
+  const colorAccentMap = {
+    '青': 'var(--color-blue)',
+    'ピンク': 'var(--color-pink)',
+    '黄': 'var(--color-yellow)',
+    '緑': 'var(--color-green)',
+    'オレンジ': 'var(--color-orange)',
+  };
+
+  const screens = {
+    start: document.getElementById('start-screen'),
+    quiz: document.getElementById('quiz-screen'),
+    result: document.getElementById('result-screen'),
+  };
+
+  const elements = {
+    colorButtons: document.querySelectorAll('.color-button'),
+    progressText: document.getElementById('progress-text'),
+    progressBar: document.getElementById('progress-bar'),
+    kimariji: document.getElementById('kimariji'),
+    options: document.querySelectorAll('#options-container .option-button'),
+    feedback: document.getElementById('feedback'),
+    selectedColorLabel: document.getElementById('selected-color-label'),
+    resultCount: document.getElementById('result-count'),
+    resultRate: document.getElementById('result-rate'),
+    resultComment: document.getElementById('result-comment'),
+    retrySame: document.getElementById('retry-same'),
+    chooseColor: document.getElementById('choose-color'),
+  };
+
+  const quizState = {
+    allPoems: [],
+    selectedColor: '',
+    currentQuestions: [],
+    currentIndex: 0,
+    correctCount: 0,
+  };
+
+  function showScreen(screen) {
+    Object.values(screens).forEach(node => node.classList.add('hidden'));
+    if (screens[screen]) {
+      screens[screen].classList.remove('hidden');
+    }
+  }
+
+  function setAccentColor(color) {
+    const accent = colorAccentMap[color] || 'var(--color-blue)';
+    document.documentElement.style.setProperty('--current-accent', accent);
+    elements.progressBar.style.backgroundColor = accent;
+    elements.selectedColorLabel.style.backgroundColor = accent;
+  }
+
+  function shuffle(array) {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function generateOptions(correctPoem, pool) {
+    const wrong = shuffle(pool.filter(p => p !== correctPoem)).slice(0, 3);
+    const options = [
+      { text: correctPoem.shimoNoKu, isCorrect: true },
+      ...wrong.map(poem => ({ text: poem.shimoNoKu, isCorrect: false })),
+    ];
+    return shuffle(options);
+  }
+
+  function buildQuestions(color) {
+    const poemsByColor = quizState.allPoems.filter(poem => poem.color === color);
+    if (poemsByColor.length === 0) {
+      throw new Error(`指定の色データが見つかりません: ${color}`);
+    }
+    const selected = shuffle(poemsByColor).slice(0, Math.min(QUESTIONS_PER_COLOR, poemsByColor.length));
+    return selected.map(poem => ({
+      kimariji: poem.kimarijiShort || poem.kimarijiLong || '決まり字なし',
+      correctShimo: poem.shimoNoKu,
+      options: generateOptions(poem, poemsByColor),
+    }));
+  }
+
+  function resetOptionButtons() {
+    elements.options.forEach(btn => {
+      btn.disabled = false;
+      btn.classList.remove('btn-success', 'btn-danger', 'active');
+      btn.classList.add('btn-outline-secondary');
+    });
+  }
+
+  function updateProgress() {
+    const total = quizState.currentQuestions.length || QUESTIONS_PER_COLOR;
+    const current = quizState.currentIndex + 1;
+    elements.progressText.textContent = `問題 ${current} / ${total}`;
+    const ratio = Math.round((current / total) * 100);
+    elements.progressBar.style.width = `${ratio}%`;
+    elements.progressBar.setAttribute('aria-valuenow', String(ratio));
+  }
+
+  function renderQuestion() {
+    const question = quizState.currentQuestions[quizState.currentIndex];
+    if (!question) {
+      showResults();
+      return;
+    }
+
+    elements.kimariji.textContent = question.kimariji;
+    resetOptionButtons();
+    elements.feedback.textContent = '';
+    elements.feedback.style.color = 'var(--color-text)';
+
+    question.options.forEach((option, idx) => {
+      const btn = elements.options[idx];
+      btn.textContent = option.text;
+      btn.dataset.correct = option.isCorrect ? 'true' : 'false';
+      btn.dataset.optionIndex = String(idx);
+    });
+
+    updateProgress();
+  }
+
+  function handleAnswer(event) {
+    const btn = event.currentTarget;
+    if (btn.disabled) return;
+
+    const question = quizState.currentQuestions[quizState.currentIndex];
+    if (!question) return;
+
+    const isCorrect = btn.dataset.correct === 'true';
+    elements.options.forEach(optionBtn => {
+      optionBtn.disabled = true;
+      const correct = optionBtn.dataset.correct === 'true';
+      optionBtn.classList.remove('btn-outline-secondary');
+      if (correct) {
+        optionBtn.classList.add('btn-success');
+      }
+    });
+
+    if (isCorrect) {
+      quizState.correctCount += 1;
+      btn.classList.add('btn-success');
+      elements.feedback.textContent = '正解！';
+      elements.feedback.style.color = 'var(--color-correct)';
+    } else {
+      btn.classList.add('btn-danger');
+      elements.feedback.textContent = `不正解。正解: ${question.correctShimo}`;
+      elements.feedback.style.color = 'var(--color-incorrect)';
+    }
+
+    setTimeout(() => {
+      quizState.currentIndex += 1;
+      if (quizState.currentIndex >= quizState.currentQuestions.length) {
+        showResults();
+      } else {
+        renderQuestion();
+      }
+    }, 1000);
+  }
+
+  function getResultComment(rate) {
+    if (rate === 100) return '完璧です！';
+    if (rate >= 90) return '素晴らしい！';
+    if (rate >= 70) return 'よくできました！';
+    if (rate >= 50) return 'もう少しです';
+    return '復習しましょう';
+  }
+
+  function showResults() {
+    const total = quizState.currentQuestions.length || QUESTIONS_PER_COLOR;
+    const rate = Math.round((quizState.correctCount / total) * 100);
+    elements.resultCount.textContent = `${quizState.correctCount} / ${total} 問正解`;
+    elements.resultRate.textContent = `正答率 ${rate}%`;
+    elements.resultComment.textContent = getResultComment(rate);
+    showScreen('result');
+  }
+
+  function startQuiz(color) {
+    try {
+      quizState.selectedColor = color;
+      quizState.currentQuestions = buildQuestions(color);
+      quizState.currentIndex = 0;
+      quizState.correctCount = 0;
+      elements.selectedColorLabel.textContent = `${color}の歌`;
+      setAccentColor(color);
+      showScreen('quiz');
+      renderQuestion();
+    } catch (error) {
+      console.error(error);
+      alert(error.message || 'データの読み込みに失敗しました。');
+    }
+  }
+
+  function handleChooseColor(color) {
+    if (!quizState.allPoems.length) {
+      alert('データがまだ読み込まれていません。少し待ってから再試行してください。');
+      return;
+    }
+    startQuiz(color);
+  }
+
+  function loadCsv() {
+    return fetch(CSV_URL)
+      .then(resp => {
+        if (!resp.ok) throw new Error('CSVの取得に失敗しました。');
+        return resp.text();
+      })
+      .then(text => Papa.parse(text, { header: true, skipEmptyLines: true }))
+      .then(result => {
+        if (result.errors && result.errors.length) {
+          console.warn('CSV parse errors', result.errors);
+        }
+        quizState.allPoems = result.data.map(row => ({
+          color: row['色'],
+          kamiNoKu: row['上の句'],
+          shimoNoKu: row['下の句'],
+          kamiReading: row['上の句読み'],
+          shimoReading: row['下の句読み'],
+          kimarijiLong: row['決まり字（競技かるた）'],
+          kimarijiShort: row['決まり字（五色百人一首）'],
+        })).filter(p => p.color && p.shimoNoKu && (p.kimarijiLong || p.kimarijiShort));
+        if (!quizState.allPoems.length) {
+          throw new Error('CSVから有効なデータを読み込めませんでした。');
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert('CSVの読み込みに失敗しました。ファイルが存在するか確認してください。');
+      });
+  }
+
+  function initEventHandlers() {
+    elements.colorButtons.forEach(btn => {
+      btn.addEventListener('click', () => handleChooseColor(btn.dataset.color));
+    });
+
+    elements.options.forEach(btn => {
+      btn.addEventListener('click', handleAnswer);
+    });
+
+    elements.retrySame.addEventListener('click', () => {
+      if (!quizState.selectedColor) {
+        showScreen('start');
+        return;
+      }
+      startQuiz(quizState.selectedColor);
+    });
+
+    elements.chooseColor.addEventListener('click', () => {
+      showScreen('start');
+    });
+  }
+
+  function init() {
+    initEventHandlers();
+    loadCsv();
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();

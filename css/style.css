@@ -1,0 +1,87 @@
+:root {
+  --color-blue: #4A90E2;
+  --color-pink: #FF6B9D;
+  --color-yellow: #FFC107;
+  --color-green: #4CAF50;
+  --color-orange: #FF9800;
+  --current-accent: var(--color-blue);
+  --color-correct: #28a745;
+  --color-incorrect: #dc3545;
+  --color-bg: #f8f9fa;
+  --color-text: #212529;
+  --color-border: #dee2e6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.screen {
+  margin-bottom: 1.5rem;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.color-button {
+  color: #fff;
+  border: none;
+  font-weight: 600;
+  padding: 0.85rem 1rem;
+  min-height: 3rem;
+}
+
+.color-blue { background-color: var(--color-blue); }
+.color-pink { background-color: var(--color-pink); }
+.color-yellow { background-color: var(--color-yellow); color: #3b3b00; }
+.color-green { background-color: var(--color-green); }
+.color-orange { background-color: var(--color-orange); }
+
+.quiz-card {
+  border: 1px solid var(--color-border);
+}
+
+.progress-bar {
+  background: var(--current-accent);
+}
+
+.kimariji-display {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.option-button {
+  text-align: left;
+  white-space: normal;
+  line-height: 1.5;
+  padding: 0.9rem 1rem;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  min-height: 3rem;
+}
+
+.option-button:focus-visible,
+.color-button:focus-visible,
+#retry-same:focus-visible,
+#choose-color:focus-visible {
+  outline: 3px solid rgba(0, 0, 0, 0.2);
+  outline-offset: 2px;
+}
+
+#feedback {
+  min-height: 1.5rem;
+}
+
+@media (max-width: 767px) {
+  .kimariji-display {
+    font-size: 1.7rem;
+  }
+}

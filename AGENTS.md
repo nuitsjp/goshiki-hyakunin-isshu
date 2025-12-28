@@ -1,5 +1,14 @@
 # Repository Guidelines
 
+## Core Mandates
+
+**CRITICAL: You must adhere to these rules in all interactions.**
+
+1.  **Language**:
+    *   **Think in English.**
+    *   **Interact with the user in Japanese.**
+    *   Plans and artifacts (commit messages, PR descriptions) must be written in **Japanese**.
+
 ## Project Structure & Assets
 - Current files live at the repository root: `README.md` (requirements/design), `TODO.md` (implementation checklist), `LICENSE`, and `data/hyakunin_isshu_with_ruby.csv` (authoritative poem dataset).
 - Planned app layout (per README/TODO) is a static site: `index.html`, `css/style.css`, `js/app.js`, and `data/` for CSV. Keep static assets self-contained; no server-side code is expected.
