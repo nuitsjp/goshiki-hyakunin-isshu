@@ -1,5 +1,5 @@
 (() => {
-  const CSV_URL = 'data/hyakunin_isshu_with_ruby.csv';
+  const CSV_URL = new URL('data/hyakunin_isshu_with_ruby.csv', window.location.href).toString();
   const QUESTIONS_PER_COLOR = 20;
   const colorAccentMap = {
     '青': 'var(--color-blue)',
@@ -204,7 +204,7 @@
   function loadCsv() {
     return fetch(CSV_URL)
       .then(resp => {
-        if (!resp.ok) throw new Error('CSVの取得に失敗しました。');
+        if (!resp.ok) throw new Error(`CSVの取得に失敗しました (status ${resp.status}).`);
         return resp.text();
       })
       .then(text => Papa.parse(text, { header: true, skipEmptyLines: true }))
@@ -226,8 +226,8 @@
         }
       })
       .catch(err => {
-        console.error(err);
-        alert('CSVの読み込みに失敗しました。ファイルが存在するか確認してください。');
+        console.error('CSV load error', err);
+        alert('CSVの読み込みに失敗しました。HTTPサーバーで開いているか、GitHub Pagesの公開を確認してください。');
       });
   }
 
