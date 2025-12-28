@@ -1,5 +1,5 @@
 (() => {
-  const APP_VERSION = 'v0.0.4';
+  const APP_VERSION = 'v0.0.5';
   const CSV_URL = new URL('data/hyakunin_isshu_with_ruby.csv', window.location.href).toString();
   const CSV_FALLBACK_URL = 'https://nuitsjp.github.io/goshiki-hyakunin-isshu/data/hyakunin_isshu_with_ruby.csv';
   const QUESTIONS_PER_COLOR = 20;
@@ -40,6 +40,21 @@
     currentIndex: 0,
     correctCount: 0,
   };
+
+  const escapeHtml = (str = '') =>
+    str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
+  const toRubyHtml = (text = '') => {
+    const escaped = escapeHtml(text);
+    return escaped.replace(/([^\[\]]+)\[([^\[\]]+)\]/g, '<ruby><rb>$1</rb><rt>$2</rt></ruby>');
+  };
+
+  const toAriaLabel = (text = '') => text.replace(/([^\[\]]+)\[([^\[\]]+)\]/g, '$1($2)');
 
   function showScreen(screen) {
     Object.values(screens).forEach(node => node.classList.add('hidden'));
@@ -117,7 +132,8 @@
 
     question.options.forEach((option, idx) => {
       const btn = elements.options[idx];
-      btn.textContent = option.text;
+      btn.innerHTML = toRubyHtml(option.text);
+      btn.setAttribute('aria-label', toAriaLabel(option.text));
       btn.dataset.correct = option.isCorrect ? 'true' : 'false';
       btn.dataset.optionIndex = String(idx);
     });
@@ -149,7 +165,7 @@
       elements.feedback.style.color = 'var(--color-correct)';
     } else {
       btn.classList.add('btn-danger');
-      elements.feedback.textContent = `不正解。正解: ${question.correctShimo}`;
+      elements.feedback.innerHTML = `不正解。正解: ${toRubyHtml(question.correctShimo)}`;
       elements.feedback.style.color = 'var(--color-incorrect)';
     }
 

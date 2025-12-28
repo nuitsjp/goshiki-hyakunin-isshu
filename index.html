@@ -10,7 +10,7 @@
 <body>
   <div class="container py-4">
     <header class="mb-4 text-center">
-      <h1 class="fw-bold">五色百人一首 決まり字クイズ <span id="app-version" class="badge bg-secondary align-middle">v0.0.4</span></h1>
+      <h1 class="fw-bold">五色百人一首 決まり字クイズ <span id="app-version" class="badge bg-secondary align-middle">v0.0.5</span></h1>
       <p class="text-muted mb-0">色を選んで決まり字を覚えよう</p>
     </header>
 
@@ -54,6 +54,11 @@
             <div class="card-body">
               <div class="text-muted small mb-1">決まり字</div>
               <div id="kimariji" class="kimariji-display mb-3">---</div>
+              <div class="d-flex flex-column flex-md-row align-items-md-center gap-2 mb-3">
+                <div class="text-muted small mb-0">分からないときはヒントを表示</div>
+                <button id="hint-button" class="btn btn-sm btn-outline-primary ms-md-auto">ヒント: 上の句を表示</button>
+              </div>
+              <div id="hint-text" class="hint-box mb-3 hidden" aria-live="polite"></div>
               <div class="text-muted small mb-2">下の句を選んでください</div>
               <div id="options-container" class="d-grid gap-2">
                 <button class="btn option-button" data-index="0"></button>

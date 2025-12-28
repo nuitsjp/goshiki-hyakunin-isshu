@@ -61,7 +61,7 @@ body {
 .option-button {
   text-align: left;
   white-space: normal;
-  line-height: 1.5;
+  line-height: 1.6;
   padding: 0.9rem 1rem;
   background: #fff;
   border: 1px solid var(--color-border);
@@ -78,6 +78,20 @@ body {
 
 #feedback {
   min-height: 1.5rem;
+}
+
+ruby {
+  ruby-position: over;
+  ruby-align: center;
+}
+ruby rt {
+  font-size: 0.65em;
+  line-height: 1;
+  color: #6c757d;
+  letter-spacing: 0;
+}
+ruby rb {
+  line-height: 1.2;
 }
 
 @media (max-width: 767px) {
