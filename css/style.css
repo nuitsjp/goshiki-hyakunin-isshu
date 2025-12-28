@@ -80,19 +80,6 @@ body {
   min-height: 1.5rem;
 }
 
-ruby {
-  ruby-position: over;
-  ruby-align: center;
-}
-ruby rt {
-  font-size: 0.65em;
-  line-height: 1;
-  color: #6c757d;
-  letter-spacing: 0;
-}
-ruby rb {
-  line-height: 1.2;
-}
 
 @media (max-width: 767px) {
   .kimariji-display {

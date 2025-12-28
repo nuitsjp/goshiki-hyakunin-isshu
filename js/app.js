@@ -57,12 +57,9 @@
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
 
-  const toRubyHtml = (text = '') => {
-    const escaped = escapeHtml(text);
-    return escaped.replace(/([^\[\]]+)\[([^\[\]]+)\]/g, '<ruby><rb>$1</rb><rt>$2</rt></ruby>');
-  };
+  const toRubyHtml = (text = '') => escapeHtml(text.replace(/\[([^\[\]]+)\]/g, ''));
 
-  const toAriaLabel = (text = '') => text.replace(/([^\[\]]+)\[([^\[\]]+)\]/g, '$1($2)');
+  const toAriaLabel = (text = '') => text.replace(/\[([^\[\]]+)\]/g, '');
 
   function showScreen(screen) {
     Object.values(screens).forEach(node => node.classList.add('hidden'));
