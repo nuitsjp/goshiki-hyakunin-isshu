@@ -352,6 +352,18 @@
       btn.addEventListener('click', () => handleChooseColor(btn.dataset.color));
     });
 
+    if (elements.questionCount) {
+      elements.questionCount.addEventListener('change', () => {
+        const val = parseInt(elements.questionCount.value, 10);
+        if (Number.isFinite(val) && val >= 1 && val <= 20) {
+          quizState.questionLimit = val;
+        } else {
+          quizState.questionLimit = 20;
+          elements.questionCount.value = 20;
+        }
+      });
+    }
+
     elements.options.forEach(btn => {
       btn.addEventListener('click', handleAnswer);
     });
@@ -381,6 +393,13 @@
   function init() {
     if (elements.version) {
       elements.version.textContent = APP_VERSION;
+    }
+    if (elements.questionCount) {
+      elements.questionCount.innerHTML = Array.from({ length: 20 }, (_, idx) => {
+        const val = idx + 1;
+        return `<option value="${val}" ${val === quizState.questionLimit ? 'selected' : ''}>${val} 問</option>`;
+      }).join('');
+      elements.questionCount.value = quizState.questionLimit;
     }
     initEventHandlers();
     loadCsv();
