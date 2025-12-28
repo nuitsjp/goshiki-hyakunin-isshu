@@ -1,6 +1,7 @@
 (() => {
-  const APP_VERSION = 'v0.0.1';
+  const APP_VERSION = 'v0.0.2';
   const CSV_URL = new URL('data/hyakunin_isshu_with_ruby.csv', window.location.href).toString();
+  const CSV_FALLBACK_URL = 'https://nuitsjp.github.io/goshiki-hyakunin-isshu/data/hyakunin_isshu_with_ruby.csv';
   const QUESTIONS_PER_COLOR = 20;
   const colorAccentMap = {
     '青': 'var(--color-blue)',
@@ -203,33 +204,45 @@
     startQuiz(color);
   }
 
+  function parseCsvText(text) {
+    const result = Papa.parse(text, { header: true, skipEmptyLines: true });
+    if (result.errors && result.errors.length) {
+      console.warn('CSV parse errors', result.errors);
+    }
+    quizState.allPoems = result.data.map(row => ({
+      color: row['色'],
+      kamiNoKu: row['上の句'],
+      shimoNoKu: row['下の句'],
+      kamiReading: row['上の句読み'],
+      shimoReading: row['下の句読み'],
+      kimarijiLong: row['決まり字（競技かるた）'],
+      kimarijiShort: row['決まり字（五色百人一首）'],
+    })).filter(p => p.color && p.shimoNoKu && (p.kimarijiLong || p.kimarijiShort));
+    if (!quizState.allPoems.length) {
+      throw new Error('CSVから有効なデータを読み込めませんでした。');
+    }
+  }
+
+  function fetchCsv(url) {
+    return fetch(url, { cache: 'no-cache' }).then(resp => {
+      if (!resp.ok) throw new Error(`CSV取得失敗 (status ${resp.status})`);
+      return resp.text();
+    });
+  }
+
   function loadCsv() {
-    return fetch(CSV_URL)
-      .then(resp => {
-        if (!resp.ok) throw new Error(`CSVの取得に失敗しました (status ${resp.status}).`);
-        return resp.text();
-      })
-      .then(text => Papa.parse(text, { header: true, skipEmptyLines: true }))
-      .then(result => {
-        if (result.errors && result.errors.length) {
-          console.warn('CSV parse errors', result.errors);
+    return fetchCsv(CSV_URL)
+      .catch(err => {
+        console.warn('Primary CSV fetch failed, trying fallback.', err);
+        if (window.location.protocol === 'file:' || window.location.hostname === 'localhost') {
+          return fetchCsv(CSV_FALLBACK_URL);
         }
-        quizState.allPoems = result.data.map(row => ({
-          color: row['色'],
-          kamiNoKu: row['上の句'],
-          shimoNoKu: row['下の句'],
-          kamiReading: row['上の句読み'],
-          shimoReading: row['下の句読み'],
-          kimarijiLong: row['決まり字（競技かるた）'],
-          kimarijiShort: row['決まり字（五色百人一首）'],
-        })).filter(p => p.color && p.shimoNoKu && (p.kimarijiLong || p.kimarijiShort));
-        if (!quizState.allPoems.length) {
-          throw new Error('CSVから有効なデータを読み込めませんでした。');
-        }
+        throw err;
       })
+      .then(parseCsvText)
       .catch(err => {
         console.error('CSV load error', err);
-        alert('CSVの読み込みに失敗しました。HTTPサーバーで開いているか、GitHub Pagesの公開を確認してください。');
+        alert('CSVの読み込みに失敗しました。HTTPサーバーで開くか、GitHub Pagesを開き直してください。');
       });
   }
 
