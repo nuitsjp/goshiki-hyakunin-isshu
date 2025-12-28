@@ -12,11 +12,21 @@
   const colorTextMap = {
     '黄': '#3b3b00',
   };
+  const STORAGE_KEYS = {
+    HISTORY: 'goshiki_quiz_history',
+    VERSION: 'goshiki_stats_version',
+    DISPLAY_MODE: 'goshiki_display_mode',
+    ORDER_MODE: 'goshiki_order_mode'
+  };
+  const STATS_VERSION = '1.0.0';
+  const MAX_HISTORY_ENTRIES = 1000;
+  const HISTORY_RETENTION_DAYS = 365;
 
   const screens = {
     start: document.getElementById('start-screen'),
     quiz: document.getElementById('quiz-screen'),
     result: document.getElementById('result-screen'),
+    stats: document.getElementById('stats-screen'),
   };
 
   const elements = {
@@ -44,6 +54,17 @@
     retrySame: document.getElementById('retry-same'),
     chooseColor: document.getElementById('choose-color'),
     giveUp: document.getElementById('give-up-button'),
+    viewStats: document.getElementById('view-stats'),
+    viewStatsFromResult: document.getElementById('view-stats-from-result'),
+    closeStats: document.getElementById('close-stats'),
+    clearHistory: document.getElementById('clear-history'),
+    totalQuizzes: document.getElementById('total-quizzes'),
+    totalQuestions: document.getElementById('total-questions'),
+    totalCorrect: document.getElementById('total-correct'),
+    overallAccuracy: document.getElementById('overall-accuracy'),
+    overallHintUsage: document.getElementById('overall-hint-usage'),
+    colorStatsBody: document.getElementById('color-stats-tbody'),
+    recentActivity: document.getElementById('recent-activity'),
   };
 
   const quizState = {
@@ -62,6 +83,277 @@
   };
 
   let advanceTimerId = null;
+
+  // ==================== Storage Management Functions ====================
+
+  function saveQuizSession(sessionData) {
+    try {
+      let history = loadQuizHistory();
+      history.push(sessionData);
+      history = cleanOldHistory(history);
+      history = enforceHistoryLimit(history);
+      localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+      localStorage.setItem(STORAGE_KEYS.VERSION, STATS_VERSION);
+      return true;
+    } catch (e) {
+      console.error('Failed to save quiz session:', e);
+      if (e.name === 'QuotaExceededError') {
+        try {
+          let history = loadQuizHistory();
+          history = history.slice(Math.floor(history.length * 0.2));
+          localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+          history.push(sessionData);
+          localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+          return true;
+        } catch (retryError) {
+          console.error('Failed even after cleanup:', retryError);
+          return false;
+        }
+      }
+      return false;
+    }
+  }
+
+  function loadQuizHistory() {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.HISTORY);
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      console.error('Failed to load quiz history:', e);
+      return [];
+    }
+  }
+
+  function cleanOldHistory(history) {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - HISTORY_RETENTION_DAYS);
+    const cutoffTime = cutoffDate.getTime();
+    return history.filter(session => session.timestamp >= cutoffTime);
+  }
+
+  function enforceHistoryLimit(history) {
+    if (history.length <= MAX_HISTORY_ENTRIES) return history;
+    return history.slice(history.length - MAX_HISTORY_ENTRIES);
+  }
+
+  function clearAllHistory() {
+    if (confirm('本当にすべての統計データを削除しますか？この操作は取り消せません。')) {
+      try {
+        localStorage.removeItem(STORAGE_KEYS.HISTORY);
+        localStorage.removeItem(STORAGE_KEYS.VERSION);
+        alert('統計データを削除しました。');
+        return true;
+      } catch (e) {
+        console.error('Failed to clear history:', e);
+        alert('データの削除に失敗しました。');
+        return false;
+      }
+    }
+    return false;
+  }
+
+  function checkLocalStorageAvailable() {
+    try {
+      const test = '__localStorage_test__';
+      localStorage.setItem(test, test);
+      localStorage.removeItem(test);
+      return true;
+    } catch (e) {
+      console.warn('LocalStorage not available:', e);
+      return false;
+    }
+  }
+
+  // ==================== Statistics Calculation Functions ====================
+
+  function calculateColorStats(color) {
+    const history = loadQuizHistory();
+    const colorSessions = history.filter(s => s.color === color);
+
+    if (colorSessions.length === 0) {
+      return {
+        color,
+        totalQuizzes: 0,
+        totalQuestions: 0,
+        totalCorrect: 0,
+        totalWrong: 0,
+        totalPass: 0,
+        accuracyRate: 0,
+        hintUsageRate: 0,
+        lastPlayed: null
+      };
+    }
+
+    const totalQuizzes = colorSessions.length;
+    const totalQuestions = colorSessions.reduce((sum, s) => sum + s.questionCount, 0);
+    const totalCorrect = colorSessions.reduce((sum, s) => sum + s.correctCount, 0);
+    const totalWrong = colorSessions.reduce((sum, s) => sum + s.wrongCount, 0);
+    const totalPass = colorSessions.reduce((sum, s) => sum + s.passCount, 0);
+    const accuracyRate = totalQuestions > 0
+      ? Math.round((totalCorrect / totalQuestions) * 100)
+      : 0;
+
+    let totalHintUsed = 0;
+    colorSessions.forEach(session => {
+      if (session.answers && Array.isArray(session.answers)) {
+        totalHintUsed += session.answers.filter(a => a.isCorrect && a.usedKami).length;
+      }
+    });
+    const hintUsageRate = totalCorrect > 0
+      ? Math.round((totalHintUsed / totalCorrect) * 100)
+      : 0;
+
+    const lastSession = colorSessions.reduce((latest, current) =>
+      current.timestamp > latest.timestamp ? current : latest
+    );
+
+    return {
+      color,
+      totalQuizzes,
+      totalQuestions,
+      totalCorrect,
+      totalWrong,
+      totalPass,
+      accuracyRate,
+      hintUsageRate,
+      lastPlayed: lastSession.date
+    };
+  }
+
+  function calculateAllColorStats() {
+    const colors = ['青', 'ピンク', '黄', '緑', 'オレンジ'];
+    return colors.map(color => calculateColorStats(color));
+  }
+
+  function calculateOverallStats() {
+    const history = loadQuizHistory();
+
+    if (history.length === 0) {
+      return {
+        totalQuizzes: 0,
+        totalQuestions: 0,
+        totalCorrect: 0,
+        totalWrong: 0,
+        accuracyRate: 0,
+        hintUsageRate: 0
+      };
+    }
+
+    const totalQuizzes = history.length;
+    const totalQuestions = history.reduce((sum, s) => sum + s.questionCount, 0);
+    const totalCorrect = history.reduce((sum, s) => sum + s.correctCount, 0);
+    const totalWrong = history.reduce((sum, s) => sum + s.wrongCount, 0);
+    const accuracyRate = totalQuestions > 0
+      ? Math.round((totalCorrect / totalQuestions) * 100)
+      : 0;
+
+    let totalHintUsed = 0;
+    history.forEach(session => {
+      if (session.answers && Array.isArray(session.answers)) {
+        totalHintUsed += session.answers.filter(a => a.isCorrect && a.usedKami).length;
+      }
+    });
+    const hintUsageRate = totalCorrect > 0
+      ? Math.round((totalHintUsed / totalCorrect) * 100)
+      : 0;
+
+    return {
+      totalQuizzes,
+      totalQuestions,
+      totalCorrect,
+      totalWrong,
+      accuracyRate,
+      hintUsageRate
+    };
+  }
+
+  function formatDateJapanese(dateString) {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    return `${month}/${day}`;
+  }
+
+  // ==================== UI Rendering Functions ====================
+
+  function renderColorSummaries() {
+    const allStats = calculateAllColorStats();
+
+    allStats.forEach(stats => {
+      const statsElement = document.querySelector(`[data-color-stats="${stats.color}"]`);
+      if (!statsElement) return;
+
+      if (stats.totalQuizzes === 0) {
+        statsElement.textContent = stats.color;
+      } else {
+        statsElement.textContent = `${stats.color}（${stats.totalQuizzes}回／正答率${stats.accuracyRate}%）`;
+      }
+    });
+  }
+
+  function renderStatsScreen() {
+    const overall = calculateOverallStats();
+    const colorStats = calculateAllColorStats();
+    const history = loadQuizHistory();
+
+    if (elements.totalQuizzes) elements.totalQuizzes.textContent = overall.totalQuizzes;
+    if (elements.totalQuestions) elements.totalQuestions.textContent = overall.totalQuestions;
+    if (elements.totalCorrect) elements.totalCorrect.textContent = overall.totalCorrect;
+    if (elements.overallAccuracy) elements.overallAccuracy.textContent = `${overall.accuracyRate}%`;
+    if (elements.overallHintUsage) elements.overallHintUsage.textContent = `${overall.hintUsageRate}%`;
+
+    const tbody = elements.colorStatsBody;
+    if (tbody) {
+      tbody.innerHTML = colorStats.map(stats => {
+        const colorClass = {
+          '青': 'color-blue',
+          'ピンク': 'color-pink',
+          '黄': 'color-yellow',
+          '緑': 'color-green',
+          'オレンジ': 'color-orange'
+        }[stats.color] || '';
+
+        return `
+          <tr>
+            <td>
+              <span class="color-badge-mini ${colorClass}"></span>
+              ${stats.color}
+            </td>
+            <td>${stats.totalQuizzes}</td>
+            <td>${stats.totalQuestions}</td>
+            <td>${stats.totalCorrect}</td>
+            <td>${stats.accuracyRate}%</td>
+            <td>${stats.hintUsageRate}%</td>
+            <td>${formatDateJapanese(stats.lastPlayed)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    const recentActivity = elements.recentActivity;
+    if (recentActivity) {
+      const recent = history.slice(-10).reverse();
+
+      if (recent.length === 0) {
+        recentActivity.innerHTML = '<p class="text-muted text-center">まだプレイ履歴がありません</p>';
+      } else {
+        recentActivity.innerHTML = recent.map(session => `
+          <div class="activity-item">
+            <div class="activity-info">
+              <div class="fw-semibold">${session.color}の歌</div>
+              <div class="activity-date">${formatDateJapanese(session.date)}</div>
+            </div>
+            <div class="activity-result">
+              ${session.correctCount}/${session.questionCount} (${session.accuracyRate}%)
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    showScreen('stats');
+  }
 
   const escapeHtml = (str = '') =>
     str
@@ -393,6 +685,32 @@
   function showResults() {
     const total = quizState.currentQuestions.length || quizState.questionLimit;
     const rate = Math.round((quizState.correctCount / total) * 100);
+
+    const wrongCount = total - quizState.correctCount;
+    const passCount = quizState.answers.filter(a => !a.isCorrect && !a.usedKami).length;
+
+    const sessionData = {
+      sessionId: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: Date.now(),
+      date: new Date().toISOString().split('T')[0],
+      color: quizState.selectedColor,
+      questionCount: total,
+      correctCount: quizState.correctCount,
+      wrongCount: wrongCount,
+      passCount: passCount,
+      accuracyRate: rate,
+      hintType: quizState.hintType,
+      displayMode: quizState.displayMode,
+      orderMode: quizState.orderMode,
+      answers: quizState.answers.map(a => ({
+        kimariji: a.kimariji,
+        isCorrect: a.isCorrect,
+        usedKami: a.usedKami
+      }))
+    };
+
+    saveQuizSession(sessionData);
+
     elements.resultCount.textContent = `${quizState.correctCount} / ${total} 問正解`;
     elements.resultRate.textContent = `正答率 ${rate}%`;
     elements.resultComment.textContent = getResultComment(rate);
@@ -636,6 +954,33 @@
       resetQuizView();
       showScreen('start');
     });
+
+    if (elements.viewStats) {
+      elements.viewStats.addEventListener('click', () => {
+        renderStatsScreen();
+      });
+    }
+
+    if (elements.viewStatsFromResult) {
+      elements.viewStatsFromResult.addEventListener('click', () => {
+        renderStatsScreen();
+      });
+    }
+
+    if (elements.closeStats) {
+      elements.closeStats.addEventListener('click', () => {
+        showScreen('start');
+      });
+    }
+
+    if (elements.clearHistory) {
+      elements.clearHistory.addEventListener('click', () => {
+        if (clearAllHistory()) {
+          renderStatsScreen();
+          renderColorSummaries();
+        }
+      });
+    }
   }
 
   function init() {
@@ -659,8 +1004,16 @@
       elements.displayMode.value = savedMode;
     }
     // Order mode initialized above separately
+
+    if (!checkLocalStorageAvailable()) {
+      console.warn('Statistics disabled: localStorage not available');
+      if (elements.viewStats) elements.viewStats.style.display = 'none';
+      if (elements.viewStatsFromResult) elements.viewStatsFromResult.style.display = 'none';
+    }
+
     initEventHandlers();
     resetQuizView();
+    renderColorSummaries();
     loadCsv();
   }
 
