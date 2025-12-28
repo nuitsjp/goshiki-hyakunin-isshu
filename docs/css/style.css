@@ -480,3 +480,33 @@ h6,
   font-size: 1.1rem;
   font-weight: 600;
 }
+
+/* Auto Advance Progress Bar */
+.auto-advance-progress {
+  height: 4px;
+  background-color: #e9ecef;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 0.5rem;
+  margin-bottom: -0.5rem;
+}
+
+.auto-advance-bar {
+  height: 100%;
+  background: var(--color-correct);
+  width: 0%;
+  transition: none;
+}
+
+.auto-advance-bar.animating {
+  animation: autoAdvance 1s linear forwards;
+}
+
+@keyframes autoAdvance {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}

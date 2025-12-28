@@ -44,6 +44,8 @@
     toggleKimariji: document.getElementById('toggle-kimariji'),
     options: document.querySelectorAll('#options-container .option-button'),
     feedback: document.getElementById('feedback'),
+    autoAdvanceProgress: document.getElementById('auto-advance-progress'),
+    autoAdvanceBar: document.querySelector('.auto-advance-bar'),
     selectedColorLabel: document.getElementById('selected-color-label'),
     cancelQuiz: document.getElementById('cancel-quiz'),
     nextQuestion: document.getElementById('next-question'),
@@ -446,8 +448,31 @@
     }
   }
 
+  function hideAutoAdvanceProgress() {
+    if (elements.autoAdvanceProgress) {
+      elements.autoAdvanceProgress.classList.add('hidden');
+    }
+    if (elements.autoAdvanceBar) {
+      elements.autoAdvanceBar.classList.remove('animating');
+      elements.autoAdvanceBar.style.width = '0%';
+    }
+  }
+
+  function showAutoAdvanceProgress() {
+    if (elements.autoAdvanceProgress) {
+      elements.autoAdvanceProgress.classList.remove('hidden');
+    }
+    if (elements.autoAdvanceBar) {
+      // Force reflow to restart animation
+      elements.autoAdvanceBar.classList.remove('animating');
+      void elements.autoAdvanceBar.offsetWidth;
+      elements.autoAdvanceBar.classList.add('animating');
+    }
+  }
+
   function resetQuizView() {
     clearAdvanceTimer();
+    hideAutoAdvanceProgress();
     quizState.currentQuestions = [];
     quizState.currentIndex = 0;
     quizState.correctCount = 0;
@@ -563,6 +588,7 @@
 
     quizState.isAnswered = false;
     quizState.showKami = false;
+    hideAutoAdvanceProgress();
     renderKimariji(question);
 
     // Update "Give option" instruction
@@ -623,6 +649,14 @@
       btn.classList.add('btn-success');
       elements.feedback.textContent = '正解！';
       elements.feedback.style.color = 'var(--color-correct)';
+
+      // 正答時は1秒後に自動遷移
+      quizState.showKami = true;
+      renderKimariji(question);
+      showAutoAdvanceProgress();
+      advanceTimerId = setTimeout(() => {
+        goToNext();
+      }, 1000);
     } else {
       btn.classList.add('btn-danger');
       let correctText = '';
@@ -633,11 +667,12 @@
       }
       elements.feedback.innerHTML = `不正解。正解: ${toRubyHtml(correctText)}`;
       elements.feedback.style.color = 'var(--color-incorrect)';
-    }
 
-    quizState.showKami = true;
-    renderKimariji(question);
-    updateNextButton(true);
+      // 誤答時は「次へ」ボタンを表示
+      quizState.showKami = true;
+      renderKimariji(question);
+      updateNextButton(true);
+    }
   }
 
   function getResultComment(rate) {
