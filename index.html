@@ -50,7 +50,7 @@
           <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
             <div id="progress-text" class="fw-semibold">問題 1 / 20</div>
             <div class="ms-auto d-flex align-items-center gap-2 flex-wrap">
-              <div id="selected-color-label" class="badge bg-secondary"></div>
+              <div id="selected-color-label" class="badge selected-color-badge"></div>
               <button id="cancel-quiz" class="btn btn-outline-secondary btn-sm quiz-cancel-btn" type="button" aria-label="クイズを中止してトップへ" title="トップに戻る">×</button>
             </div>
           </div>
@@ -72,6 +72,9 @@
                 <button class="btn option-button" data-index="3"></button>
               </div>
               <div id="feedback" class="mt-3 fw-semibold"></div>
+              <div class="d-flex justify-content-end mt-2">
+                <button id="next-question" class="btn btn-primary next-button" type="button" disabled>次へ</button>
+              </div>
             </div>
           </div>
         </div>
@@ -83,20 +86,6 @@
           <div class="display-6 fw-bold" id="result-count">-- / 20 問正解</div>
           <div class="h5 text-muted" id="result-rate">正答率 --%</div>
           <div class="mt-2 mb-4 fw-semibold" id="result-comment">---</div>
-          <div class="result-legend d-flex justify-content-center gap-3 mb-3">
-            <div class="legend-item">
-              <span class="result-icon icon-correct" aria-hidden="true">○</span>
-              <span class="small text-muted">正解</span>
-            </div>
-            <div class="legend-item">
-              <span class="result-icon icon-assist" aria-hidden="true">△</span>
-              <span class="small text-muted">上の句を表示</span>
-            </div>
-            <div class="legend-item">
-              <span class="result-icon icon-wrong" aria-hidden="true">×</span>
-              <span class="small text-muted">不正解</span>
-            </div>
-          </div>
           <div class="d-grid gap-2 d-sm-flex justify-content-center mb-3">
             <button id="retry-same" class="btn btn-primary">同じ色で再挑戦</button>
             <button id="choose-color" class="btn btn-outline-secondary">別の色を選ぶ</button>
@@ -108,7 +97,7 @@
   </div>
 
   <footer class="container text-center py-3 text-muted small">
-    <span>Version: <span id="app-version">v0.0.15</span></span>
+    <span>Version: <span id="app-version">v0.0.19</span></span>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>

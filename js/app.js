@@ -1,5 +1,5 @@
 (() => {
-  const APP_VERSION = 'v0.0.15';
+  const APP_VERSION = 'v0.0.19';
   const CSV_URL = new URL('data/hyakunin_isshu_with_ruby.csv', window.location.href).toString();
   const CSV_FALLBACK_URL = 'https://nuitsjp.github.io/goshiki-hyakunin-isshu/data/hyakunin_isshu_with_ruby.csv';
   const colorAccentMap = {
@@ -8,6 +8,9 @@
     '黄': 'var(--color-yellow)',
     '緑': 'var(--color-green)',
     'オレンジ': 'var(--color-orange)',
+  };
+  const colorTextMap = {
+    '黄': '#3b3b00',
   };
 
   const screens = {
@@ -28,6 +31,7 @@
     feedback: document.getElementById('feedback'),
     selectedColorLabel: document.getElementById('selected-color-label'),
     cancelQuiz: document.getElementById('cancel-quiz'),
+    nextQuestion: document.getElementById('next-question'),
     resultCount: document.getElementById('result-count'),
     resultRate: document.getElementById('result-rate'),
     resultComment: document.getElementById('result-comment'),
@@ -45,6 +49,7 @@
     showKami: false,
     answers: [],
     questionLimit: 20,
+    isAnswered: false,
   };
 
   let advanceTimerId = null;
@@ -70,9 +75,11 @@
 
   function setAccentColor(color) {
     const accent = colorAccentMap[color] || 'var(--color-blue)';
+    const textColor = colorTextMap[color] || '#fff';
     document.documentElement.style.setProperty('--current-accent', accent);
     elements.progressBar.style.backgroundColor = accent;
     elements.selectedColorLabel.style.backgroundColor = accent;
+    elements.selectedColorLabel.style.color = textColor;
   }
 
   function shuffle(array) {
@@ -135,9 +142,15 @@
     elements.feedback.style.color = 'var(--color-text)';
     elements.kimariji.textContent = '---';
     elements.selectedColorLabel.textContent = '';
+    elements.selectedColorLabel.style.backgroundColor = '';
+    elements.selectedColorLabel.style.color = '';
     elements.progressText.textContent = '問題 0 / 0';
     elements.progressBar.style.width = '0%';
     elements.progressBar.setAttribute('aria-valuenow', '0');
+    if (elements.nextQuestion) {
+      elements.nextQuestion.disabled = true;
+      elements.nextQuestion.textContent = '次へ';
+    }
     resetOptionButtons();
     elements.options.forEach(btn => {
       btn.innerHTML = '';
@@ -158,6 +171,15 @@
     const ratio = Math.round((current / total) * 100);
     elements.progressBar.style.width = `${ratio}%`;
     elements.progressBar.setAttribute('aria-valuenow', String(ratio));
+  }
+
+  function updateNextButton(ready = false) {
+    if (!elements.nextQuestion) return;
+    const isLast = quizState.currentIndex + 1 >= (quizState.currentQuestions.length || 0);
+    elements.nextQuestion.disabled = !ready;
+    elements.nextQuestion.textContent = ready
+      ? (isLast ? '結果を見る' : '次の問題へ')
+      : '次へ';
   }
 
   function renderKimariji(question) {
@@ -182,9 +204,11 @@
       return;
     }
 
+    quizState.isAnswered = false;
     quizState.showKami = false;
     renderKimariji(question);
     resetOptionButtons();
+    updateNextButton(false);
     elements.feedback.textContent = '';
     elements.feedback.style.color = 'var(--color-text)';
     question.options.forEach((option, idx) => {
@@ -214,6 +238,7 @@
       isCorrect,
       index: quizState.currentIndex,
     });
+    quizState.isAnswered = true;
     elements.options.forEach(optionBtn => {
       optionBtn.disabled = true;
       const correct = optionBtn.dataset.correct === 'true';
@@ -236,17 +261,7 @@
 
     quizState.showKami = true;
     renderKimariji(question);
-
-    clearAdvanceTimer();
-    advanceTimerId = setTimeout(() => {
-      advanceTimerId = null;
-      quizState.currentIndex += 1;
-      if (quizState.currentIndex >= quizState.currentQuestions.length) {
-        showResults();
-      } else {
-        renderQuestion();
-      }
-    }, 1000);
+    updateNextButton(true);
   }
 
   function getResultComment(rate) {
@@ -265,13 +280,7 @@
       : status === 'assist'
         ? 'icon-assist'
         : 'icon-wrong';
-    const metaText = status === 'correct'
-      ? '正解'
-      : status === 'assist'
-        ? '上の句を表示して正解'
-        : ans.usedKami
-          ? '上の句を表示したが不正解'
-          : '不正解';
+    const poemLine = `${toRubyHtml(ans.kamiNoKu)} ${toRubyHtml(ans.shimoNoKu)}`;
     const item = document.createElement('div');
     item.className = 'result-item';
     item.innerHTML = `
@@ -279,11 +288,9 @@
         <span class="result-icon ${iconClass}" aria-hidden="true">${icon}</span>
         <div>
           <div class="fw-semibold mb-0">第${idx + 1}問 ${escapeHtml(ans.kimariji)}</div>
-          <div class="result-meta">${metaText}</div>
+          <div class="result-meta">${poemLine}</div>
         </div>
       </div>
-      <p class="result-body mb-1">上の句: ${toRubyHtml(ans.kamiNoKu)}</p>
-      <p class="result-body mb-0">下の句: ${toRubyHtml(ans.shimoNoKu)}</p>
     `;
     return item;
   }
@@ -305,6 +312,16 @@
     elements.resultComment.textContent = getResultComment(rate);
     renderResultList();
     showScreen('result');
+  }
+
+  function goToNext() {
+    if (!quizState.isAnswered) return;
+    quizState.currentIndex += 1;
+    if (quizState.currentIndex >= quizState.currentQuestions.length) {
+      showResults();
+    } else {
+      renderQuestion();
+    }
   }
 
   function cancelQuiz() {
@@ -416,6 +433,10 @@
 
     if (elements.cancelQuiz) {
       elements.cancelQuiz.addEventListener('click', cancelQuiz);
+    }
+
+    if (elements.nextQuestion) {
+      elements.nextQuestion.addEventListener('click', goToNext);
     }
 
     if (elements.toggleKimariji) {
