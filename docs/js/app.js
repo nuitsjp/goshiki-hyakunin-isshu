@@ -24,7 +24,8 @@
     questionCount: document.getElementById('question-count'),
     hintType: document.getElementById('hint-type'),
     displayMode: document.getElementById('display-mode'),
-    orderMode: document.getElementById('order-mode'),
+    orderNormal: document.getElementById('order-normal'),
+    orderReverse: document.getElementById('order-reverse'),
     colorButtons: document.querySelectorAll('.color-button'),
     progressText: document.getElementById('progress-text'),
     progressBar: document.getElementById('progress-bar'),
@@ -432,9 +433,7 @@
       if (elements.displayMode) {
         quizState.displayMode = elements.displayMode.value || 'kana';
       }
-      if (elements.orderMode) {
-        quizState.orderMode = elements.orderMode.value || 'normal';
-      }
+      // orderMode is already set by click handlers
       quizState.currentQuestions = buildQuestions(color);
       quizState.currentIndex = 0;
       quizState.correctCount = 0;
@@ -572,13 +571,35 @@
       });
     }
 
-    if (elements.orderMode) {
-      elements.orderMode.addEventListener('change', () => {
-        quizState.orderMode = elements.orderMode.value || 'normal';
+    if (elements.orderNormal && elements.orderReverse) {
+      const updateOrderButtons = (mode) => {
+        if (mode === 'normal') {
+          elements.orderNormal.classList.add('active');
+          elements.orderReverse.classList.remove('active');
+        } else {
+          elements.orderNormal.classList.remove('active');
+          elements.orderReverse.classList.add('active');
+        }
+      };
+
+      const setOrderMode = (mode) => {
+        quizState.orderMode = mode;
+        updateOrderButtons(mode);
         try {
-          localStorage.setItem('goshiki_order_mode', quizState.orderMode);
+          localStorage.setItem('goshiki_order_mode', mode);
         } catch (e) { console.warn(e); }
-      });
+      };
+
+      elements.orderNormal.addEventListener('click', () => setOrderMode('normal'));
+      elements.orderReverse.addEventListener('click', () => setOrderMode('reverse'));
+
+      // Init
+      let savedOrder = 'normal';
+      try {
+        savedOrder = localStorage.getItem('goshiki_order_mode') || 'normal';
+      } catch (e) { console.warn(e); }
+      quizState.orderMode = savedOrder;
+      updateOrderButtons(savedOrder);
     }
 
     elements.options.forEach(btn => {
@@ -640,14 +661,7 @@
       quizState.displayMode = savedMode;
       elements.displayMode.value = savedMode;
     }
-    if (elements.orderMode) {
-      let savedOrder = 'normal';
-      try {
-        savedOrder = localStorage.getItem('goshiki_order_mode') || 'normal';
-      } catch (e) { console.warn(e); }
-      quizState.orderMode = savedOrder;
-      elements.orderMode.value = savedOrder;
-    }
+    // Order mode initialized above separately
     initEventHandlers();
     resetQuizView();
     loadCsv();
