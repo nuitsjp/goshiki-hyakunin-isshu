@@ -22,6 +22,7 @@
   const elements = {
     version: document.getElementById('app-version'),
     questionCount: document.getElementById('question-count'),
+    hintType: document.getElementById('hint-type'),
     colorButtons: document.querySelectorAll('.color-button'),
     progressText: document.getElementById('progress-text'),
     progressBar: document.getElementById('progress-bar'),
@@ -50,6 +51,7 @@
     answers: [],
     questionLimit: 20,
     isAnswered: false,
+    hintType: 'shoku',
   };
 
   let advanceTimerId = null;
@@ -111,6 +113,7 @@
       kimariji: poem.kimarijiShort || poem.kimarijiLong || '決まり字なし',
       correctShimo: poem.shimoNoKu,
       kamiNoKu: poem.kamiNoKu,
+      hint: poem.hint,
       options: generateOptions(poem, poemsByColor),
     }));
   }
@@ -158,7 +161,8 @@
       btn.removeAttribute('data-option-index');
     });
     if (elements.toggleKimariji) {
-      elements.toggleKimariji.textContent = '? 上の句表示';
+      const hintLabel = quizState.hintType === 'shoku' ? '初句' : '上の句';
+      elements.toggleKimariji.textContent = `⇆ ${hintLabel}表示`;
       elements.toggleKimariji.setAttribute('aria-pressed', 'false');
       elements.toggleKimariji.disabled = true;
     }
@@ -184,14 +188,19 @@
 
   function renderKimariji(question) {
     if (!question) return;
+    const hintLabel = quizState.hintType === 'shoku' ? '初句' : '上の句';
     if (quizState.showKami) {
-      elements.kimariji.innerHTML = toRubyHtml(question.kamiNoKu || '');
+      if (quizState.hintType === 'shoku') {
+        elements.kimariji.textContent = question.hint || '';
+      } else {
+        elements.kimariji.innerHTML = toRubyHtml(question.kamiNoKu || '');
+      }
     } else {
       elements.kimariji.textContent = question.kimariji;
     }
     if (elements.toggleKimariji) {
       const showingKami = quizState.showKami;
-      elements.toggleKimariji.textContent = showingKami ? '⇆ 決まり字表示' : '⇆ 上の句表示';
+      elements.toggleKimariji.textContent = showingKami ? '⇆ 決まり字表示' : `⇆ ${hintLabel}表示`;
       elements.toggleKimariji.setAttribute('aria-pressed', showingKami ? 'true' : 'false');
       elements.toggleKimariji.disabled = false;
     }
@@ -338,6 +347,9 @@
         const val = parseInt(elements.questionCount.value, 10);
         quizState.questionLimit = Number.isFinite(val) ? val : 20;
       }
+      if (elements.hintType) {
+        quizState.hintType = elements.hintType.value || 'shoku';
+      }
       quizState.currentQuestions = buildQuestions(color);
       quizState.currentIndex = 0;
       quizState.correctCount = 0;
@@ -381,6 +393,7 @@
       shimoReading: pickField(row, ['下の句読み']),
       kimarijiLong: pickField(row, ['決まり字（競技かるた）']),
       kimarijiShort: pickField(row, ['決まり字（五色百人一首）']),
+      hint: pickField(row, ['ヒント']),
     })).filter(p => p.color && p.shimoNoKu && (p.kimarijiLong || p.kimarijiShort));
     if (!quizState.allPoems.length) {
       throw new Error('CSVから有効なデータを読み込めませんでした。');
