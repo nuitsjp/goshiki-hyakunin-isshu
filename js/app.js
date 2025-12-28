@@ -1,5 +1,5 @@
 (() => {
-  const APP_VERSION = 'v0.0.13';
+  const APP_VERSION = 'v0.0.15';
   const CSV_URL = new URL('data/hyakunin_isshu_with_ruby.csv', window.location.href).toString();
   const CSV_FALLBACK_URL = 'https://nuitsjp.github.io/goshiki-hyakunin-isshu/data/hyakunin_isshu_with_ruby.csv';
   const colorAccentMap = {
@@ -233,6 +233,9 @@
       elements.feedback.innerHTML = `不正解。正解: ${toRubyHtml(question.correctShimo)}`;
       elements.feedback.style.color = 'var(--color-incorrect)';
     }
+
+    quizState.showKami = true;
+    renderKimariji(question);
 
     clearAdvanceTimer();
     advanceTimerId = setTimeout(() => {

@@ -85,6 +85,15 @@ body {
 .quiz-cancel-btn {
   min-height: 44px;
   min-width: 44px;
+  padding: 0.35rem;
+  line-height: 1;
+  color: #6c757d;
+  border-color: var(--color-border);
+  background: #fff;
+}
+
+.quiz-cancel-btn:hover {
+  background: #f8f9fa;
 }
 
 .result-legend .legend-item {
