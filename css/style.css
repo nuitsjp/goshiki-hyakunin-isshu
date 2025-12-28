@@ -72,13 +72,19 @@ body {
 .option-button:focus-visible,
 .color-button:focus-visible,
 #retry-same:focus-visible,
-#choose-color:focus-visible {
+#choose-color:focus-visible,
+#cancel-quiz:focus-visible {
   outline: 3px solid rgba(0, 0, 0, 0.2);
   outline-offset: 2px;
 }
 
 #feedback {
   min-height: 1.5rem;
+}
+
+.quiz-cancel-btn {
+  min-height: 44px;
+  min-width: 44px;
 }
 
 .result-legend .legend-item {

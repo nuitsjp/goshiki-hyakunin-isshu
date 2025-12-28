@@ -47,9 +47,12 @@
 
       <section id="quiz-screen" class="screen card shadow-sm hidden">
         <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
             <div id="progress-text" class="fw-semibold">問題 1 / 20</div>
-            <div id="selected-color-label" class="badge bg-secondary"></div>
+            <div class="ms-auto d-flex align-items-center gap-2 flex-wrap">
+              <div id="selected-color-label" class="badge bg-secondary"></div>
+              <button id="cancel-quiz" class="btn btn-outline-danger quiz-cancel-btn" type="button">中止してトップへ</button>
+            </div>
           </div>
           <div class="progress mb-3" role="progressbar" aria-label="進捗">
             <div id="progress-bar" class="progress-bar" style="width: 0%;"></div>
@@ -105,7 +108,7 @@
   </div>
 
   <footer class="container text-center py-3 text-muted small">
-    <span>Version: <span id="app-version">v0.0.12</span></span>
+    <span>Version: <span id="app-version">v0.0.13</span></span>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>

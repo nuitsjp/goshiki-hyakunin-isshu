@@ -1,5 +1,5 @@
 (() => {
-  const APP_VERSION = 'v0.0.12';
+  const APP_VERSION = 'v0.0.13';
   const CSV_URL = new URL('data/hyakunin_isshu_with_ruby.csv', window.location.href).toString();
   const CSV_FALLBACK_URL = 'https://nuitsjp.github.io/goshiki-hyakunin-isshu/data/hyakunin_isshu_with_ruby.csv';
   const colorAccentMap = {
@@ -27,6 +27,7 @@
     options: document.querySelectorAll('#options-container .option-button'),
     feedback: document.getElementById('feedback'),
     selectedColorLabel: document.getElementById('selected-color-label'),
+    cancelQuiz: document.getElementById('cancel-quiz'),
     resultCount: document.getElementById('result-count'),
     resultRate: document.getElementById('result-rate'),
     resultComment: document.getElementById('result-comment'),
@@ -45,6 +46,8 @@
     answers: [],
     questionLimit: 20,
   };
+
+  let advanceTimerId = null;
 
   const escapeHtml = (str = '') =>
     str
@@ -111,6 +114,41 @@
       btn.classList.remove('btn-success', 'btn-danger', 'active');
       btn.classList.add('btn-outline-secondary');
     });
+  }
+
+  function clearAdvanceTimer() {
+    if (advanceTimerId) {
+      clearTimeout(advanceTimerId);
+      advanceTimerId = null;
+    }
+  }
+
+  function resetQuizView() {
+    clearAdvanceTimer();
+    quizState.currentQuestions = [];
+    quizState.currentIndex = 0;
+    quizState.correctCount = 0;
+    quizState.answers = [];
+    quizState.showKami = false;
+    quizState.selectedColor = '';
+    elements.feedback.textContent = '';
+    elements.feedback.style.color = 'var(--color-text)';
+    elements.kimariji.textContent = '---';
+    elements.selectedColorLabel.textContent = '';
+    elements.progressText.textContent = '問題 0 / 0';
+    elements.progressBar.style.width = '0%';
+    elements.progressBar.setAttribute('aria-valuenow', '0');
+    resetOptionButtons();
+    elements.options.forEach(btn => {
+      btn.innerHTML = '';
+      btn.removeAttribute('data-correct');
+      btn.removeAttribute('data-option-index');
+    });
+    if (elements.toggleKimariji) {
+      elements.toggleKimariji.textContent = '? 上の句表示';
+      elements.toggleKimariji.setAttribute('aria-pressed', 'false');
+      elements.toggleKimariji.disabled = true;
+    }
   }
 
   function updateProgress() {
@@ -196,7 +234,9 @@
       elements.feedback.style.color = 'var(--color-incorrect)';
     }
 
-    setTimeout(() => {
+    clearAdvanceTimer();
+    advanceTimerId = setTimeout(() => {
+      advanceTimerId = null;
       quizState.currentIndex += 1;
       if (quizState.currentIndex >= quizState.currentQuestions.length) {
         showResults();
@@ -264,8 +304,15 @@
     showScreen('result');
   }
 
+  function cancelQuiz() {
+    resetQuizView();
+    showScreen('start');
+  }
+
   function startQuiz(color) {
     try {
+      clearAdvanceTimer();
+      quizState.showKami = false;
       quizState.selectedColor = color;
       if (elements.questionCount) {
         const val = parseInt(elements.questionCount.value, 10);
@@ -364,6 +411,10 @@
       btn.addEventListener('click', handleAnswer);
     });
 
+    if (elements.cancelQuiz) {
+      elements.cancelQuiz.addEventListener('click', cancelQuiz);
+    }
+
     if (elements.toggleKimariji) {
       elements.toggleKimariji.addEventListener('click', () => {
         const question = quizState.currentQuestions[quizState.currentIndex];
@@ -382,6 +433,7 @@
     });
 
     elements.chooseColor.addEventListener('click', () => {
+      resetQuizView();
       showScreen('start');
     });
   }
@@ -398,6 +450,7 @@
       elements.questionCount.value = quizState.questionLimit;
     }
     initEventHandlers();
+    resetQuizView();
     loadCsv();
   }
 
