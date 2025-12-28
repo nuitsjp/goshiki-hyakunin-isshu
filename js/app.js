@@ -1,8 +1,7 @@
 (() => {
-  const APP_VERSION = 'v0.0.5';
+  const APP_VERSION = 'v0.0.11';
   const CSV_URL = new URL('data/hyakunin_isshu_with_ruby.csv', window.location.href).toString();
   const CSV_FALLBACK_URL = 'https://nuitsjp.github.io/goshiki-hyakunin-isshu/data/hyakunin_isshu_with_ruby.csv';
-  const QUESTIONS_PER_COLOR = 20;
   const colorAccentMap = {
     '青': 'var(--color-blue)',
     'ピンク': 'var(--color-pink)',
@@ -19,16 +18,22 @@
 
   const elements = {
     version: document.getElementById('app-version'),
+    questionCount: document.getElementById('question-count'),
     colorButtons: document.querySelectorAll('.color-button'),
     progressText: document.getElementById('progress-text'),
     progressBar: document.getElementById('progress-bar'),
     kimariji: document.getElementById('kimariji'),
+    toggleKimariji: document.getElementById('toggle-kimariji'),
     options: document.querySelectorAll('#options-container .option-button'),
     feedback: document.getElementById('feedback'),
     selectedColorLabel: document.getElementById('selected-color-label'),
     resultCount: document.getElementById('result-count'),
     resultRate: document.getElementById('result-rate'),
     resultComment: document.getElementById('result-comment'),
+    usedKamiSection: document.getElementById('used-kami-section'),
+    usedKamiList: document.getElementById('used-kami-list'),
+    wrongSection: document.getElementById('wrong-section'),
+    wrongList: document.getElementById('wrong-list'),
     retrySame: document.getElementById('retry-same'),
     chooseColor: document.getElementById('choose-color'),
   };
@@ -39,6 +44,9 @@
     currentQuestions: [],
     currentIndex: 0,
     correctCount: 0,
+    showKami: false,
+    answers: [],
+    questionLimit: 20,
   };
 
   const escapeHtml = (str = '') =>
@@ -93,10 +101,12 @@
     if (poemsByColor.length === 0) {
       throw new Error(`指定の色データが見つかりません: ${color}`);
     }
-    const selected = shuffle(poemsByColor).slice(0, Math.min(QUESTIONS_PER_COLOR, poemsByColor.length));
+    const maxCount = Math.max(1, Math.min(quizState.questionLimit, poemsByColor.length));
+    const selected = shuffle(poemsByColor).slice(0, maxCount);
     return selected.map(poem => ({
       kimariji: poem.kimarijiShort || poem.kimarijiLong || '決まり字なし',
       correctShimo: poem.shimoNoKu,
+      kamiNoKu: poem.kamiNoKu,
       options: generateOptions(poem, poemsByColor),
     }));
   }
@@ -110,12 +120,27 @@
   }
 
   function updateProgress() {
-    const total = quizState.currentQuestions.length || QUESTIONS_PER_COLOR;
+    const total = quizState.currentQuestions.length || quizState.questionLimit;
     const current = quizState.currentIndex + 1;
     elements.progressText.textContent = `問題 ${current} / ${total}`;
     const ratio = Math.round((current / total) * 100);
     elements.progressBar.style.width = `${ratio}%`;
     elements.progressBar.setAttribute('aria-valuenow', String(ratio));
+  }
+
+  function renderKimariji(question) {
+    if (!question) return;
+    if (quizState.showKami) {
+      elements.kimariji.innerHTML = toRubyHtml(question.kamiNoKu || '');
+    } else {
+      elements.kimariji.textContent = question.kimariji;
+    }
+    if (elements.toggleKimariji) {
+      const showingKami = quizState.showKami;
+      elements.toggleKimariji.textContent = showingKami ? '⇆ 決まり字表示' : '⇆ 上の句表示';
+      elements.toggleKimariji.setAttribute('aria-pressed', showingKami ? 'true' : 'false');
+      elements.toggleKimariji.disabled = false;
+    }
   }
 
   function renderQuestion() {
@@ -125,11 +150,11 @@
       return;
     }
 
-    elements.kimariji.textContent = question.kimariji;
+    quizState.showKami = false;
+    renderKimariji(question);
     resetOptionButtons();
     elements.feedback.textContent = '';
     elements.feedback.style.color = 'var(--color-text)';
-
     question.options.forEach((option, idx) => {
       const btn = elements.options[idx];
       btn.innerHTML = toRubyHtml(option.text);
@@ -149,6 +174,14 @@
     if (!question) return;
 
     const isCorrect = btn.dataset.correct === 'true';
+    quizState.answers.push({
+      kimariji: question.kimariji,
+      kamiNoKu: question.kamiNoKu,
+      shimoNoKu: question.correctShimo,
+      usedKami: quizState.showKami,
+      isCorrect,
+      index: quizState.currentIndex,
+    });
     elements.options.forEach(optionBtn => {
       optionBtn.disabled = true;
       const correct = optionBtn.dataset.correct === 'true';
@@ -188,20 +221,64 @@
   }
 
   function showResults() {
-    const total = quizState.currentQuestions.length || QUESTIONS_PER_COLOR;
+    const total = quizState.currentQuestions.length || quizState.questionLimit;
     const rate = Math.round((quizState.correctCount / total) * 100);
     elements.resultCount.textContent = `${quizState.correctCount} / ${total} 問正解`;
     elements.resultRate.textContent = `正答率 ${rate}%`;
     elements.resultComment.textContent = getResultComment(rate);
+    if (elements.usedKamiSection && elements.usedKamiList) {
+      elements.usedKamiList.innerHTML = '';
+      const used = quizState.answers.filter(ans => ans.usedKami);
+      if (!used.length) {
+        elements.usedKamiSection.classList.add('hidden');
+      } else {
+        used.forEach(ans => {
+          const li = document.createElement('li');
+          li.className = 'list-group-item';
+          li.innerHTML = `
+            <div class="fw-semibold">${escapeHtml(ans.kimariji)}</div>
+            <div class="small text-muted">上の句: ${toRubyHtml(ans.kamiNoKu)}</div>
+            <div class="small">下の句: ${toRubyHtml(ans.shimoNoKu)}</div>
+          `;
+          elements.usedKamiList.appendChild(li);
+        });
+        elements.usedKamiSection.classList.remove('hidden');
+      }
+    }
+
+    if (elements.wrongSection && elements.wrongList) {
+      elements.wrongList.innerHTML = '';
+      const wrong = quizState.answers.filter(ans => !ans.isCorrect);
+      if (!wrong.length) {
+        elements.wrongSection.classList.add('hidden');
+      } else {
+        wrong.forEach(ans => {
+          const li = document.createElement('li');
+          li.className = 'list-group-item';
+          li.innerHTML = `
+            <div class="fw-semibold">${escapeHtml(ans.kimariji)}</div>
+            <div class="small text-muted">上の句: ${toRubyHtml(ans.kamiNoKu)}</div>
+            <div class="small">下の句: ${toRubyHtml(ans.shimoNoKu)}</div>
+          `;
+          elements.wrongList.appendChild(li);
+        });
+        elements.wrongSection.classList.remove('hidden');
+      }
+    }
     showScreen('result');
   }
 
   function startQuiz(color) {
     try {
       quizState.selectedColor = color;
+      if (elements.questionCount) {
+        const val = parseInt(elements.questionCount.value, 10);
+        quizState.questionLimit = Number.isFinite(val) ? val : 20;
+      }
       quizState.currentQuestions = buildQuestions(color);
       quizState.currentIndex = 0;
       quizState.correctCount = 0;
+      quizState.answers = [];
       elements.selectedColorLabel.textContent = `${color}の歌`;
       setAccentColor(color);
       showScreen('quiz');
@@ -278,6 +355,15 @@
     elements.options.forEach(btn => {
       btn.addEventListener('click', handleAnswer);
     });
+
+    if (elements.toggleKimariji) {
+      elements.toggleKimariji.addEventListener('click', () => {
+        const question = quizState.currentQuestions[quizState.currentIndex];
+        if (!question) return;
+        quizState.showKami = !quizState.showKami;
+        renderKimariji(question);
+      });
+    }
 
     elements.retrySame.addEventListener('click', () => {
       if (!quizState.selectedColor) {
