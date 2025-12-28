@@ -57,8 +57,8 @@
     questionLimit: 20,
     isAnswered: false,
     isAnswered: false,
-    hintType: 'shoku',
-    hintType: 'shoku',
+    hintType: 'kimariji',
+    hintType: 'kimariji',
     displayMode: 'kana',
     orderMode: 'normal',
   };
@@ -146,7 +146,6 @@
     });
     if (elements.giveUp) {
       elements.giveUp.disabled = false;
-      elements.giveUp.classList.remove('active');
     }
   }
 
@@ -185,7 +184,7 @@
       btn.removeAttribute('data-option-index');
     });
     if (elements.toggleKimariji) {
-      const hintLabel = quizState.hintType === 'shoku' ? '初句' : '上の句';
+      const hintLabel = quizState.hintType === 'shoku' ? '初句' : (quizState.hintType === 'kami' ? '上の句' : '決まり字');
       elements.toggleKimariji.textContent = `⇆ ${hintLabel}表示`;
       elements.toggleKimariji.setAttribute('aria-pressed', 'false');
       elements.toggleKimariji.disabled = true;

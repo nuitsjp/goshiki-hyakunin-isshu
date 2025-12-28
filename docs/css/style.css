@@ -252,7 +252,29 @@ h6,
   padding: 0.6rem 1.5rem;
 }
 
+.pass-button {
+  min-width: 100px;
+  border-radius: 20px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  padding: 0.6rem 1.5rem;
+  border: 1px solid var(--color-border);
+  color: #666;
+}
+
+.pass-button:hover:not(:disabled) {
+  background-color: #fdfdf9;
+  border-color: var(--current-accent);
+  color: var(--current-accent);
+}
+
+.pass-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .next-button:disabled {
+
   background: #e9ecef;
   color: #adb5bd;
 }
@@ -337,4 +359,30 @@ h6,
   .kimariji-display {
     font-size: 1.7rem;
   }
+}
+/* Toggle Buttons (Settings) */
+.btn-toggle {
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  font-family: var(--font-serif);
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-toggle:hover {
+  background: #fdfdf9;
+  border-color: var(--color-text);
+}
+
+.btn-toggle.active {
+  background: var(--color-text);
+  color: #fff;
+  border-color: var(--color-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.btn-toggle:focus-visible {
+  outline: 2px solid var(--current-accent);
+  outline-offset: 2px;
 }
