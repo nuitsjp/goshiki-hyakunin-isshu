@@ -302,14 +302,17 @@ body {
 ## 7. ファイル構成
 
 ```
-hyakunin-isshu-quiz/
-├── index.html              # メインHTMLファイル
-├── css/
-│   └── style.css          # カスタムCSS
-├── js/
-│   └── app.js             # メインJavaScript
-├── data/
-│   └── hyakunin_isshu_with_ruby.csv  # 歌データ
+goshiki-hyakunin-isshu/
+├── app/                   # Webアプリ本体
+│   ├── index.html         # メインHTMLファイル
+│   ├── css/
+│   │   └── style.css      # カスタムCSS
+│   ├── js/
+│   │   └── app.js         # メインJavaScript
+│   └── data/
+│       └── hyakunin_isshu_with_ruby.csv  # 歌データ
+├── AGENTS.md              # AIエージェント用ドキュメント
+├── LICENSE                # ライセンスファイル
 └── README.md              # プロジェクト説明
 ```
 
@@ -428,7 +431,7 @@ git push -u origin main
 
 ### 10.2 公開URL
 ```
-https://USERNAME.github.io/hyakunin-isshu-quiz/
+https://nuitsjp.github.io/goshiki-hyakunin-isshu/app/
 ```
 
 ---
