@@ -1,5 +1,5 @@
 (() => {
-  const APP_VERSION = 'v0.0.11';
+  const APP_VERSION = 'v0.0.12';
   const CSV_URL = new URL('data/hyakunin_isshu_with_ruby.csv', window.location.href).toString();
   const CSV_FALLBACK_URL = 'https://nuitsjp.github.io/goshiki-hyakunin-isshu/data/hyakunin_isshu_with_ruby.csv';
   const colorAccentMap = {
@@ -30,10 +30,7 @@
     resultCount: document.getElementById('result-count'),
     resultRate: document.getElementById('result-rate'),
     resultComment: document.getElementById('result-comment'),
-    usedKamiSection: document.getElementById('used-kami-section'),
-    usedKamiList: document.getElementById('used-kami-list'),
-    wrongSection: document.getElementById('wrong-section'),
-    wrongList: document.getElementById('wrong-list'),
+    resultList: document.getElementById('result-list'),
     retrySame: document.getElementById('retry-same'),
     chooseColor: document.getElementById('choose-color'),
   };
@@ -217,51 +214,53 @@
     return '復習しましょう';
   }
 
+  function buildResultItem(ans, idx) {
+    const status = ans.isCorrect ? (ans.usedKami ? 'assist' : 'correct') : 'wrong';
+    const icon = status === 'correct' ? '○' : status === 'assist' ? '△' : '×';
+    const iconClass = status === 'correct'
+      ? 'icon-correct'
+      : status === 'assist'
+        ? 'icon-assist'
+        : 'icon-wrong';
+    const metaText = status === 'correct'
+      ? '正解'
+      : status === 'assist'
+        ? '上の句を表示して正解'
+        : ans.usedKami
+          ? '上の句を表示したが不正解'
+          : '不正解';
+    const item = document.createElement('div');
+    item.className = 'result-item';
+    item.innerHTML = `
+      <div class="result-header">
+        <span class="result-icon ${iconClass}" aria-hidden="true">${icon}</span>
+        <div>
+          <div class="fw-semibold mb-0">第${idx + 1}問 ${escapeHtml(ans.kimariji)}</div>
+          <div class="result-meta">${metaText}</div>
+        </div>
+      </div>
+      <p class="result-body mb-1">上の句: ${toRubyHtml(ans.kamiNoKu)}</p>
+      <p class="result-body mb-0">下の句: ${toRubyHtml(ans.shimoNoKu)}</p>
+    `;
+    return item;
+  }
+
+  function renderResultList() {
+    if (!elements.resultList) return;
+    elements.resultList.innerHTML = '';
+    if (!quizState.answers.length) return;
+    quizState.answers.forEach((ans, idx) => {
+      elements.resultList.appendChild(buildResultItem(ans, idx));
+    });
+  }
+
   function showResults() {
     const total = quizState.currentQuestions.length || quizState.questionLimit;
     const rate = Math.round((quizState.correctCount / total) * 100);
     elements.resultCount.textContent = `${quizState.correctCount} / ${total} 問正解`;
     elements.resultRate.textContent = `正答率 ${rate}%`;
     elements.resultComment.textContent = getResultComment(rate);
-    if (elements.usedKamiSection && elements.usedKamiList) {
-      elements.usedKamiList.innerHTML = '';
-      const used = quizState.answers.filter(ans => ans.usedKami);
-      if (!used.length) {
-        elements.usedKamiSection.classList.add('hidden');
-      } else {
-        used.forEach(ans => {
-          const li = document.createElement('li');
-          li.className = 'list-group-item';
-          li.innerHTML = `
-            <div class="fw-semibold">${escapeHtml(ans.kimariji)}</div>
-            <div class="small text-muted">上の句: ${toRubyHtml(ans.kamiNoKu)}</div>
-            <div class="small">下の句: ${toRubyHtml(ans.shimoNoKu)}</div>
-          `;
-          elements.usedKamiList.appendChild(li);
-        });
-        elements.usedKamiSection.classList.remove('hidden');
-      }
-    }
-
-    if (elements.wrongSection && elements.wrongList) {
-      elements.wrongList.innerHTML = '';
-      const wrong = quizState.answers.filter(ans => !ans.isCorrect);
-      if (!wrong.length) {
-        elements.wrongSection.classList.add('hidden');
-      } else {
-        wrong.forEach(ans => {
-          const li = document.createElement('li');
-          li.className = 'list-group-item';
-          li.innerHTML = `
-            <div class="fw-semibold">${escapeHtml(ans.kimariji)}</div>
-            <div class="small text-muted">上の句: ${toRubyHtml(ans.kamiNoKu)}</div>
-            <div class="small">下の句: ${toRubyHtml(ans.shimoNoKu)}</div>
-          `;
-          elements.wrongList.appendChild(li);
-        });
-        elements.wrongSection.classList.remove('hidden');
-      }
-    }
+    renderResultList();
     showScreen('result');
   }
 

@@ -80,25 +80,32 @@
           <div class="display-6 fw-bold" id="result-count">-- / 20 問正解</div>
           <div class="h5 text-muted" id="result-rate">正答率 --%</div>
           <div class="mt-2 mb-4 fw-semibold" id="result-comment">---</div>
+          <div class="result-legend d-flex justify-content-center gap-3 mb-3">
+            <div class="legend-item">
+              <span class="result-icon icon-correct" aria-hidden="true">○</span>
+              <span class="small text-muted">正解</span>
+            </div>
+            <div class="legend-item">
+              <span class="result-icon icon-assist" aria-hidden="true">△</span>
+              <span class="small text-muted">上の句を表示</span>
+            </div>
+            <div class="legend-item">
+              <span class="result-icon icon-wrong" aria-hidden="true">×</span>
+              <span class="small text-muted">不正解</span>
+            </div>
+          </div>
           <div class="d-grid gap-2 d-sm-flex justify-content-center mb-3">
             <button id="retry-same" class="btn btn-primary">同じ色で再挑戦</button>
             <button id="choose-color" class="btn btn-outline-secondary">別の色を選ぶ</button>
           </div>
-          <div id="used-kami-section" class="text-start hidden">
-            <h3 class="h6 fw-semibold mb-2">上の句を表示して回答した問題</h3>
-            <ul id="used-kami-list" class="list-group small"></ul>
-          </div>
-          <div id="wrong-section" class="text-start hidden mt-3">
-            <h3 class="h6 fw-semibold mb-2">間違った問題</h3>
-            <ul id="wrong-list" class="list-group small"></ul>
-          </div>
+          <div id="result-list" class="result-list text-start" aria-live="polite"></div>
         </div>
       </section>
     </main>
   </div>
 
   <footer class="container text-center py-3 text-muted small">
-    <span>Version: <span id="app-version">v0.0.11</span></span>
+    <span>Version: <span id="app-version">v0.0.12</span></span>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>

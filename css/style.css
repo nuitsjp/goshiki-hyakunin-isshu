@@ -7,6 +7,7 @@
   --current-accent: var(--color-blue);
   --color-correct: #28a745;
   --color-incorrect: #dc3545;
+  --color-assist: #ffb347;
   --color-bg: #f8f9fa;
   --color-text: #212529;
   --color-border: #dee2e6;
@@ -78,6 +79,69 @@ body {
 
 #feedback {
   min-height: 1.5rem;
+}
+
+.result-legend .legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.result-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.result-item {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.result-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.25rem;
+}
+
+.result-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  font-weight: 800;
+  font-size: 1.1rem;
+  border: 2px solid currentColor;
+}
+
+.icon-correct {
+  color: var(--color-correct);
+  background: rgba(40, 167, 69, 0.08);
+}
+
+.icon-assist {
+  color: var(--color-assist);
+  background: rgba(255, 179, 71, 0.12);
+}
+
+.icon-wrong {
+  color: var(--color-incorrect);
+  background: rgba(220, 53, 69, 0.08);
+}
+
+.result-meta {
+  color: #6c757d;
+  font-size: 0.95rem;
+}
+
+.result-body {
+  margin: 0;
+  line-height: 1.5;
 }
 
 
