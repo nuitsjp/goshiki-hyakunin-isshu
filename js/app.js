@@ -1,5 +1,5 @@
 (() => {
-  const APP_VERSION = 'v0.0.19';
+  const APP_VERSION = 'v0.0.20';
   const CSV_URL = new URL('data/hyakunin_isshu_with_ruby.csv', window.location.href).toString();
   const CSV_FALLBACK_URL = 'https://nuitsjp.github.io/goshiki-hyakunin-isshu/data/hyakunin_isshu_with_ruby.csv';
   const colorAccentMap = {
