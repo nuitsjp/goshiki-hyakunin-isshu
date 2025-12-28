@@ -1,4 +1,5 @@
 (() => {
+  const APP_VERSION = 'v0.0.1';
   const CSV_URL = new URL('data/hyakunin_isshu_with_ruby.csv', window.location.href).toString();
   const QUESTIONS_PER_COLOR = 20;
   const colorAccentMap = {
@@ -16,6 +17,7 @@
   };
 
   const elements = {
+    version: document.getElementById('app-version'),
     colorButtons: document.querySelectorAll('.color-button'),
     progressText: document.getElementById('progress-text'),
     progressBar: document.getElementById('progress-bar'),
@@ -254,6 +256,9 @@
   }
 
   function init() {
+    if (elements.version) {
+      elements.version.textContent = APP_VERSION;
+    }
     initEventHandlers();
     loadCsv();
   }
