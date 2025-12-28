@@ -1,5 +1,5 @@
 (() => {
-  const APP_VERSION = 'v0.0.20';
+  const APP_VERSION = 'v0.0.21';
   const CSV_URL = new URL('data/hyakunin_isshu_with_ruby.csv', window.location.href).toString();
   const CSV_FALLBACK_URL = 'https://nuitsjp.github.io/goshiki-hyakunin-isshu/data/hyakunin_isshu_with_ruby.csv';
   const colorAccentMap = {
@@ -56,9 +56,7 @@
     answers: [],
     questionLimit: 20,
     isAnswered: false,
-    isAnswered: false,
-    hintType: 'kimariji',
-    hintType: 'kimariji',
+    hintType: 'shoku',
     displayMode: 'kana',
     orderMode: 'normal',
   };
@@ -184,7 +182,7 @@
       btn.removeAttribute('data-option-index');
     });
     if (elements.toggleKimariji) {
-      const hintLabel = quizState.hintType === 'shoku' ? '初句' : (quizState.hintType === 'kami' ? '上の句' : '決まり字');
+      const hintLabel = quizState.hintType === 'kami' ? '上の句' : '初句';
       elements.toggleKimariji.textContent = `⇆ ${hintLabel}表示`;
       elements.toggleKimariji.setAttribute('aria-pressed', 'false');
       elements.toggleKimariji.disabled = true;
