@@ -35,6 +35,23 @@
 2. **クイズ画面**で、表示された「決まり字」に対応する正しい札を選んで回答します。
 3. 全問終了すると**結果画面**が表示され、正答数と正答率が確認できます。「統計を見る」から詳細な学習記録へアクセスすることも可能です。
 
+## 開発・テスト
+
+テストの実行には Node.js と npm が必要です。
+
+```bash
+npm install
+npm test
+```
+
+カバレッジを取得する場合は以下を実行してください。
+
+```bash
+npm run test:coverage
+```
+
+HTMLレポートは `coverage/index.html` に出力されます。
+
 ## 技術スタック
 
 - **Frontend**: HTML5, CSS3 (Modern Japanese Design), JavaScript (Vanilla ES6+)
