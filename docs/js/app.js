@@ -84,6 +84,10 @@
     orderMode: 'normal',
   };
 
+  const statsState = {
+    selectedColor: null, // null=全体表示, 色名=その色の詳細表示中
+  };
+
   let advanceTimerId = null;
 
   // ==================== Storage Management Functions ====================
@@ -227,6 +231,130 @@
     return colors.map(color => calculateColorStats(color));
   }
 
+  // ==================== Detailed Color Stats Functions ====================
+
+  function calculateKimarijiPerformance(color) {
+    const history = loadQuizHistory();
+    const colorSessions = history.filter(s => s.color === color);
+
+    // Get all kimariji for this color from allPoems
+    const colorPoems = quizState.allPoems.filter(poem => poem.color === color);
+    const kimarijiMap = new Map();
+
+    // Initialize kimariji map
+    colorPoems.forEach(poem => {
+      if (poem.kimariji && !kimarijiMap.has(poem.kimariji)) {
+        kimarijiMap.set(poem.kimariji, { correct: 0, total: 0 });
+      }
+    });
+
+    // Aggregate performance data from all sessions
+    colorSessions.forEach(session => {
+      if (session.answers && Array.isArray(session.answers)) {
+        session.answers.forEach(answer => {
+          if (answer.kimariji && kimarijiMap.has(answer.kimariji)) {
+            const stats = kimarijiMap.get(answer.kimariji);
+            stats.total++;
+            if (answer.isCorrect) {
+              stats.correct++;
+            }
+          }
+        });
+      }
+    });
+
+    // Convert map to array and calculate rates
+    const kimarijiStats = Array.from(kimarijiMap.entries()).map(([kimariji, stats]) => ({
+      kimariji,
+      correct: stats.correct,
+      total: stats.total,
+      rate: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0
+    }));
+
+    // Sort by rate (ascending - weak ones first)
+    kimarijiStats.sort((a, b) => {
+      if (a.total === 0 && b.total === 0) return 0;
+      if (a.total === 0) return 1; // Push never-attempted to end
+      if (b.total === 0) return -1;
+      return a.rate - b.rate; // Lower rate first
+    });
+
+    return kimarijiStats;
+  }
+
+  function calculateRecentTrend(color, sessionCount = 5) {
+    const history = loadQuizHistory();
+    const colorSessions = history.filter(s => s.color === color);
+
+    if (colorSessions.length === 0) {
+      return {
+        recentAvg: 0,
+        overallAvg: 0,
+        diff: 0,
+        trend: 'no-data',
+        recentCount: 0
+      };
+    }
+
+    // Calculate overall average for this color
+    const overallStats = calculateColorStats(color);
+    const overallAvg = overallStats.accuracyRate;
+
+    // Get recent sessions
+    const recentSessions = colorSessions.slice(-sessionCount);
+    const recentCount = recentSessions.length;
+
+    if (recentCount === 0) {
+      return {
+        recentAvg: 0,
+        overallAvg,
+        diff: 0,
+        trend: 'no-data',
+        recentCount: 0
+      };
+    }
+
+    // Calculate recent average
+    const recentTotal = recentSessions.reduce((sum, s) => sum + s.questionCount, 0);
+    const recentCorrect = recentSessions.reduce((sum, s) => sum + s.correctCount, 0);
+    const recentAvg = recentTotal > 0 ? Math.round((recentCorrect / recentTotal) * 100) : 0;
+
+    const diff = recentAvg - overallAvg;
+
+    // Determine trend
+    let trend = 'stable';
+    if (diff >= 5) {
+      trend = 'improving';
+    } else if (diff <= -5) {
+      trend = 'declining';
+    }
+
+    return {
+      recentAvg,
+      overallAvg,
+      diff,
+      trend,
+      recentCount
+    };
+  }
+
+  function calculateDetailedColorStats(color) {
+    const history = loadQuizHistory();
+    const colorSessions = history.filter(s => s.color === color);
+
+    // Sort sessions by timestamp (newest first)
+    const sessions = colorSessions.sort((a, b) => b.timestamp - a.timestamp);
+
+    const kimarijiStats = calculateKimarijiPerformance(color);
+    const trendData = calculateRecentTrend(color);
+
+    return {
+      kimarijiStats,
+      trendData,
+      sessions
+    };
+  }
+
   function calculateOverallStats() {
     const history = loadQuizHistory();
 
@@ -317,7 +445,7 @@
         }[stats.color] || '';
 
         return `
-          <tr>
+          <tr data-color="${stats.color}" class="${statsState.selectedColor === stats.color ? 'selected' : ''}">
             <td>
               <span class="color-badge-mini ${colorClass}"></span>
               ${stats.color}
@@ -331,6 +459,30 @@
           </tr>
         `;
       }).join('');
+
+      // Add click event listeners to table rows
+      tbody.querySelectorAll('tr').forEach(row => {
+        row.addEventListener('click', () => {
+          const color = row.getAttribute('data-color');
+          if (!color) return;
+
+          // Toggle selection
+          if (statsState.selectedColor === color) {
+            // Deselect
+            clearDetailedView();
+          } else {
+            // Select new color
+            statsState.selectedColor = color;
+
+            // Update selected class
+            tbody.querySelectorAll('tr').forEach(r => r.classList.remove('selected'));
+            row.classList.add('selected');
+
+            // Render detailed stats
+            renderDetailedColorStats(color);
+          }
+        });
+      });
     }
 
     const recentActivity = elements.recentActivity;
@@ -355,6 +507,219 @@
     }
 
     showScreen('stats');
+  }
+
+  // ==================== Detailed Color Stats Rendering Functions ====================
+
+  function clearDetailedView() {
+    statsState.selectedColor = null;
+    const container = document.getElementById('color-detail-container');
+    if (container) {
+      container.innerHTML = '';
+    }
+    // Remove selected class from all table rows
+    const tbody = elements.colorStatsBody;
+    if (tbody) {
+      tbody.querySelectorAll('tr').forEach(row => row.classList.remove('selected'));
+    }
+  }
+
+  function renderSessionDetail(sessionId) {
+    const session = loadQuizHistory().find(s => s.sessionId === sessionId);
+    if (!session || !session.answers) return;
+
+    const sessionElement = document.querySelector(`[data-session-id="${sessionId}"]`);
+    if (!sessionElement) return;
+
+    const isExpanded = sessionElement.classList.contains('expanded');
+
+    if (isExpanded) {
+      // Collapse
+      sessionElement.classList.remove('expanded');
+      const answersDiv = sessionElement.querySelector('.session-answers');
+      if (answersDiv) {
+        answersDiv.style.display = 'none';
+      }
+    } else {
+      // Expand
+      sessionElement.classList.add('expanded');
+      let answersDiv = sessionElement.querySelector('.session-answers');
+
+      if (!answersDiv) {
+        // Create answers div if it doesn't exist
+        answersDiv = document.createElement('div');
+        answersDiv.className = 'session-answers';
+
+        const answersHtml = session.answers.map(answer => {
+          let answerClass = 'answer-wrong';
+          let symbol = '×';
+          if (answer.isCorrect) {
+            if (answer.usedKami) {
+              answerClass = 'answer-assist';
+              symbol = '△';
+            } else {
+              answerClass = 'answer-correct';
+              symbol = '○';
+            }
+          }
+          return `<span class="answer-item ${answerClass}">${answer.kimariji} ${symbol}</span>`;
+        }).join('');
+
+        answersDiv.innerHTML = answersHtml;
+        sessionElement.appendChild(answersDiv);
+      }
+
+      answersDiv.style.display = 'block';
+    }
+  }
+
+  function renderDetailedColorStats(color) {
+    const detailedStats = calculateDetailedColorStats(color);
+    const container = document.getElementById('color-detail-container');
+
+    if (!container) return;
+
+    // Build HTML
+    const colorClass = {
+      '青': 'color-blue',
+      'ピンク': 'color-pink',
+      '黄': 'color-yellow',
+      '緑': 'color-green',
+      'オレンジ': 'color-orange'
+    }[color] || '';
+
+    let html = `
+      <div class="color-detail-panel">
+        <div class="detail-header">
+          <h4><span class="color-badge-mini ${colorClass}"></span> 【${color}】の詳細統計</h4>
+          <button class="btn btn-outline-secondary btn-sm" id="close-detail-panel">閉じる</button>
+        </div>
+    `;
+
+    // Kimariji Performance Section
+    html += `
+      <div class="detail-section">
+        <h5>苦手な決まり字</h5>
+    `;
+
+    if (detailedStats.kimarijiStats.length === 0) {
+      html += `<p class="text-muted">まだプレイ履歴がありません</p>`;
+    } else {
+      // Show only kimariji with attempts
+      const attemptedKimariji = detailedStats.kimarijiStats.filter(k => k.total > 0);
+
+      if (attemptedKimariji.length === 0) {
+        html += `<p class="text-muted">まだ出題されていない決まり字です</p>`;
+      } else {
+        html += `<div class="kimariji-performance-list">`;
+        attemptedKimariji.slice(0, 10).forEach(k => {
+          const isWeak = k.rate < 60;
+          html += `
+            <div class="kimariji-item ${isWeak ? 'weak' : ''}">
+              <div class="kimariji-name">${k.kimariji}</div>
+              <div class="kimariji-stats">${k.correct}/${k.total}</div>
+              <div class="kimariji-rate">${k.rate}%</div>
+            </div>
+          `;
+        });
+        html += `</div>`;
+      }
+    }
+
+    html += `</div>`;
+
+    // Recent Trend Section
+    html += `
+      <div class="detail-section">
+        <h5>最近の傾向</h5>
+    `;
+
+    if (detailedStats.trendData.recentCount === 0) {
+      html += `<p class="text-muted">最近のプレイ履歴がありません</p>`;
+    } else {
+      const trendText = {
+        'improving': '改善傾向',
+        'stable': '安定',
+        'declining': '要注意',
+        'no-data': 'データ不足'
+      }[detailedStats.trendData.trend] || '不明';
+
+      const diffText = detailedStats.trendData.diff >= 0
+        ? `+${detailedStats.trendData.diff}%`
+        : `${detailedStats.trendData.diff}%`;
+
+      html += `
+        <div class="trend-info">
+          <p>最近${detailedStats.trendData.recentCount}回の平均正答率: <strong>${detailedStats.trendData.recentAvg}%</strong></p>
+          <p>全体平均: ${detailedStats.trendData.overallAvg}% （${diffText}）</p>
+          <p>傾向: <strong>${trendText}</strong></p>
+        </div>
+      `;
+    }
+
+    html += `</div>`;
+
+    // Session History Section
+    html += `
+      <div class="detail-section">
+        <h5>セッション履歴</h5>
+    `;
+
+    if (detailedStats.sessions.length === 0) {
+      html += `<p class="text-muted">まだプレイ履歴がありません</p>`;
+    } else {
+      html += `<div class="session-history-list">`;
+
+      detailedStats.sessions.forEach(session => {
+        const hintTypeText = session.hintType === 'shoku' ? '初句' : '上の句';
+        const displayModeText = session.displayMode === 'kana' ? 'よみがな' : '漢字';
+        const orderModeText = session.orderMode === 'normal' ? '上の句→下の句' : '下の句→上の句';
+
+        html += `
+          <div class="session-item" data-session-id="${session.sessionId}">
+            <div class="session-header">
+              <div>
+                <div class="fw-semibold">${formatDateJapanese(session.date)} ${new Date(session.timestamp).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</div>
+                <div class="session-meta">${hintTypeText} / ${displayModeText} / ${orderModeText}</div>
+              </div>
+              <div class="session-result">
+                ${session.correctCount}/${session.questionCount} (${session.accuracyRate}%)
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+    }
+
+    html += `</div>`;
+
+    html += `</div>`; // Close color-detail-panel
+
+    container.innerHTML = html;
+
+    // Add event listeners
+    const closeButton = document.getElementById('close-detail-panel');
+    if (closeButton) {
+      closeButton.addEventListener('click', () => {
+        clearDetailedView();
+      });
+    }
+
+    // Add click listeners to session items
+    const sessionItems = container.querySelectorAll('.session-item');
+    sessionItems.forEach(item => {
+      item.addEventListener('click', () => {
+        const sessionId = item.getAttribute('data-session-id');
+        if (sessionId) {
+          renderSessionDetail(sessionId);
+        }
+      });
+    });
+
+    // Scroll to detail panel
+    container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   const escapeHtml = (str = '') =>
