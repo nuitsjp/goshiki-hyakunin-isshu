@@ -136,6 +136,12 @@ export const initAuthUI = async ({
                 localStorage.removeItem(STORAGE_KEYS.HISTORY);
                 log('sync', 'localStorage履歴を削除', { userId: user.uid });
                 console.log(`Migrated ${count} sessions to Firestore`);
+              } else if (count === 0) {
+                log('sync', 'すべてのセッションが既にFirestoreに存在するため、localStorage履歴を削除', {
+                  userId: user.uid,
+                  totalLocal: localHistory.length,
+                });
+                localStorage.removeItem(STORAGE_KEYS.HISTORY);
               }
             }
           } else {

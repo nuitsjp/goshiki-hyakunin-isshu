@@ -1,11 +1,15 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   checkLocalStorageAvailable,
   cleanOldHistory,
   clearAllHistory,
+  clearCachedQuizHistory,
   enforceHistoryLimit,
+  getCachedQuizHistory,
   loadQuizHistory,
+  refreshQuizHistory,
   saveQuizSession,
+  setCachedQuizHistory,
 } from '../docs/js/storage.js';
 import { STORAGE_KEYS, STATS_VERSION } from '../docs/js/config.js';
 
@@ -30,6 +34,10 @@ class MemoryStorage {
 }
 
 describe('storage', () => {
+  beforeEach(() => {
+    clearCachedQuizHistory();
+  });
+
   it('saveQuizSession stores history and version', async () => {
     const storage = new MemoryStorage();
     const session = { timestamp: Date.now(), questionCount: 1 };
@@ -82,6 +90,57 @@ describe('storage', () => {
       [STORAGE_KEYS.HISTORY]: '{bad json}',
     });
     expect(await loadQuizHistory(storage)).toEqual([]);
+  });
+
+  it('loadQuizHistory caches results', async () => {
+    const storage = new MemoryStorage({
+      [STORAGE_KEYS.HISTORY]: JSON.stringify([{ timestamp: Date.now() }]),
+    });
+    const getItemSpy = vi.spyOn(storage, 'getItem');
+
+    await loadQuizHistory(storage);
+    await loadQuizHistory(storage);
+
+    expect(getItemSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('refreshQuizHistory reloads and updates cache', async () => {
+    const storage = new MemoryStorage({
+      [STORAGE_KEYS.HISTORY]: JSON.stringify([{ timestamp: 1 }]),
+    });
+
+    await refreshQuizHistory(storage);
+    expect(getCachedQuizHistory()).toHaveLength(1);
+
+    storage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify([{ timestamp: 1 }, { timestamp: 2 }]));
+    await refreshQuizHistory(storage);
+    expect(getCachedQuizHistory()).toHaveLength(2);
+  });
+
+  it('saveQuizSession updates cached history when present', async () => {
+    const storage = new MemoryStorage();
+    const now = Date.now();
+    setCachedQuizHistory([{ timestamp: now, questionCount: 1 }]);
+
+    const ok = await saveQuizSession({ timestamp: now + 1, questionCount: 1 }, storage);
+    expect(ok).toBe(true);
+    expect(getCachedQuizHistory()).toHaveLength(2);
+  });
+
+  it('clearAllHistory clears cache when confirmed', async () => {
+    const storage = new MemoryStorage({
+      [STORAGE_KEYS.HISTORY]: '[]',
+      [STORAGE_KEYS.VERSION]: '1',
+    });
+    const dialog = {
+      confirm: () => true,
+      alert: vi.fn(),
+    };
+    setCachedQuizHistory([{ timestamp: 1 }]);
+
+    const ok = await clearAllHistory(storage, dialog);
+    expect(ok).toBe(true);
+    expect(getCachedQuizHistory()).toEqual([]);
   });
 
   it('cleanOldHistory filters by retention', () => {

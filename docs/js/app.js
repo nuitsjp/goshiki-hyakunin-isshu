@@ -4,6 +4,8 @@ import { getScreens, getElements } from './dom.js';
 import {
   saveQuizSession,
   loadQuizHistory,
+  refreshQuizHistory,
+  getCachedQuizHistory,
   clearAllHistory,
   checkLocalStorageAvailable,
   setAuthModule,
@@ -44,6 +46,16 @@ const statsUI = createStatsUI({
   loadHistory: loadQuizHistory,
 });
 
+async function refreshHistoryCache() {
+  await refreshQuizHistory();
+  statsUI.clearHistoryCache();
+}
+
+async function refreshHistoryForStart() {
+  await refreshHistoryCache();
+  await statsUI.renderColorSummaries();
+}
+
 function closeMenu() {
   if (elements.menuPanel) elements.menuPanel.classList.add('hidden');
   if (elements.menuButton) elements.menuButton.setAttribute('aria-expanded', 'false');
@@ -65,14 +77,14 @@ function setAccentColor(color) {
   elements.selectedColorLabel.style.color = textColor;
 }
 
-async function updateWeak5Option(color) {
+function updateWeak5Option(color) {
   if (!elements.questionCount) return;
 
   const weak5Option = elements.questionCount.querySelector('option[value="weak5"]');
   if (!weak5Option) return;
 
-  if (color && quizState.allPoems.length) {
-    const history = await loadQuizHistory();
+  const history = getCachedQuizHistory();
+  if (color && quizState.allPoems.length && Array.isArray(history)) {
     const kimarijiPerf = calculateKimarijiPerformance(color, quizState.allPoems, history);
     weak5Option.disabled = !canUseWeak5(kimarijiPerf);
   } else {
@@ -367,7 +379,7 @@ function renderResultList() {
   });
 }
 
-function showResults() {
+async function showResults() {
   const total = quizState.currentQuestions.length || quizState.questionLimit;
   const rate = Math.round((quizState.correctCount / total) * 100);
 
@@ -397,7 +409,7 @@ function showResults() {
     }))
   };
 
-  saveQuizSession(sessionData);
+  await saveQuizSession(sessionData);
   statsUI.clearHistoryCache();
 
   elements.resultCount.textContent = `${quizState.correctCount} / ${total} 問正解`;
@@ -417,10 +429,10 @@ function goToNext() {
   }
 }
 
-function cancelQuiz() {
+async function cancelQuiz() {
   resetQuizView();
-  statsUI.renderColorSummaries();
   showScreen('start');
+  refreshHistoryForStart();
 }
 
 async function startQuiz(color) {
@@ -449,7 +461,7 @@ async function startQuiz(color) {
     }
 
     if (isWeak5Mode) {
-      const history = await loadQuizHistory();
+      const history = getCachedQuizHistory() || [];
       const kimarijiPerf = calculateKimarijiPerformance(color, quizState.allPoems, history);
       quizState.currentQuestions = buildWeakQuestions({
         poems: quizState.allPoems,
@@ -568,13 +580,14 @@ function initEventHandlers() {
       }
     };
 
-    const setOrderMode = (mode) => {
+    const setOrderMode = async (mode) => {
       quizState.orderMode = mode;
       updateOrderButtons(mode);
       try {
         localStorage.setItem(STORAGE_KEYS.ORDER_MODE, mode);
       } catch (e) { console.warn(e); }
-      statsUI.renderColorSummaries();
+      statsUI.clearHistoryCache();
+      await statsUI.renderColorSummaries();
     };
 
     elements.orderNormal.addEventListener('click', () => setOrderMode('normal'));
@@ -613,46 +626,50 @@ function initEventHandlers() {
     });
   }
 
-  elements.retrySame.addEventListener('click', () => {
+  elements.retrySame.addEventListener('click', async () => {
     if (!quizState.selectedColor) {
-      statsUI.renderColorSummaries();
       showScreen('start');
+      refreshHistoryForStart();
       return;
     }
     startQuiz(quizState.selectedColor);
   });
 
-  elements.chooseColor.addEventListener('click', () => {
+  elements.chooseColor.addEventListener('click', async () => {
     resetQuizView();
-    statsUI.renderColorSummaries();
     showScreen('start');
+    refreshHistoryForStart();
   });
 
   if (elements.viewStats) {
-    elements.viewStats.addEventListener('click', () => {
-      statsUI.renderStatsScreen(true);
+    elements.viewStats.addEventListener('click', async () => {
+      await refreshHistoryCache();
+      await statsUI.renderStatsScreen(true);
     });
   }
 
   if (elements.viewStatsFromResult) {
-    elements.viewStatsFromResult.addEventListener('click', () => {
-      statsUI.renderStatsScreen(true);
+    elements.viewStatsFromResult.addEventListener('click', async () => {
+      await refreshHistoryCache();
+      await statsUI.renderStatsScreen(true);
     });
   }
 
   if (elements.closeStats) {
-    elements.closeStats.addEventListener('click', () => {
-      statsUI.renderColorSummaries();
+    elements.closeStats.addEventListener('click', async () => {
       showScreen('start');
+      refreshHistoryForStart();
     });
   }
 
   if (elements.clearHistory) {
-    elements.clearHistory.addEventListener('click', () => {
-      if (clearAllHistory()) {
+    elements.clearHistory.addEventListener('click', async () => {
+      if (await clearAllHistory()) {
         statsUI.clearHistoryCache();
-        statsUI.renderStatsScreen(false);
-        statsUI.renderColorSummaries();
+        if (currentScreen === 'stats') {
+          await statsUI.renderStatsScreen(false);
+          await statsUI.renderColorSummaries();
+        }
       }
     });
   }
@@ -689,8 +706,14 @@ function initEventHandlers() {
   }
 
   if (elements.closeSettings) {
-    elements.closeSettings.addEventListener('click', () => {
-      showScreen(settingsReturnScreen || 'start');
+    elements.closeSettings.addEventListener('click', async () => {
+      const returnTo = settingsReturnScreen || 'start';
+      if (returnTo === 'start') {
+        showScreen(returnTo);
+        refreshHistoryForStart();
+        return;
+      }
+      showScreen(returnTo);
     });
   }
 
@@ -742,7 +765,7 @@ function init() {
   initEventHandlers();
   initAuthUI({ elements, closeMenu });
   resetQuizView();
-  statsUI.renderColorSummaries();
+  refreshHistoryForStart();
   loadCsv()
     .then(poems => {
       quizState.allPoems = poems;

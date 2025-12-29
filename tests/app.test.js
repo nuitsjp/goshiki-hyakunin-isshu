@@ -173,6 +173,7 @@ describe('app', () => {
     correctButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     vi.runAllTimers();
+    await flushPromises();
     const resultScreen = document.getElementById('result-screen');
     expect(resultScreen.classList.contains('hidden')).toBe(false);
     expect(document.getElementById('result-count').textContent).toMatch(/1/);
@@ -198,6 +199,7 @@ describe('app', () => {
     expect(nextButton.disabled).toBe(false);
     nextButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
+    await flushPromises();
     const resultScreen = document.getElementById('result-screen');
     expect(resultScreen.classList.contains('hidden')).toBe(false);
   });
@@ -237,6 +239,8 @@ describe('app', () => {
 
     document.getElementById('clear-history').dispatchEvent(new MouseEvent('click', { bubbles: true }));
     document.getElementById('close-stats').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flushPromises();
+    await flushPromises();
     const startScreen = document.getElementById('start-screen');
     expect(startScreen.classList.contains('hidden')).toBe(false);
   });
@@ -249,6 +253,8 @@ describe('app', () => {
     const startScreen = document.getElementById('start-screen');
     startScreen.classList.add('hidden');
     document.getElementById('retry-same').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flushPromises();
+    await flushPromises();
     expect(startScreen.classList.contains('hidden')).toBe(false);
   });
 
@@ -288,6 +294,8 @@ describe('app', () => {
     optionButtons[0].dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     document.getElementById('choose-color').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flushPromises();
+    await flushPromises();
     const startScreen = document.getElementById('start-screen');
     expect(startScreen.classList.contains('hidden')).toBe(false);
   });
@@ -452,6 +460,8 @@ describe('app', () => {
     document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     document.getElementById('cancel-quiz').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flushPromises();
+    await flushPromises();
     const startScreen = document.getElementById('start-screen');
     expect(startScreen.classList.contains('hidden')).toBe(false);
   });

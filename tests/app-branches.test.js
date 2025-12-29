@@ -11,12 +11,16 @@ const saveQuizSession = vi.fn(async () => true);
 const clearAllHistory = vi.fn(async () => true);
 const checkLocalStorageAvailable = vi.fn(() => true);
 const setAuthModule = vi.fn();
+const refreshQuizHistory = vi.fn(async () => []);
+const getCachedQuizHistory = vi.fn(() => []);
 vi.mock('../docs/js/storage.js', () => ({
   loadQuizHistory,
   saveQuizSession,
   clearAllHistory,
   checkLocalStorageAvailable,
   setAuthModule,
+  refreshQuizHistory,
+  getCachedQuizHistory,
 }));
 
 const buildQuestions = vi.fn(() => ([
@@ -312,6 +316,7 @@ describe('app branches', () => {
 
     document.querySelector('.color-button')
       .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flushPromises();
     const resultScreen = document.getElementById('result-screen');
     expect(resultScreen.classList.contains('hidden')).toBe(false);
   });
@@ -345,6 +350,9 @@ describe('app branches', () => {
 
     document.getElementById('close-settings')
       .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flushPromises();
+    await flushPromises();
+    await flushPromises();
     const startScreen = document.getElementById('start-screen');
     expect(startScreen.classList.contains('hidden')).toBe(false);
 
