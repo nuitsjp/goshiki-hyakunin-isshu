@@ -1,5 +1,6 @@
 import { ENABLE_FIREBASE_AUTH, FIREBASE_CONFIG, AUTH_PROVIDER, STORAGE_KEYS } from './config.js';
 import { uploadLocalHistoryToFirestore, initializeFirestore } from './firestore.js';
+import { log } from './debug.js';
 
 let currentUser = null;
 
@@ -102,6 +103,12 @@ export const initAuthUI = async ({
     authModule.onAuthStateChanged(auth, async (user) => {
       currentUser = user;
       if (user) {
+        log('auth', 'ログイン成功', {
+          userId: user.uid,
+          displayName: user.displayName,
+          email: user.email,
+        });
+
         setAuthStatus(elements, {
           isSignedIn: true,
           photoUrl: user.photoURL || '',
@@ -114,20 +121,37 @@ export const initAuthUI = async ({
           const localDataStr = localStorage.getItem(STORAGE_KEYS.HISTORY);
           if (localDataStr) {
             const localHistory = JSON.parse(localDataStr);
+            log('sync', 'ローカル履歴検出', {
+              userId: user.uid,
+              localSessionCount: localHistory.length,
+            });
             if (localHistory.length > 0) {
               const count = await uploadLocalHistoryToFirestore(user.uid, localHistory);
+              log('sync', 'Firestoreへ移行完了', {
+                userId: user.uid,
+                migratedCount: count,
+                totalLocal: localHistory.length,
+              });
               if (count > 0) {
                 localStorage.removeItem(STORAGE_KEYS.HISTORY);
+                log('sync', 'localStorage履歴を削除', { userId: user.uid });
                 console.log(`Migrated ${count} sessions to Firestore`);
               }
             }
+          } else {
+            log('sync', 'ローカル履歴なし', { userId: user.uid });
           }
         } catch (error) {
+          log('error', '履歴移行失敗', {
+            userId: user.uid,
+            error: error.message,
+          });
           console.error('Failed to migrate local history:', error);
         }
 
         return;
       }
+      log('auth', 'ログアウト', {});
       setAuthStatus(elements, {
         isSignedIn: false,
         photoUrl: '',

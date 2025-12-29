@@ -9,6 +9,7 @@ import {
   loadSessionsFromFirestore,
   deleteAllSessionsFromFirestore
 } from './firestore.js';
+import { log } from './debug.js';
 
 let getCurrentUserId = null;
 
@@ -18,20 +19,32 @@ export function setAuthModule(authModule) {
 
 export async function saveQuizSession(sessionData, storage = window.localStorage) {
   try {
+    const userId = getCurrentUserId?.();
+    log('save', 'セッション保存開始', {
+      sessionId: sessionData.sessionId,
+      userId: userId || 'not-logged-in',
+      color: sessionData.color,
+      questionCount: sessionData.questionCount,
+    });
+
     let history = await loadQuizHistory(storage);
     history.push(sessionData);
     history = cleanOldHistory(history);
     history = enforceHistoryLimit(history);
     storage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
     storage.setItem(STORAGE_KEYS.VERSION, STATS_VERSION);
+    log('save', 'localStorage保存完了', { historyCount: history.length });
 
-    const userId = getCurrentUserId?.();
     if (userId) {
       try {
         await saveSessionToFirestore(userId, sessionData);
+        log('save', 'Firestore保存完了', { userId, sessionId: sessionData.sessionId });
       } catch (e) {
+        log('error', 'Firestore保存失敗', { userId, error: e.message });
         console.error('Firestore save failed:', e);
       }
+    } else {
+      log('save', 'Firestore保存スキップ（未ログイン）', {});
     }
 
     return true;
@@ -56,18 +69,34 @@ export async function saveQuizSession(sessionData, storage = window.localStorage
 
 export async function loadQuizHistory(storage = window.localStorage) {
   const userId = getCurrentUserId?.();
+  log('load', '履歴読み込み開始', { userId: userId || 'not-logged-in' });
+
   if (userId) {
     try {
-      return await loadSessionsFromFirestore(userId);
+      const sessions = await loadSessionsFromFirestore(userId);
+      log('load', 'Firestoreから読み込み完了', {
+        userId,
+        sessionCount: sessions.length,
+      });
+      return sessions;
     } catch (e) {
+      log('error', 'Firestore読み込み失敗、localStorageにフォールバック', {
+        userId,
+        error: e.message,
+      });
       console.error('Firestore load failed, fallback to localStorage:', e);
     }
   }
 
   try {
     const data = storage.getItem(STORAGE_KEYS.HISTORY);
-    return data ? JSON.parse(data) : [];
+    const sessions = data ? JSON.parse(data) : [];
+    log('load', 'localStorageから読み込み完了', {
+      sessionCount: sessions.length,
+    });
+    return sessions;
   } catch (e) {
+    log('error', 'localStorage読み込み失敗', { error: e.message });
     console.error('Failed to load quiz history:', e);
     return [];
   }
