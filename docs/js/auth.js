@@ -68,6 +68,7 @@ export const initAuthUI = async ({
   elements,
   loadModules = loadFirebaseModules,
   closeMenu = () => {},
+  onAuthStateChanged = () => {},
 } = {}) => {
   if (!elements) return;
   if (!elements.menuButton && !elements.authLogin && !elements.authLogout) return;
@@ -99,6 +100,14 @@ export const initAuthUI = async ({
       if (elements.authLogout) elements.authLogout.disabled = true;
       return;
     }
+
+    const notifyAuthState = async (payload) => {
+      try {
+        await onAuthStateChanged(payload);
+      } catch (error) {
+        console.error('Auth state handler failed:', error);
+      }
+    };
 
     authModule.onAuthStateChanged(auth, async (user) => {
       currentUser = user;
@@ -155,6 +164,7 @@ export const initAuthUI = async ({
           console.error('Failed to migrate local history:', error);
         }
 
+        await notifyAuthState({ user, isSignedIn: true });
         return;
       }
       log('auth', 'ログアウト', {});
@@ -164,6 +174,7 @@ export const initAuthUI = async ({
         userText: 'ゲスト',
       });
       closeMenu();
+      await notifyAuthState({ user: null, isSignedIn: false });
     });
 
     if (elements.authLogin) {

@@ -229,6 +229,30 @@ describe('auth', () => {
     expect(elements.authLogout.disabled).toBe(true);
   });
 
+  it('notifies auth state change handler', async () => {
+    const { initAuthUI } = await loadAuthModule();
+    const elements = buildElements();
+    const mocks = createFirebaseMocks();
+    const onAuthStateChanged = vi.fn();
+
+    await initAuthUI({
+      elements,
+      loadModules: async () => mocks,
+      onAuthStateChanged,
+    });
+
+    const callback = mocks.getAuthStateCallback();
+    const user = { displayName: 'テスト', photoURL: '', uid: '123' };
+    await callback(user);
+    await flushPromises();
+
+    expect(onAuthStateChanged).toHaveBeenCalledWith({ user, isSignedIn: true });
+
+    await callback(null);
+    await flushPromises();
+    expect(onAuthStateChanged).toHaveBeenCalledWith({ user: null, isSignedIn: false });
+  });
+
   it('calls closeMenu on auth state change', async () => {
     const { initAuthUI } = await loadAuthModule();
     const elements = buildElements();

@@ -831,7 +831,21 @@ function init() {
   }
 
   initEventHandlers();
-  initAuthUI({ elements, closeMenu });
+  initAuthUI({
+    elements,
+    closeMenu,
+    onAuthStateChanged: async () => {
+      if (currentScreen === 'start') {
+        await refreshHistoryForStart();
+        return;
+      }
+
+      await refreshHistoryCache();
+      if (currentScreen === 'stats') {
+        await statsUI.renderStatsScreen(false);
+      }
+    },
+  });
   resetQuizView();
   refreshHistoryForStart();
   loadCsv()
