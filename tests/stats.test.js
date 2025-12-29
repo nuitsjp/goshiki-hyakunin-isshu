@@ -4,6 +4,7 @@ import {
   calculateKimarijiPerformance,
   calculateRecentTrend,
   calculateOverallStats,
+  formatDurationMs,
   formatDateJapanese,
 } from '../docs/js/stats.js';
 
@@ -16,6 +17,7 @@ describe('stats', () => {
     expect(stats.accuracyRate).toBe(0);
     expect(stats.hintUsageRate).toBe(0);
     expect(stats.lastPlayed).toBe(null);
+    expect(stats.fastestDurationMs).toBe(null);
   });
 
   it('calculateColorStats aggregates quiz sessions', () => {
@@ -26,6 +28,7 @@ describe('stats', () => {
         correctCount: 7,
         wrongCount: 2,
         passCount: 1,
+        durationMs: 120000,
         timestamp: 1000,
         date: '2024-01-01',
         orderMode: 'normal',
@@ -40,6 +43,7 @@ describe('stats', () => {
         correctCount: 3,
         wrongCount: 1,
         passCount: 1,
+        durationMs: 90000,
         timestamp: 2000,
         date: '2024-01-02',
         orderMode: 'normal',
@@ -69,6 +73,7 @@ describe('stats', () => {
     expect(stats.accuracyRate).toBe(67);
     expect(stats.hintUsageRate).toBe(20);
     expect(stats.lastPlayed).toBe('2024-01-02');
+    expect(stats.fastestDurationMs).toBe(null);
   });
 
   it('calculateColorStats respects orderMode filter', () => {
@@ -203,5 +208,42 @@ describe('stats', () => {
 
   it('formatDateJapanese formats month/day', () => {
     expect(formatDateJapanese('2024-01-09')).toBe('1/9');
+  });
+
+  it('formatDurationMs formats minutes and seconds', () => {
+    expect(formatDurationMs(65000)).toBe('1:05');
+    expect(formatDurationMs(null)).toBe('-');
+  });
+
+  it('calculateColorStats uses fastest time only when all answers are correct', () => {
+    const history = [
+      {
+        color: '青',
+        questionCount: 10,
+        correctCount: 10,
+        wrongCount: 0,
+        passCount: 0,
+        durationMs: 120000,
+        timestamp: 1000,
+        date: '2024-01-01',
+        orderMode: 'normal',
+        answers: [],
+      },
+      {
+        color: '青',
+        questionCount: 10,
+        correctCount: 9,
+        wrongCount: 1,
+        passCount: 0,
+        durationMs: 90000,
+        timestamp: 2000,
+        date: '2024-01-02',
+        orderMode: 'normal',
+        answers: [],
+      },
+    ];
+
+    const stats = calculateColorStats('青', history, 'normal');
+    expect(stats.fastestDurationMs).toBe(120000);
   });
 });

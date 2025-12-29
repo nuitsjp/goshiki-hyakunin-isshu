@@ -13,6 +13,7 @@ export const quizState = {
   orderMode: 'normal',
   sessionStartTime: 0,
   questionStartTime: 0,
+  sessionEndTime: null,
 };
 
 export const statsState = {

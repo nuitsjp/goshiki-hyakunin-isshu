@@ -103,6 +103,7 @@
           <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
             <div id="progress-text" class="fw-semibold">問題 1 / 20</div>
             <div class="ms-auto d-flex align-items-center gap-2 flex-wrap">
+              <div id="elapsed-time" class="elapsed-time-badge">0:00</div>
               <div id="selected-color-label" class="badge selected-color-badge"></div>
               <button id="cancel-quiz" class="btn btn-outline-secondary btn-sm quiz-cancel-btn" type="button"
                 aria-label="クイズを中止してトップへ" title="トップに戻る">×</button>
@@ -240,13 +241,13 @@
             <table class="table table-sm stats-table">
               <thead>
                 <tr>
-                  <th>色</th>
-                  <th>プレイ回数</th>
-                  <th>問題数</th>
-                  <th>正解数</th>
-                  <th>正答率</th>
-                  <th>ヒント利用率</th>
-                  <th>最終プレイ</th>
+                  <th class="stats-header">プレイ回数</th>
+                  <th class="stats-header">問題数</th>
+                  <th class="stats-header">正解数</th>
+                  <th class="stats-header">正答率</th>
+                  <th class="stats-header">ヒント利用率</th>
+                  <th class="stats-header">最速</th>
+                  <th class="stats-header">最終プレイ</th>
                 </tr>
               </thead>
               <tbody id="color-stats-tbody">
@@ -270,7 +271,7 @@
   </div>
 
   <footer class="container text-center py-3 text-muted small">
-    <span>Version: <span id="app-version">v0.1.2</span></span>
+    <span>Version: <span id="app-version">v0.1.3</span></span>
     <span class="ms-2">|</span>
     <a href="credits.html" class="ms-2 text-decoration-none text-muted">OSSライセンス</a>
   </footer>

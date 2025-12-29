@@ -25,6 +25,7 @@ export const getElements = (doc = document) => ({
   colorButtons: doc.querySelectorAll('.color-button'),
   progressText: doc.getElementById('progress-text'),
   progressBar: doc.getElementById('progress-bar'),
+  elapsedTime: doc.getElementById('elapsed-time'),
   kimariji: doc.getElementById('kimariji'),
   mainDisplayLabel: doc.getElementById('main-display-label'),
   toggleKimariji: doc.getElementById('toggle-kimariji'),

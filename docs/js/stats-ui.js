@@ -3,6 +3,7 @@ import {
   calculateDetailedColorStats,
   calculateOverallStats,
   formatDateJapanese,
+  formatDurationMs,
 } from './stats.js';
 
 export function createStatsUI({
@@ -271,26 +272,23 @@ export function createStatsUI({
     const tbody = elements.colorStatsBody;
     if (tbody) {
       tbody.innerHTML = colorStats.map(stats => {
-        const colorClass = {
-          '青': 'color-blue',
-          'ピンク': 'color-pink',
-          '黄': 'color-yellow',
-          '緑': 'color-green',
-          'オレンジ': 'color-orange'
+        const rowClass = {
+          '青': 'row-blue',
+          'ピンク': 'row-pink',
+          '黄': 'row-yellow',
+          '緑': 'row-green',
+          'オレンジ': 'row-orange'
         }[stats.color] || '';
 
         return `
-          <tr data-color="${stats.color}" class="${statsState.selectedColor === stats.color ? 'selected' : ''}">
-            <td>
-              <span class="color-badge-mini ${colorClass}"></span>
-              ${stats.color}
-            </td>
-            <td>${stats.totalQuizzes}</td>
-            <td>${stats.totalQuestions}</td>
-            <td>${stats.totalCorrect}</td>
-            <td>${stats.accuracyRate}%</td>
-            <td>${stats.hintUsageRate}%</td>
-            <td>${formatDateJapanese(stats.lastPlayed)}</td>
+          <tr data-color="${stats.color}" class="stats-row ${rowClass} ${statsState.selectedColor === stats.color ? 'selected' : ''}">
+            <td class="stats-cell">${stats.totalQuizzes}</td>
+            <td class="stats-cell">${stats.totalQuestions}</td>
+            <td class="stats-cell">${stats.totalCorrect}</td>
+            <td class="stats-cell">${stats.accuracyRate}%</td>
+            <td class="stats-cell">${stats.hintUsageRate}%</td>
+            <td class="stats-cell">${formatDurationMs(stats.fastestDurationMs)}</td>
+            <td class="stats-cell">${formatDateJapanese(stats.lastPlayed)}</td>
           </tr>
         `;
       }).join('');
@@ -333,7 +331,7 @@ export function createStatsUI({
               <div class="activity-date">${formatDateJapanese(session.date)}</div>
             </div>
             <div class="activity-result">
-              ${session.correctCount}/${session.questionCount} (${session.accuracyRate}%)
+              ${formatDurationMs(session.durationMs)} - ${session.correctCount}/${session.questionCount} (${session.accuracyRate}%)
             </div>
           </div>
         `).join('');

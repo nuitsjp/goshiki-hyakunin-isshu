@@ -94,6 +94,7 @@ describe('stats-ui', () => {
         correctCount: 8,
         wrongCount: 1,
         passCount: 1,
+        durationMs: 90000,
         accuracyRate: 80,
         hintType: 'shoku',
         displayMode: 'kana',
@@ -130,10 +131,16 @@ describe('stats-ui', () => {
 
     await ui.renderStatsScreen();
     expect(showScreen).toHaveBeenCalledWith('stats');
+    expect(document.getElementById('recent-activity').textContent).toMatch(/1:30 - 8\/10/);
     const rows = document.querySelectorAll('#color-stats-tbody tr');
     expect(rows.length).toBe(5);
 
     const firstRow = document.querySelector('#color-stats-tbody tr[data-color="青"]');
+    expect(firstRow.classList.contains('stats-row')).toBe(true);
+    expect(firstRow.classList.contains('row-blue')).toBe(true);
+    const numericCells = firstRow.querySelectorAll('.stats-cell');
+    expect(numericCells.length).toBeGreaterThan(0);
+    expect(firstRow.textContent).toMatch(/-/);
     firstRow.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     firstRow.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     const detail = document.getElementById('color-detail-container');
@@ -150,6 +157,7 @@ describe('stats-ui', () => {
         correctCount: 4,
         wrongCount: 1,
         passCount: 0,
+        durationMs: 70000,
         accuracyRate: 80,
         hintType: 'shoku',
         displayMode: 'kana',
@@ -213,6 +221,7 @@ describe('stats-ui', () => {
         correctCount: 1,
         wrongCount: 0,
         passCount: 0,
+        durationMs: 30000,
         accuracyRate: 100,
         hintType: 'shoku',
         displayMode: 'kana',
@@ -254,6 +263,7 @@ describe('stats-ui', () => {
         correctCount: 2,
         wrongCount: 1,
         passCount: 0,
+        durationMs: 45000,
         accuracyRate: 67,
         hintType: 'kami',
         displayMode: 'kanji',
@@ -313,12 +323,12 @@ describe('stats-ui', () => {
   it('shows declining trend label', async () => {
     setupDom();
     const history = [
-      { sessionId: 's1', color: '青', questionCount: 10, correctCount: 10, wrongCount: 0, passCount: 0, accuracyRate: 100, hintType: 'shoku', displayMode: 'kana', orderMode: 'normal', timestamp: 1, date: '2024-01-01', answers: [] },
-      { sessionId: 's2', color: '青', questionCount: 10, correctCount: 0, wrongCount: 10, passCount: 0, accuracyRate: 0, hintType: 'shoku', displayMode: 'kana', orderMode: 'normal', timestamp: 2, date: '2024-01-02', answers: [] },
-      { sessionId: 's3', color: '青', questionCount: 10, correctCount: 0, wrongCount: 10, passCount: 0, accuracyRate: 0, hintType: 'shoku', displayMode: 'kana', orderMode: 'normal', timestamp: 3, date: '2024-01-03', answers: [] },
-      { sessionId: 's4', color: '青', questionCount: 10, correctCount: 0, wrongCount: 10, passCount: 0, accuracyRate: 0, hintType: 'shoku', displayMode: 'kana', orderMode: 'normal', timestamp: 4, date: '2024-01-04', answers: [] },
-      { sessionId: 's5', color: '青', questionCount: 10, correctCount: 0, wrongCount: 10, passCount: 0, accuracyRate: 0, hintType: 'shoku', displayMode: 'kana', orderMode: 'normal', timestamp: 5, date: '2024-01-05', answers: [] },
-      { sessionId: 's6', color: '青', questionCount: 10, correctCount: 0, wrongCount: 10, passCount: 0, accuracyRate: 0, hintType: 'shoku', displayMode: 'kana', orderMode: 'normal', timestamp: 6, date: '2024-01-06', answers: [] },
+      { sessionId: 's1', color: '青', questionCount: 10, correctCount: 10, wrongCount: 0, passCount: 0, durationMs: 60000, accuracyRate: 100, hintType: 'shoku', displayMode: 'kana', orderMode: 'normal', timestamp: 1, date: '2024-01-01', answers: [] },
+      { sessionId: 's2', color: '青', questionCount: 10, correctCount: 0, wrongCount: 10, passCount: 0, durationMs: 60000, accuracyRate: 0, hintType: 'shoku', displayMode: 'kana', orderMode: 'normal', timestamp: 2, date: '2024-01-02', answers: [] },
+      { sessionId: 's3', color: '青', questionCount: 10, correctCount: 0, wrongCount: 10, passCount: 0, durationMs: 60000, accuracyRate: 0, hintType: 'shoku', displayMode: 'kana', orderMode: 'normal', timestamp: 3, date: '2024-01-03', answers: [] },
+      { sessionId: 's4', color: '青', questionCount: 10, correctCount: 0, wrongCount: 10, passCount: 0, durationMs: 60000, accuracyRate: 0, hintType: 'shoku', displayMode: 'kana', orderMode: 'normal', timestamp: 4, date: '2024-01-04', answers: [] },
+      { sessionId: 's5', color: '青', questionCount: 10, correctCount: 0, wrongCount: 10, passCount: 0, durationMs: 60000, accuracyRate: 0, hintType: 'shoku', displayMode: 'kana', orderMode: 'normal', timestamp: 5, date: '2024-01-05', answers: [] },
+      { sessionId: 's6', color: '青', questionCount: 10, correctCount: 0, wrongCount: 10, passCount: 0, durationMs: 60000, accuracyRate: 0, hintType: 'shoku', displayMode: 'kana', orderMode: 'normal', timestamp: 6, date: '2024-01-06', answers: [] },
     ];
     const quizState = {
       allPoems: [
@@ -344,12 +354,12 @@ describe('stats-ui', () => {
   it('shows improving trend label', async () => {
     setupDom();
     const history = [
-      { sessionId: 's1', color: '青', questionCount: 10, correctCount: 1, wrongCount: 9, passCount: 0, accuracyRate: 10, hintType: 'shoku', displayMode: 'kana', orderMode: 'normal', timestamp: 1, date: '2024-01-01', answers: [] },
-      { sessionId: 's2', color: '青', questionCount: 10, correctCount: 9, wrongCount: 1, passCount: 0, accuracyRate: 90, hintType: 'shoku', displayMode: 'kana', orderMode: 'normal', timestamp: 2, date: '2024-01-02', answers: [] },
-      { sessionId: 's3', color: '青', questionCount: 10, correctCount: 9, wrongCount: 1, passCount: 0, accuracyRate: 90, hintType: 'shoku', displayMode: 'kana', orderMode: 'normal', timestamp: 3, date: '2024-01-03', answers: [] },
-      { sessionId: 's4', color: '青', questionCount: 10, correctCount: 9, wrongCount: 1, passCount: 0, accuracyRate: 90, hintType: 'shoku', displayMode: 'kana', orderMode: 'normal', timestamp: 4, date: '2024-01-04', answers: [] },
-      { sessionId: 's5', color: '青', questionCount: 10, correctCount: 9, wrongCount: 1, passCount: 0, accuracyRate: 90, hintType: 'shoku', displayMode: 'kana', orderMode: 'normal', timestamp: 5, date: '2024-01-05', answers: [] },
-      { sessionId: 's6', color: '青', questionCount: 10, correctCount: 9, wrongCount: 1, passCount: 0, accuracyRate: 90, hintType: 'shoku', displayMode: 'kana', orderMode: 'normal', timestamp: 6, date: '2024-01-06', answers: [] },
+      { sessionId: 's1', color: '青', questionCount: 10, correctCount: 1, wrongCount: 9, passCount: 0, durationMs: 80000, accuracyRate: 10, hintType: 'shoku', displayMode: 'kana', orderMode: 'normal', timestamp: 1, date: '2024-01-01', answers: [] },
+      { sessionId: 's2', color: '青', questionCount: 10, correctCount: 9, wrongCount: 1, passCount: 0, durationMs: 75000, accuracyRate: 90, hintType: 'shoku', displayMode: 'kana', orderMode: 'normal', timestamp: 2, date: '2024-01-02', answers: [] },
+      { sessionId: 's3', color: '青', questionCount: 10, correctCount: 9, wrongCount: 1, passCount: 0, durationMs: 75000, accuracyRate: 90, hintType: 'shoku', displayMode: 'kana', orderMode: 'normal', timestamp: 3, date: '2024-01-03', answers: [] },
+      { sessionId: 's4', color: '青', questionCount: 10, correctCount: 9, wrongCount: 1, passCount: 0, durationMs: 75000, accuracyRate: 90, hintType: 'shoku', displayMode: 'kana', orderMode: 'normal', timestamp: 4, date: '2024-01-04', answers: [] },
+      { sessionId: 's5', color: '青', questionCount: 10, correctCount: 9, wrongCount: 1, passCount: 0, durationMs: 75000, accuracyRate: 90, hintType: 'shoku', displayMode: 'kana', orderMode: 'normal', timestamp: 5, date: '2024-01-05', answers: [] },
+      { sessionId: 's6', color: '青', questionCount: 10, correctCount: 9, wrongCount: 1, passCount: 0, durationMs: 75000, accuracyRate: 90, hintType: 'shoku', displayMode: 'kana', orderMode: 'normal', timestamp: 6, date: '2024-01-06', answers: [] },
     ];
     const quizState = {
       allPoems: [
@@ -382,6 +392,7 @@ describe('stats-ui', () => {
         correctCount: 1,
         wrongCount: 0,
         passCount: 0,
+        durationMs: 30000,
         accuracyRate: 100,
         hintType: 'shoku',
         displayMode: 'kana',

@@ -267,6 +267,18 @@ h6,
   letter-spacing: 0.05em;
 }
 
+.elapsed-time-badge {
+  min-width: 72px;
+  text-align: center;
+  background: #f7f3e8;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  padding: 0.45em 0.7em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
 .progress {
   height: 6px;
   background-color: #e9ecef;
@@ -531,6 +543,7 @@ h6,
   font-weight: 600;
   border-bottom: 2px solid var(--color-border);
   font-size: 0.85rem;
+  text-align: center;
 }
 
 .stats-table td {
@@ -626,16 +639,49 @@ h6,
 /* Interactive table rows */
 .stats-table tbody tr {
   cursor: pointer;
-  transition: background-color 0.2s ease;
 }
 
-.stats-table tbody tr:hover {
-  background-color: #f8f9fa;
+.stats-table tbody tr:hover td {
+  filter: brightness(0.97);
 }
 
-.stats-table tbody tr.selected {
-  background-color: #e3f2fd;
+.stats-table tbody tr.selected td {
   font-weight: 600;
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.15);
+}
+
+.stats-row td {
+  transition: filter 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stats-cell {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-row.row-blue td {
+  background-color: var(--color-blue);
+  color: #fff;
+}
+
+.stats-row.row-pink td {
+  background-color: var(--color-pink);
+  color: #4a2c2e;
+}
+
+.stats-row.row-yellow td {
+  background-color: var(--color-yellow);
+  color: #5d4037;
+}
+
+.stats-row.row-green td {
+  background-color: var(--color-green);
+  color: #fff;
+}
+
+.stats-row.row-orange td {
+  background-color: var(--color-orange);
+  color: #fff;
 }
 
 /* Detail panel */

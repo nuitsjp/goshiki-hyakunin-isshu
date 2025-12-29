@@ -10,7 +10,7 @@ import {
   checkLocalStorageAvailable,
   setAuthModule,
 } from './storage.js';
-import { calculateKimarijiPerformance } from './stats.js';
+import { calculateKimarijiPerformance, formatDurationMs } from './stats.js';
 import { buildQuestions, buildWeakQuestions, canUseWeak5 } from './questions.js';
 import { loadCsv } from './data.js';
 import { escapeHtml, toRubyHtml, toAriaLabel } from './text.js';
@@ -21,6 +21,7 @@ const screens = getScreens();
 const elements = getElements();
 
 let advanceTimerId = null;
+let elapsedTimerId = null;
 let currentScreen = 'start';
 let settingsReturnScreen = 'start';
 
@@ -115,6 +116,34 @@ function clearAdvanceTimer() {
   }
 }
 
+function clearElapsedTimer() {
+  if (elapsedTimerId) {
+    clearInterval(elapsedTimerId);
+    elapsedTimerId = null;
+  }
+}
+
+function updateElapsedTime() {
+  if (!elements.elapsedTime) return;
+  const elapsedMs = Math.max(0, Math.round(performance.now() - quizState.sessionStartTime));
+  elements.elapsedTime.textContent = formatDurationMs(elapsedMs);
+}
+
+function startElapsedTimer() {
+  if (!elements.elapsedTime) return;
+  clearElapsedTimer();
+  updateElapsedTime();
+  elapsedTimerId = setInterval(() => {
+    updateElapsedTime();
+  }, 250);
+}
+
+function finalizeSessionTiming() {
+  quizState.sessionEndTime = performance.now();
+  updateElapsedTime();
+  clearElapsedTimer();
+}
+
 function hideAutoAdvanceProgress() {
   if (elements.autoAdvanceProgress) {
     elements.autoAdvanceProgress.classList.add('hidden');
@@ -138,6 +167,7 @@ function showAutoAdvanceProgress() {
 
 function resetQuizView() {
   clearAdvanceTimer();
+  clearElapsedTimer();
   hideAutoAdvanceProgress();
   quizState.currentQuestions = [];
   quizState.currentIndex = 0;
@@ -145,6 +175,7 @@ function resetQuizView() {
   quizState.answers = [];
   quizState.showKami = false;
   quizState.selectedColor = '';
+  quizState.sessionEndTime = null;
   elements.feedback.textContent = '';
   elements.feedback.style.color = 'var(--color-text)';
   elements.kimariji.textContent = '---';
@@ -154,6 +185,9 @@ function resetQuizView() {
   elements.progressText.textContent = '問題 0 / 0';
   elements.progressBar.style.width = '0%';
   elements.progressBar.setAttribute('aria-valuenow', '0');
+  if (elements.elapsedTime) {
+    elements.elapsedTime.textContent = formatDurationMs(0);
+  }
   if (elements.nextQuestion) {
     elements.nextQuestion.disabled = true;
     elements.nextQuestion.textContent = '次へ';
@@ -298,6 +332,9 @@ function handleAnswer(event) {
     answerTimeMs,
   });
   quizState.isAnswered = true;
+  if (quizState.currentIndex + 1 >= quizState.currentQuestions.length) {
+    finalizeSessionTiming();
+  }
   if (elements.giveUp) elements.giveUp.disabled = true;
   elements.options.forEach(optionBtn => {
     optionBtn.disabled = true;
@@ -380,12 +417,16 @@ function renderResultList() {
 }
 
 async function showResults() {
+  clearElapsedTimer();
   const total = quizState.currentQuestions.length || quizState.questionLimit;
   const rate = Math.round((quizState.correctCount / total) * 100);
 
   const wrongCount = total - quizState.correctCount;
   const passCount = quizState.answers.filter(a => !a.isCorrect && !a.usedKami).length;
-  const durationMs = Math.round(performance.now() - quizState.sessionStartTime);
+  const endTime = Number.isFinite(quizState.sessionEndTime)
+    ? quizState.sessionEndTime
+    : performance.now();
+  const durationMs = Math.round(endTime - quizState.sessionStartTime);
 
   const sessionData = {
     sessionId: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -482,6 +523,8 @@ async function startQuiz(color) {
     quizState.correctCount = 0;
     quizState.answers = [];
     quizState.sessionStartTime = performance.now();
+    quizState.sessionEndTime = null;
+    startElapsedTimer();
     elements.selectedColorLabel.textContent = `${color}の歌`;
     setAccentColor(color);
     showScreen('quiz');
@@ -518,6 +561,9 @@ function handleGiveUp() {
     answerTimeMs,
   });
   quizState.isAnswered = true;
+  if (quizState.currentIndex + 1 >= quizState.currentQuestions.length) {
+    finalizeSessionTiming();
+  }
 
   elements.options.forEach(btn => btn.disabled = true);
   if (elements.giveUp) elements.giveUp.disabled = true;

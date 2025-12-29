@@ -20,7 +20,8 @@ export function calculateColorStats(color, history, orderMode = null) {
       totalPass: 0,
       accuracyRate: 0,
       hintUsageRate: 0,
-      lastPlayed: null
+      lastPlayed: null,
+      fastestDurationMs: null
     };
   }
 
@@ -46,6 +47,11 @@ export function calculateColorStats(color, history, orderMode = null) {
   const lastSession = colorSessions.reduce((latest, current) =>
     current.timestamp > latest.timestamp ? current : latest
   );
+  const durations = colorSessions
+    .filter(session => session.correctCount === session.questionCount)
+    .map(session => session.durationMs)
+    .filter(value => Number.isFinite(value));
+  const fastestDurationMs = durations.length ? Math.min(...durations) : null;
 
   return {
     color,
@@ -56,7 +62,8 @@ export function calculateColorStats(color, history, orderMode = null) {
     totalPass,
     accuracyRate,
     hintUsageRate,
-    lastPlayed: lastSession.date
+    lastPlayed: lastSession.date,
+    fastestDurationMs
   };
 }
 
@@ -230,4 +237,12 @@ export function formatDateJapanese(dateString) {
   const month = date.getMonth() + 1;
   const day = date.getDate();
   return `${month}/${day}`;
+}
+
+export function formatDurationMs(durationMs) {
+  if (!Number.isFinite(durationMs) || durationMs < 0) return '-';
+  const totalSeconds = Math.floor(durationMs / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }

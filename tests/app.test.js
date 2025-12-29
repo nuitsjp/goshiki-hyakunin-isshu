@@ -52,6 +52,7 @@ const setupAppDom = () => {
     <div id="quiz-screen" class="hidden">
       <div id="progress-text"></div>
       <div id="progress-bar"></div>
+      <div id="elapsed-time">0:00</div>
       <div id="main-display-label"></div>
       <div id="kimariji"></div>
       <div class="text-muted"></div>
@@ -177,6 +178,64 @@ describe('app', () => {
     const resultScreen = document.getElementById('result-screen');
     expect(resultScreen.classList.contains('hidden')).toBe(false);
     expect(document.getElementById('result-count').textContent).toMatch(/1/);
+  });
+
+  it('updates elapsed time during quiz', async () => {
+    vi.useFakeTimers();
+    const nowSpy = vi.spyOn(performance, 'now');
+    let now = 0;
+    nowSpy.mockImplementation(() => now);
+
+    await import('../docs/js/app.js');
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    await flushPromises();
+
+    const questionCount = document.getElementById('question-count');
+    questionCount.value = '1';
+    questionCount.dispatchEvent(new Event('change'));
+
+    document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    const elapsed = document.getElementById('elapsed-time');
+    expect(elapsed.textContent).toBe('0:00');
+
+    now = 1000;
+    vi.advanceTimersByTime(1000);
+    expect(elapsed.textContent).toBe('0:01');
+
+    nowSpy.mockRestore();
+  });
+
+  it('stops elapsed time when the last question is answered', async () => {
+    vi.useFakeTimers();
+    const nowSpy = vi.spyOn(performance, 'now');
+    let now = 0;
+    nowSpy.mockImplementation(() => now);
+
+    await import('../docs/js/app.js');
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    await flushPromises();
+
+    const questionCount = document.getElementById('question-count');
+    questionCount.value = '1';
+    questionCount.dispatchEvent(new Event('change'));
+
+    document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    now = 2000;
+    vi.advanceTimersByTime(250);
+    expect(document.getElementById('elapsed-time').textContent).toBe('0:02');
+
+    now = 5000;
+    const optionButtons = Array.from(document.querySelectorAll('.option-button'));
+    const correctButton = optionButtons.find(btn => btn.dataset.correct === 'true');
+    correctButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(document.getElementById('elapsed-time').textContent).toBe('0:05');
+
+    now = 8000;
+    vi.advanceTimersByTime(1000);
+    expect(document.getElementById('elapsed-time').textContent).toBe('0:05');
+
+    nowSpy.mockRestore();
   });
 
   it('handles wrong answer and next button', async () => {

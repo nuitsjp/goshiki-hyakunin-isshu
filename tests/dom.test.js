@@ -26,6 +26,7 @@ describe('dom helpers', () => {
       <button class="color-button"></button>
       <div id="progress-text"></div>
       <div id="progress-bar"></div>
+      <div id="elapsed-time"></div>
       <div id="kimariji"></div>
       <div id="options-container">
         <button class="option-button"></button>
@@ -40,5 +41,6 @@ describe('dom helpers', () => {
     expect(elements.colorButtons).toHaveLength(2);
     expect(elements.options).toHaveLength(4);
     expect(elements.kimariji.id).toBe('kimariji');
+    expect(elements.elapsedTime.id).toBe('elapsed-time');
   });
 });
