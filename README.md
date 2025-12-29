@@ -52,13 +52,39 @@ npm run test:coverage
 
 HTMLレポートは `coverage/index.html` に出力されます。
 
+## Firebase Hosting
+
+### 公開URL / コンソール
+
+- 本番URL: https://goshiki-hyakunin-isshu.web.app
+- Firebase Console: https://console.firebase.google.com/project/goshiki-hyakunin-isshu/overview
+
+### よく使う Firebase CLI
+
+```bash
+# ログイン
+firebase login
+
+# プロジェクトの紐づけ
+firebase use --add
+
+# Hosting のみデプロイ
+firebase deploy --only hosting
+```
+
+### テスト・確認で使うコンソール操作
+
+- Hosting の反映確認: Firebase Console > Build > Hosting
+- デプロイ履歴の確認: Hosting の "リリース" から確認
+- 確認後の公開URLアクセス: https://goshiki-hyakunin-isshu.web.app
+
 ## 技術スタック
 
 - **Frontend**: HTML5, CSS3 (Modern Japanese Design), JavaScript (Vanilla ES6+)
 - **CSS Framework**: Bootstrap 5.3
 - **Fonts**: Google Fonts (Zen Old Mincho, Zen Kaku Gothic New)
 - **Data**: CSV file (converted from spreadsheet)
-- **Hosting**: GitHub Pages
+- **Hosting**: Firebase Hosting
 
 ## ライセンス
 
