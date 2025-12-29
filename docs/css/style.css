@@ -65,12 +65,16 @@ h6,
   flex: 1;
 }
 
-/* Auth Inline */
-.auth-inline {
+/* App Menu */
+.app-menu {
   align-items: center;
 }
 
-.auth-button {
+.menu-wrapper {
+  position: relative;
+}
+
+.menu-button {
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -83,37 +87,36 @@ h6,
   padding: 6px;
 }
 
-.auth-button:hover {
+.menu-button:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   transform: translateY(-1px);
 }
 
-.auth-button:focus-visible {
+.menu-button:focus-visible {
   outline: 2px solid var(--current-accent);
   outline-offset: 2px;
 }
 
-.auth-avatar-image {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.auth-avatar-fallback {
+.menu-button-icon {
   width: 100%;
   height: 100%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #888;
+  color: #6b6b6b;
 }
 
-.auth-avatar-icon {
-  width: 22px;
-  height: 22px;
+.menu-icon {
+  width: 24px;
+  height: 24px;
   fill: currentColor;
 }
 
+.menu-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
 
 .auth-message {
   font-size: 0.85rem;
@@ -121,44 +124,46 @@ h6,
   min-height: 1.2rem;
 }
 
-.auth-menu {
-  position: relative;
-}
-
-.auth-menu-panel {
+.menu-panel {
   position: absolute;
   right: 0;
   top: calc(100% + 8px);
   background: #fff;
   border: 1px solid var(--color-border);
   border-radius: 10px;
-  padding: 0.5rem;
+  padding: 0.25rem 0;
   min-width: 140px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   z-index: 10;
 }
 
-.auth-logout {
+.menu-item {
   min-height: 36px;
-  padding: 0 0.75rem;
-  border-radius: 999px;
-  border: 1px solid var(--color-border);
-  background: #fff;
+  padding: 0.5rem 0.9rem;
+  border-radius: 0;
+  border: none;
+  background: transparent;
   color: var(--color-text);
   font-weight: 600;
   font-size: 0.85rem;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition: background 0.2s ease;
   width: 100%;
+  text-align: left;
 }
 
-.auth-logout:hover {
+.menu-item:hover {
   background: #fdfdf9;
-  border-color: var(--current-accent);
 }
 
-.auth-logout:focus-visible {
+.menu-item:focus-visible {
   outline: 2px solid var(--current-accent);
-  outline-offset: 2px;
+  outline-offset: -2px;
+}
+
+.menu-divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: 0.25rem 0;
 }
 
 /* --- Component Styles --- */

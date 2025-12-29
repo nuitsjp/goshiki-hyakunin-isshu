@@ -2,16 +2,19 @@ export const getScreens = (doc = document) => ({
   start: doc.getElementById('start-screen'),
   quiz: doc.getElementById('quiz-screen'),
   result: doc.getElementById('result-screen'),
+  settings: doc.getElementById('settings-screen'),
   stats: doc.getElementById('stats-screen'),
 });
 
 export const getElements = (doc = document) => ({
   version: doc.getElementById('app-version'),
-  authSection: doc.getElementById('auth-section'),
-  authButton: doc.getElementById('auth-button'),
+  menuButton: doc.getElementById('menu-button'),
+  menuPanel: doc.getElementById('menu-panel'),
+  menuSettings: doc.getElementById('open-settings'),
+  closeSettings: doc.getElementById('close-settings'),
   authAvatar: doc.getElementById('auth-avatar'),
   authAvatarFallback: doc.getElementById('auth-avatar-fallback'),
-  authMenu: doc.getElementById('auth-menu'),
+  authLogin: doc.getElementById('auth-login'),
   authLogout: doc.getElementById('auth-logout'),
   authMessage: doc.getElementById('auth-message'),
   questionCount: doc.getElementById('question-count'),

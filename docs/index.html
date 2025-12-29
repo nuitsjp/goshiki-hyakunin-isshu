@@ -19,20 +19,23 @@
     <header class="mb-4">
       <div class="d-flex align-items-center justify-content-between gap-2">
         <h1 class="fw-bold mb-0">五色百人一首 決まり字クイズ</h1>
-        <div id="auth-section" class="auth-inline hidden d-flex align-items-center gap-2">
-          <div class="auth-menu">
-            <button id="auth-button" class="auth-button" type="button" aria-label="Googleでログイン"
-              aria-haspopup="true" aria-expanded="false">
-              <img id="auth-avatar" class="auth-avatar-image hidden" alt="">
-              <span id="auth-avatar-fallback" class="auth-avatar-fallback" aria-hidden="true">
-                <svg class="auth-avatar-icon" viewBox="0 0 24 24" role="presentation" aria-hidden="true">
+        <div class="app-menu d-flex align-items-center gap-2">
+          <div class="menu-wrapper">
+            <button id="menu-button" class="menu-button" type="button" aria-label="メニューを開く" aria-haspopup="true"
+              aria-expanded="false">
+              <span id="auth-avatar-fallback" class="menu-button-icon" aria-hidden="true">
+                <svg class="menu-icon" viewBox="0 0 24 24" role="presentation" aria-hidden="true">
                   <path
-                    d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0v1H5v-1Z" />
+                    d="M12 8.75a3.25 3.25 0 1 0 0 6.5 3.25 3.25 0 0 0 0-6.5Zm8.5 3.25-.03-.6 1.58-1.15-1.4-2.42-1.84.52a6.53 6.53 0 0 0-1.04-.6l-.28-1.9h-2.8l-.28 1.9c-.36.16-.7.36-1.03.6l-1.85-.52-1.4 2.42 1.58 1.15-.03.6c0 .2.01.4.03.6L5.6 13.75l1.4 2.42 1.85-.52c.32.24.67.44 1.03.6l.28 1.9h2.8l.28-1.9c.36-.16.7-.36 1.04-.6l1.84.52 1.4-2.42-1.58-1.15.03-.6Zm-8.5 4.75a4.75 4.75 0 1 1 0-9.5 4.75 4.75 0 0 1 0 9.5Z" />
                 </svg>
               </span>
+              <img id="auth-avatar" class="menu-avatar hidden" alt="">
             </button>
-            <div id="auth-menu" class="auth-menu-panel hidden" role="menu">
-              <button id="auth-logout" class="auth-logout" type="button" role="menuitem">ログアウト</button>
+            <div id="menu-panel" class="menu-panel hidden" role="menu">
+              <button id="open-settings" class="menu-item" type="button" role="menuitem">設定</button>
+              <div class="menu-divider" role="separator"></div>
+              <button id="auth-login" class="menu-item" type="button" role="menuitem">ログイン</button>
+              <button id="auth-logout" class="menu-item" type="button" role="menuitem">ログアウト</button>
             </div>
           </div>
           <div id="auth-message" class="auth-message" role="status" aria-live="polite"></div>
@@ -52,21 +55,6 @@
                 <button type="button" class="btn btn-toggle active" id="order-normal" data-value="normal">上の句</button>
                 <button type="button" class="btn btn-toggle" id="order-reverse" data-value="reverse">下の句</button>
               </div>
-            </div>
-            <div class="d-flex gap-2 align-items-center">
-              <label for="hint-type" class="form-label mb-0">ヒント</label>
-              <select id="hint-type" class="form-select w-auto">
-                <option value="shoku" selected>初句</option>
-                <option value="kami">上の句</option>
-              </select>
-
-            </div>
-            <div class="d-flex gap-2 align-items-center">
-              <label for="display-mode" class="form-label mb-0">表示</label>
-              <select id="display-mode" class="form-select w-auto">
-                <option value="kana" selected>よみがな</option>
-                <option value="kanji">漢字</option>
-              </select>
             </div>
             <div class="d-flex gap-2 align-items-center ms-auto">
               <label for="question-count" class="form-label mb-0">出題</label>
@@ -147,6 +135,31 @@
                 <button id="next-question" class="btn btn-primary next-button" type="button" disabled>次へ</button>
               </div>
 
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="settings-screen" class="screen card shadow-sm hidden">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="h4 mb-0">設定</h2>
+            <button id="close-settings" class="btn btn-outline-secondary btn-sm">閉じる</button>
+          </div>
+          <div class="d-flex flex-column gap-3">
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+              <label for="hint-type" class="form-label mb-0">ヒント</label>
+              <select id="hint-type" class="form-select w-auto">
+                <option value="shoku" selected>初句</option>
+                <option value="kami">上の句</option>
+              </select>
+            </div>
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+              <label for="display-mode" class="form-label mb-0">表示</label>
+              <select id="display-mode" class="form-select w-auto">
+                <option value="kana" selected>よみがな</option>
+                <option value="kanji">漢字</option>
+              </select>
             </div>
           </div>
         </div>
@@ -257,7 +270,7 @@
   </div>
 
   <footer class="container text-center py-3 text-muted small">
-    <span>Version: <span id="app-version">v0.0.31</span></span>
+    <span>Version: <span id="app-version">v0.0.32</span></span>
     <span class="ms-2">|</span>
     <a href="credits.html" class="ms-2 text-decoration-none text-muted">OSSライセンス</a>
   </footer>

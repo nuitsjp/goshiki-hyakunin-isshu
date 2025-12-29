@@ -2,22 +2,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const buildElements = () => {
   document.body.innerHTML = `
-    <div id="auth-section">
-      <div id="auth-menu" class="hidden">
-        <button id="auth-logout" class="hidden">ログアウト</button>
-      </div>
-      <button id="auth-button"></button>
+    <div id="app-menu">
+      <button id="menu-button"></button>
       <img id="auth-avatar" class="hidden" />
       <span id="auth-avatar-fallback"></span>
+      <button id="auth-login">ログイン</button>
+      <button id="auth-logout" class="hidden">ログアウト</button>
       <div id="auth-message"></div>
     </div>
   `;
   return {
-    authSection: document.getElementById('auth-section'),
-    authButton: document.getElementById('auth-button'),
+    menuButton: document.getElementById('menu-button'),
     authAvatar: document.getElementById('auth-avatar'),
     authAvatarFallback: document.getElementById('auth-avatar-fallback'),
-    authMenu: document.getElementById('auth-menu'),
+    authLogin: document.getElementById('auth-login'),
     authLogout: document.getElementById('auth-logout'),
     authMessage: document.getElementById('auth-message'),
   };
@@ -71,24 +69,26 @@ describe('auth', () => {
     vi.clearAllMocks();
   });
 
-  it('returns early when auth section is missing', async () => {
+  it('returns early when auth controls are missing', async () => {
     const { initAuthUI } = await loadAuthModule();
     await expect(initAuthUI({ elements: {} })).resolves.toBeUndefined();
   });
 
-  it('hides auth section when Firebase config is disabled', async () => {
+  it('hides auth controls when Firebase config is disabled', async () => {
     const { initAuthUI } = await loadAuthModule({
       ENABLE_FIREBASE_AUTH: false,
       FIREBASE_CONFIG: null,
     });
     const elements = buildElements();
-    elements.authSection.classList.remove('hidden');
+    elements.authLogin.classList.remove('hidden');
+    elements.authLogout.classList.remove('hidden');
 
     await initAuthUI({ elements });
-    expect(elements.authSection.classList.contains('hidden')).toBe(true);
+    expect(elements.authLogin.classList.contains('hidden')).toBe(true);
+    expect(elements.authLogout.classList.contains('hidden')).toBe(true);
   });
 
-  it('disables auth button for unsupported provider', async () => {
+  it('disables auth controls for unsupported provider', async () => {
     const { initAuthUI } = await loadAuthModule({
       AUTH_PROVIDER: 'github',
     });
@@ -100,29 +100,31 @@ describe('auth', () => {
       loadModules: async () => mocks,
     });
 
-    expect(elements.authButton.disabled).toBe(true);
+    expect(elements.authLogin.disabled).toBe(true);
+    expect(elements.authLogout.disabled).toBe(true);
     expect(elements.authMessage.textContent).toBe('未対応のログイン方式です。');
   });
 
-  it('hides auth section when Firebase config is not an object', async () => {
+  it('hides auth controls when Firebase config is not an object', async () => {
     const { initAuthUI } = await loadAuthModule({
       ENABLE_FIREBASE_AUTH: true,
       FIREBASE_CONFIG: 'invalid',
     });
     const elements = buildElements();
-    elements.authSection.classList.remove('hidden');
+    elements.authLogin.classList.remove('hidden');
+    elements.authLogout.classList.remove('hidden');
 
     await initAuthUI({ elements });
-    expect(elements.authSection.classList.contains('hidden')).toBe(true);
+    expect(elements.authLogin.classList.contains('hidden')).toBe(true);
+    expect(elements.authLogout.classList.contains('hidden')).toBe(true);
   });
 
-  it('handles missing authMessage and authMenu safely', async () => {
+  it('handles missing authMessage safely', async () => {
     const { initAuthUI } = await loadAuthModule({
       AUTH_PROVIDER: 'github',
     });
     const elements = buildElements();
     elements.authMessage = null;
-    elements.authMenu = null;
     const mocks = createFirebaseMocks();
 
     await initAuthUI({
@@ -130,8 +132,7 @@ describe('auth', () => {
       loadModules: async () => mocks,
     });
 
-    document.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    expect(elements.authButton.disabled).toBe(true);
+    expect(elements.authLogin.disabled).toBe(true);
   });
 
   it('updates UI on auth state change and handles sign-in success', async () => {
@@ -152,12 +153,12 @@ describe('auth', () => {
     expect(elements.authAvatar.classList.contains('hidden')).toBe(false);
     expect(elements.authAvatarFallback.classList.contains('hidden')).toBe(true);
     expect(elements.authLogout.classList.contains('hidden')).toBe(false);
+    expect(elements.authLogin.classList.contains('hidden')).toBe(true);
 
     mocks.auth.currentUser = null;
-    elements.authButton.click();
+    elements.authLogin.click();
     await flushPromises();
     expect(mocks.authModule.signInWithPopup).toHaveBeenCalled();
-    expect(elements.authButton.disabled).toBe(false);
   });
 
   it('handles signed-out state change', async () => {
@@ -174,7 +175,7 @@ describe('auth', () => {
     callback(null);
 
     expect(elements.authLogout.classList.contains('hidden')).toBe(true);
-    expect(elements.authMenu.classList.contains('hidden')).toBe(true);
+    expect(elements.authLogin.classList.contains('hidden')).toBe(false);
   });
 
   it('shows fallback avatar and handles sign-in failure', async () => {
@@ -193,9 +194,10 @@ describe('auth', () => {
     expect(elements.authAvatar.classList.contains('hidden')).toBe(true);
     expect(elements.authAvatarFallback.classList.contains('hidden')).toBe(false);
 
-    elements.authButton.click();
+    elements.authLogin.click();
     await flushPromises();
     expect(elements.authMessage.textContent).toBe('ログインに失敗しました。もう一度お試しください。');
+    expect(elements.authLogin.disabled).toBe(false);
   });
 
   it('shows error message when module loading fails', async () => {
@@ -210,36 +212,27 @@ describe('auth', () => {
     });
 
     expect(elements.authMessage.textContent).toBe('認証の初期化に失敗しました。');
-    expect(elements.authButton.disabled).toBe(true);
+    expect(elements.authLogin.disabled).toBe(true);
     expect(elements.authLogout.disabled).toBe(true);
   });
 
-  it('toggles menu and closes on outside click or escape', async () => {
+  it('calls closeMenu on auth state change', async () => {
     const { initAuthUI } = await loadAuthModule();
     const elements = buildElements();
     const mocks = createFirebaseMocks();
+    const closeMenu = vi.fn();
 
     await initAuthUI({
       elements,
       loadModules: async () => mocks,
+      closeMenu,
     });
 
-    mocks.auth.currentUser = { uid: '1' };
     const callback = mocks.getAuthStateCallback();
     callback({ displayName: 'テスト', photoURL: '' });
+    callback(null);
 
-    elements.authButton.click();
-    expect(elements.authMenu.classList.contains('hidden')).toBe(false);
-
-    const outside = document.createElement('div');
-    document.body.appendChild(outside);
-    outside.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    expect(elements.authMenu.classList.contains('hidden')).toBe(true);
-
-    elements.authButton.click();
-    expect(elements.authMenu.classList.contains('hidden')).toBe(false);
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-    expect(elements.authMenu.classList.contains('hidden')).toBe(true);
+    expect(closeMenu).toHaveBeenCalled();
   });
 
   it('handles logout failure and success', async () => {
@@ -256,7 +249,6 @@ describe('auth', () => {
     const callback = mocks.getAuthStateCallback();
     callback({ displayName: 'テスト', photoURL: '' });
 
-    elements.authButton.click();
     elements.authLogout.click();
     await flushPromises();
     expect(mocks.authModule.signOut).toHaveBeenCalled();
@@ -270,7 +262,6 @@ describe('auth', () => {
     });
     successMocks.auth.currentUser = { uid: '1' };
     successMocks.getAuthStateCallback()({ displayName: 'テスト', photoURL: '' });
-    successElements.authButton.click();
     successElements.authLogout.click();
     await flushPromises();
     expect(successMocks.authModule.signOut).toHaveBeenCalled();

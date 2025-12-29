@@ -49,6 +49,10 @@ vi.mock('../docs/js/stats.js', async () => {
   };
 });
 
+vi.mock('../docs/js/auth.js', () => ({
+  initAuthUI: vi.fn(),
+}));
+
 const setupBaseDom = () => {
   document.body.innerHTML = `
     <div id="start-screen"></div>
@@ -305,5 +309,48 @@ describe('app branches', () => {
       .dispatchEvent(new MouseEvent('click', { bubbles: true }));
     const resultScreen = document.getElementById('result-screen');
     expect(resultScreen.classList.contains('hidden')).toBe(false);
+  });
+
+  it('opens menu, navigates to settings, and closes menu interactions', async () => {
+    setupBaseDom();
+    document.body.insertAdjacentHTML('beforeend', `
+      <button id="menu-button"></button>
+      <div id="menu-panel" class="hidden"></div>
+      <button id="open-settings"></button>
+      <div id="settings-screen" class="hidden"></div>
+      <button id="close-settings"></button>
+    `);
+    loadCsv.mockResolvedValueOnce([]);
+
+    await import('../docs/js/app.js');
+    domReadyHandlers.forEach(handler => handler(new Event('DOMContentLoaded')));
+    await flushPromises();
+
+    const menuButton = document.getElementById('menu-button');
+    const menuPanel = document.getElementById('menu-panel');
+    const settingsScreen = document.getElementById('settings-screen');
+
+    menuButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(menuPanel.classList.contains('hidden')).toBe(false);
+
+    document.getElementById('open-settings')
+      .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(settingsScreen.classList.contains('hidden')).toBe(false);
+    expect(menuPanel.classList.contains('hidden')).toBe(true);
+
+    document.getElementById('close-settings')
+      .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    const startScreen = document.getElementById('start-screen');
+    expect(startScreen.classList.contains('hidden')).toBe(false);
+
+    menuButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    const outside = document.createElement('div');
+    document.body.appendChild(outside);
+    outside.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(menuPanel.classList.contains('hidden')).toBe(true);
+
+    menuButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(menuPanel.classList.contains('hidden')).toBe(true);
   });
 });

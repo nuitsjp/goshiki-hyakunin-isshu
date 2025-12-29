@@ -18,11 +18,17 @@ const screens = getScreens();
 const elements = getElements();
 
 let advanceTimerId = null;
+let currentScreen = 'start';
+let settingsReturnScreen = 'start';
 
 function showScreen(screen) {
-  Object.values(screens).forEach(node => node.classList.add('hidden'));
+  Object.values(screens).forEach(node => {
+    if (!node) return;
+    node.classList.add('hidden');
+  });
   if (screens[screen]) {
     screens[screen].classList.remove('hidden');
+    currentScreen = screen;
   }
   if (screen === 'start') {
     updateWeak5Option(null);
@@ -36,6 +42,18 @@ const statsUI = createStatsUI({
   showScreen,
   loadHistory: loadQuizHistory,
 });
+
+function closeMenu() {
+  if (elements.menuPanel) elements.menuPanel.classList.add('hidden');
+  if (elements.menuButton) elements.menuButton.setAttribute('aria-expanded', 'false');
+}
+
+function toggleMenu() {
+  if (!elements.menuPanel || !elements.menuButton) return;
+  const isOpen = !elements.menuPanel.classList.contains('hidden');
+  elements.menuPanel.classList.toggle('hidden', isOpen);
+  elements.menuButton.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+}
 
 function setAccentColor(color) {
   const accent = colorAccentMap[color] || 'var(--color-blue)';
@@ -643,6 +661,40 @@ function initEventHandlers() {
     elements.statsFilterNormal.addEventListener('click', () => setStatsFilterMode('normal'));
     elements.statsFilterReverse.addEventListener('click', () => setStatsFilterMode('reverse'));
   }
+
+  if (elements.menuButton) {
+    elements.menuButton.addEventListener('click', () => {
+      toggleMenu();
+    });
+  }
+
+  if (elements.menuSettings) {
+    elements.menuSettings.addEventListener('click', () => {
+      settingsReturnScreen = currentScreen;
+      closeMenu();
+      showScreen('settings');
+    });
+  }
+
+  if (elements.closeSettings) {
+    elements.closeSettings.addEventListener('click', () => {
+      showScreen(settingsReturnScreen || 'start');
+    });
+  }
+
+  document.addEventListener('click', (event) => {
+    if (!elements.menuPanel || !elements.menuButton) return;
+    const target = event.target;
+    if (!target) return;
+    const isInside = elements.menuPanel.contains(target) || elements.menuButton.contains(target);
+    if (!isInside) closeMenu();
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      closeMenu();
+    }
+  });
 }
 
 function init() {
@@ -674,7 +726,7 @@ function init() {
   }
 
   initEventHandlers();
-  initAuthUI({ elements });
+  initAuthUI({ elements, closeMenu });
   resetQuizView();
   statsUI.renderColorSummaries();
   loadCsv()

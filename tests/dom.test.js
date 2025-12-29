@@ -7,6 +7,7 @@ describe('dom helpers', () => {
       <div id="start-screen"></div>
       <div id="quiz-screen"></div>
       <div id="result-screen"></div>
+      <div id="settings-screen"></div>
       <div id="stats-screen"></div>
     `;
 
@@ -14,6 +15,7 @@ describe('dom helpers', () => {
     expect(screens.start.id).toBe('start-screen');
     expect(screens.quiz.id).toBe('quiz-screen');
     expect(screens.result.id).toBe('result-screen');
+    expect(screens.settings.id).toBe('settings-screen');
     expect(screens.stats.id).toBe('stats-screen');
   });
 
