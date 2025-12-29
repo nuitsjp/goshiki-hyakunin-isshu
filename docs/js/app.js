@@ -171,6 +171,7 @@ function resetOptionButtons() {
     btn.disabled = false;
     btn.classList.remove('btn-success', 'btn-danger', 'active');
     btn.classList.add('btn-outline-secondary');
+    btn.blur(); // フォーカスを解除して選択状態をクリア
   });
   if (elements.giveUp) {
     elements.giveUp.disabled = false;
