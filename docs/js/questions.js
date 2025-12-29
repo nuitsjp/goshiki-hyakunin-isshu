@@ -97,3 +97,51 @@ export function canUseWeak5(kimarijiStats) {
   const stats = Array.isArray(kimarijiStats) ? kimarijiStats : [];
   return stats.filter(k => k.total > 0).length >= 5;
 }
+
+export function getIncorrectPoems(answers, poems) {
+  if (!Array.isArray(answers) || answers.length === 0) {
+    return [];
+  }
+
+  const allPoems = Array.isArray(poems) ? poems : [];
+  const incorrectAnswers = answers.filter(answer => answer.isCorrect === false);
+
+  const incorrectPoems = incorrectAnswers
+    .map(answer => {
+      return allPoems.find(poem => {
+        const poemKimariji = poem.kimarijiShort || poem.kimarijiLong || '決まり字なし';
+        return poemKimariji === answer.kimariji &&
+               poem.kamiNoKu === answer.kamiNoKu &&
+               poem.shimoNoKu === answer.shimoNoKu;
+      });
+    })
+    .filter(poem => poem !== undefined);
+
+  return incorrectPoems;
+}
+
+export function buildQuestionsFromPoems({
+  poems,
+  allPoems,
+  color,
+  orderMode,
+  random = Math.random
+}) {
+  const selectedPoems = Array.isArray(poems) ? poems : [];
+  if (selectedPoems.length === 0) {
+    throw new Error('指定された歌のデータがありません。');
+  }
+
+  const allPoemsArray = Array.isArray(allPoems) ? allPoems : [];
+  const poemsByColor = allPoemsArray.filter(poem => poem.color === color);
+
+  return selectedPoems.map(poem => ({
+    kimariji: poem.kimarijiShort || poem.kimarijiLong || '決まり字なし',
+    correctShimo: poem.shimoNoKu,
+    correctShimoReading: poem.shimoReading,
+    kamiNoKu: poem.kamiNoKu,
+    kamiReading: poem.kamiReading,
+    hint: poem.hint,
+    options: generateOptions(poem, poemsByColor, orderMode, random),
+  }));
+}

@@ -11,7 +11,7 @@ import {
   setAuthModule,
 } from './storage.js';
 import { calculateKimarijiPerformance, formatDurationMs } from './stats.js';
-import { buildQuestions, buildWeakQuestions, canUseWeak5 } from './questions.js';
+import { buildQuestions, buildWeakQuestions, canUseWeak5, getIncorrectPoems, buildQuestionsFromPoems } from './questions.js';
 import { loadCsv } from './data.js';
 import { escapeHtml, toRubyHtml, toAriaLabel } from './text.js';
 import { createStatsUI } from './stats-ui.js';
@@ -537,6 +537,16 @@ async function showResults() {
   elements.resultRate.textContent = `正答率 ${rate}%`;
   elements.resultComment.textContent = getResultComment(rate);
   renderResultList();
+
+  const hasIncorrect = quizState.answers.some(a => !a.isCorrect);
+  if (elements.retryIncorrect) {
+    if (hasIncorrect) {
+      elements.retryIncorrect.classList.remove('hidden');
+    } else {
+      elements.retryIncorrect.classList.add('hidden');
+    }
+  }
+
   showScreen('result');
 }
 
@@ -554,6 +564,52 @@ async function cancelQuiz() {
   resetQuizView();
   showScreen('start');
   refreshHistoryForStart();
+}
+
+async function startQuizWithIncorrect() {
+  try {
+    clearAdvanceTimer();
+    quizState.showKami = false;
+
+    const incorrectPoems = getIncorrectPoems(quizState.answers, quizState.allPoems);
+    if (incorrectPoems.length === 0) {
+      alert('不正解の歌がありません。');
+      return;
+    }
+
+    if (elements.hintType) {
+      quizState.hintType = elements.hintType.value || 'shoku';
+    }
+    if (elements.displayMode) {
+      quizState.displayMode = elements.displayMode.value || 'kana';
+    }
+
+    quizState.currentQuestions = buildQuestionsFromPoems({
+      poems: incorrectPoems,
+      allPoems: quizState.allPoems,
+      color: quizState.selectedColor,
+      orderMode: quizState.orderMode,
+    });
+
+    quizState.currentIndex = 0;
+    quizState.correctCount = 0;
+    quizState.answers = [];
+    quizState.measureTime = elements.measureTimeToggle ? elements.measureTimeToggle.checked : true;
+    quizState.sessionStartTime = quizState.measureTime ? performance.now() : 0;
+    quizState.sessionEndTime = null;
+    if (elements.elapsedTime && !quizState.measureTime) {
+      elements.elapsedTime.textContent = formatDurationMs(0);
+    }
+    setElapsedVisibility(quizState.measureTime);
+    startElapsedTimer();
+    elements.selectedColorLabel.textContent = `${quizState.selectedColor}の歌（不正解のみ）`;
+    setAccentColor(quizState.selectedColor);
+    showScreen('quiz');
+    renderQuestion();
+  } catch (error) {
+    console.error(error);
+    alert(error.message || 'データの読み込みに失敗しました。');
+  }
 }
 
 async function startQuiz(color) {
@@ -778,6 +834,17 @@ function initEventHandlers() {
     }
     startQuiz(quizState.selectedColor);
   });
+
+  if (elements.retryIncorrect) {
+    elements.retryIncorrect.addEventListener('click', async () => {
+      if (!quizState.selectedColor) {
+        showScreen('start');
+        refreshHistoryForStart();
+        return;
+      }
+      startQuizWithIncorrect();
+    });
+  }
 
   elements.chooseColor.addEventListener('click', async () => {
     resetQuizView();

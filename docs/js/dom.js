@@ -42,6 +42,7 @@ export const getElements = (doc = document) => ({
   resultComment: doc.getElementById('result-comment'),
   resultList: doc.getElementById('result-list'),
   retrySame: doc.getElementById('retry-same'),
+  retryIncorrect: doc.getElementById('retry-incorrect'),
   chooseColor: doc.getElementById('choose-color'),
   giveUp: doc.getElementById('give-up-button'),
   viewStats: doc.getElementById('view-stats'),

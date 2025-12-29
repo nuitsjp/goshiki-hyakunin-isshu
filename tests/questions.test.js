@@ -3,6 +3,8 @@ import {
   buildQuestions,
   buildWeakQuestions,
   canUseWeak5,
+  getIncorrectPoems,
+  buildQuestionsFromPoems,
 } from '../docs/js/questions.js';
 
 const samplePoems = [
@@ -249,5 +251,129 @@ describe('questions', () => {
 
   it('canUseWeak5 returns false for non-array input', () => {
     expect(canUseWeak5(null)).toBe(false);
+  });
+
+  it('getIncorrectPoems returns poems from incorrect answers', () => {
+    const answers = [
+      {
+        kimariji: 'あ',
+        kamiNoKu: '上1',
+        shimoNoKu: '下1',
+        isCorrect: true,
+      },
+      {
+        kimariji: 'い',
+        kamiNoKu: '上2',
+        shimoNoKu: '下2',
+        isCorrect: false,
+      },
+      {
+        kimariji: 'う',
+        kamiNoKu: '上3',
+        shimoNoKu: '下3',
+        isCorrect: false,
+      },
+    ];
+
+    const incorrectPoems = getIncorrectPoems(answers, samplePoems);
+
+    expect(incorrectPoems).toHaveLength(2);
+    expect(incorrectPoems[0].kimarijiShort).toBe('い');
+    expect(incorrectPoems[1].kimarijiShort).toBe('う');
+  });
+
+  it('getIncorrectPoems returns empty array when all correct', () => {
+    const answers = [
+      {
+        kimariji: 'あ',
+        kamiNoKu: '上1',
+        shimoNoKu: '下1',
+        isCorrect: true,
+      },
+      {
+        kimariji: 'い',
+        kamiNoKu: '上2',
+        shimoNoKu: '下2',
+        isCorrect: true,
+      },
+    ];
+
+    const incorrectPoems = getIncorrectPoems(answers, samplePoems);
+
+    expect(incorrectPoems).toHaveLength(0);
+  });
+
+  it('getIncorrectPoems handles missing poems gracefully', () => {
+    const answers = [
+      {
+        kimariji: 'notfound',
+        kamiNoKu: 'unknown',
+        shimoNoKu: 'unknown',
+        isCorrect: false,
+      },
+    ];
+
+    const incorrectPoems = getIncorrectPoems(answers, samplePoems);
+
+    expect(incorrectPoems).toHaveLength(0);
+  });
+
+  it('getIncorrectPoems returns empty array for empty answers', () => {
+    const incorrectPoems = getIncorrectPoems([], samplePoems);
+
+    expect(incorrectPoems).toHaveLength(0);
+  });
+
+  it('buildQuestionsFromPoems builds questions from specific poems', () => {
+    const specificPoems = [
+      samplePoems[1], // い
+      samplePoems[2], // う
+    ];
+
+    const questions = buildQuestionsFromPoems({
+      poems: specificPoems,
+      allPoems: samplePoems,
+      color: '青',
+      orderMode: 'normal',
+      random: fixedRandom,
+    });
+
+    expect(questions).toHaveLength(2);
+    expect(questions[0].kimariji).toBe('い');
+    expect(questions[1].kimariji).toBe('う');
+    questions.forEach(question => {
+      expect(question.options).toHaveLength(4);
+      const correctOption = question.options.find(option => option.isCorrect);
+      expect(correctOption).toBeTruthy();
+    });
+  });
+
+  it('buildQuestionsFromPoems throws when poems is empty', () => {
+    expect(() => buildQuestionsFromPoems({
+      poems: [],
+      allPoems: samplePoems,
+      color: '青',
+      orderMode: 'normal',
+      random: fixedRandom,
+    })).toThrow(/指定された歌のデータがありません/);
+  });
+
+  it('buildQuestionsFromPoems uses allPoems for options pool', () => {
+    const specificPoems = [samplePoems[0]];
+
+    const questions = buildQuestionsFromPoems({
+      poems: specificPoems,
+      allPoems: samplePoems,
+      color: '青',
+      orderMode: 'normal',
+      random: fixedRandom,
+    });
+
+    expect(questions).toHaveLength(1);
+    const question = questions[0];
+    expect(question.options).toHaveLength(4);
+    // 選択肢は allPoems の中の同じ色の歌から生成される
+    const allOptionTexts = question.options.map(opt => opt.text);
+    expect(new Set(allOptionTexts).size).toBe(4);
   });
 });
