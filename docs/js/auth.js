@@ -1,4 +1,11 @@
-import { ENABLE_FIREBASE_AUTH, FIREBASE_CONFIG, AUTH_PROVIDER } from './config.js';
+import { ENABLE_FIREBASE_AUTH, FIREBASE_CONFIG, AUTH_PROVIDER, STORAGE_KEYS } from './config.js';
+import { uploadLocalHistoryToFirestore, initializeFirestore } from './firestore.js';
+
+let currentUser = null;
+
+export function getCurrentUserId() {
+  return currentUser?.uid || null;
+}
 
 const normalizeAuthConfig = () => {
   if (!ENABLE_FIREBASE_AUTH || !FIREBASE_CONFIG) return null;
@@ -83,6 +90,8 @@ export const initAuthUI = async ({
     const auth = authModule.getAuth(app);
     const provider = resolveProvider(authModule);
 
+    await initializeFirestore(app);
+
     if (!provider) {
       setAuthMessage(elements, '未対応のログイン方式です。');
       if (elements.authLogin) elements.authLogin.disabled = true;
@@ -90,7 +99,8 @@ export const initAuthUI = async ({
       return;
     }
 
-    authModule.onAuthStateChanged(auth, (user) => {
+    authModule.onAuthStateChanged(auth, async (user) => {
+      currentUser = user;
       if (user) {
         setAuthStatus(elements, {
           isSignedIn: true,
@@ -99,6 +109,23 @@ export const initAuthUI = async ({
         });
         closeMenu();
         setAuthMessage(elements, '');
+
+        try {
+          const localDataStr = localStorage.getItem(STORAGE_KEYS.HISTORY);
+          if (localDataStr) {
+            const localHistory = JSON.parse(localDataStr);
+            if (localHistory.length > 0) {
+              const count = await uploadLocalHistoryToFirestore(user.uid, localHistory);
+              if (count > 0) {
+                localStorage.removeItem(STORAGE_KEYS.HISTORY);
+                console.log(`Migrated ${count} sessions to Firestore`);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Failed to migrate local history:', error);
+        }
+
         return;
       }
       setAuthStatus(elements, {

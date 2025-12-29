@@ -6,13 +6,14 @@ import {
   loadQuizHistory,
   clearAllHistory,
   checkLocalStorageAvailable,
+  setAuthModule,
 } from './storage.js';
 import { calculateKimarijiPerformance } from './stats.js';
 import { buildQuestions, buildWeakQuestions, canUseWeak5 } from './questions.js';
 import { loadCsv } from './data.js';
 import { escapeHtml, toRubyHtml, toAriaLabel } from './text.js';
 import { createStatsUI } from './stats-ui.js';
-import { initAuthUI } from './auth.js';
+import { initAuthUI, getCurrentUserId } from './auth.js';
 
 const screens = getScreens();
 const elements = getElements();
@@ -64,14 +65,14 @@ function setAccentColor(color) {
   elements.selectedColorLabel.style.color = textColor;
 }
 
-function updateWeak5Option(color) {
+async function updateWeak5Option(color) {
   if (!elements.questionCount) return;
 
   const weak5Option = elements.questionCount.querySelector('option[value="weak5"]');
   if (!weak5Option) return;
 
   if (color && quizState.allPoems.length) {
-    const history = loadQuizHistory();
+    const history = await loadQuizHistory();
     const kimarijiPerf = calculateKimarijiPerformance(color, quizState.allPoems, history);
     weak5Option.disabled = !canUseWeak5(kimarijiPerf);
   } else {
@@ -237,6 +238,7 @@ function renderQuestion() {
 
   quizState.isAnswered = false;
   quizState.showKami = false;
+  quizState.questionStartTime = performance.now();
   hideAutoAdvanceProgress();
   renderKimariji(question);
 
@@ -271,6 +273,7 @@ function handleAnswer(event) {
   if (!question) return;
 
   const isCorrect = btn.dataset.correct === 'true';
+  const answerTimeMs = Math.round(performance.now() - quizState.questionStartTime);
   quizState.answers.push({
     kimariji: question.kimariji,
     kamiNoKu: question.kamiNoKu,
@@ -280,6 +283,7 @@ function handleAnswer(event) {
     usedKami: quizState.showKami,
     isCorrect,
     index: quizState.currentIndex,
+    answerTimeMs,
   });
   quizState.isAnswered = true;
   if (elements.giveUp) elements.giveUp.disabled = true;
@@ -369,6 +373,7 @@ function showResults() {
 
   const wrongCount = total - quizState.correctCount;
   const passCount = quizState.answers.filter(a => !a.isCorrect && !a.usedKami).length;
+  const durationMs = Math.round(performance.now() - quizState.sessionStartTime);
 
   const sessionData = {
     sessionId: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -383,10 +388,12 @@ function showResults() {
     hintType: quizState.hintType,
     displayMode: quizState.displayMode,
     orderMode: quizState.orderMode,
+    durationMs: durationMs,
     answers: quizState.answers.map(a => ({
       kimariji: a.kimariji,
       isCorrect: a.isCorrect,
-      usedKami: a.usedKami
+      usedKami: a.usedKami,
+      answerTimeMs: a.answerTimeMs
     }))
   };
 
@@ -415,7 +422,7 @@ function cancelQuiz() {
   showScreen('start');
 }
 
-function startQuiz(color) {
+async function startQuiz(color) {
   try {
     clearAdvanceTimer();
     quizState.showKami = false;
@@ -441,7 +448,7 @@ function startQuiz(color) {
     }
 
     if (isWeak5Mode) {
-      const history = loadQuizHistory();
+      const history = await loadQuizHistory();
       const kimarijiPerf = calculateKimarijiPerformance(color, quizState.allPoems, history);
       quizState.currentQuestions = buildWeakQuestions({
         poems: quizState.allPoems,
@@ -461,6 +468,7 @@ function startQuiz(color) {
     quizState.currentIndex = 0;
     quizState.correctCount = 0;
     quizState.answers = [];
+    quizState.sessionStartTime = performance.now();
     elements.selectedColorLabel.textContent = `${color}の歌`;
     setAccentColor(color);
     showScreen('quiz');
@@ -484,6 +492,7 @@ function handleGiveUp() {
   const question = quizState.currentQuestions[quizState.currentIndex];
   if (!question) return;
 
+  const answerTimeMs = Math.round(performance.now() - quizState.questionStartTime);
   quizState.answers.push({
     kimariji: question.kimariji,
     kamiNoKu: question.kamiNoKu,
@@ -493,6 +502,7 @@ function handleGiveUp() {
     usedKami: quizState.showKami,
     isCorrect: false,
     index: quizState.currentIndex,
+    answerTimeMs,
   });
   quizState.isAnswered = true;
 
@@ -698,6 +708,8 @@ function initEventHandlers() {
 }
 
 function init() {
+  setAuthModule({ getCurrentUserId });
+
   if (elements.version) {
     elements.version.textContent = APP_VERSION;
   }

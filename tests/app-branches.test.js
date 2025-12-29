@@ -6,15 +6,17 @@ vi.mock('../docs/js/data.js', () => ({
   loadCsv,
 }));
 
-const loadQuizHistory = vi.fn(() => []);
-const saveQuizSession = vi.fn(() => true);
-const clearAllHistory = vi.fn(() => true);
+const loadQuizHistory = vi.fn(async () => []);
+const saveQuizSession = vi.fn(async () => true);
+const clearAllHistory = vi.fn(async () => true);
 const checkLocalStorageAvailable = vi.fn(() => true);
+const setAuthModule = vi.fn();
 vi.mock('../docs/js/storage.js', () => ({
   loadQuizHistory,
   saveQuizSession,
   clearAllHistory,
   checkLocalStorageAvailable,
+  setAuthModule,
 }));
 
 const buildQuestions = vi.fn(() => ([
@@ -51,6 +53,7 @@ vi.mock('../docs/js/stats.js', async () => {
 
 vi.mock('../docs/js/auth.js', () => ({
   initAuthUI: vi.fn(),
+  getCurrentUserId: vi.fn(() => null),
 }));
 
 const setupBaseDom = () => {
@@ -210,6 +213,7 @@ describe('app branches', () => {
     questionCount.value = 'weak5';
     document.querySelector('.color-button')
       .dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+    await flushPromises();
 
     expect(questionCount.value).toBe('20');
     expect(quizState.questionLimit).toBe(20);
@@ -278,6 +282,7 @@ describe('app branches', () => {
 
     document.querySelector('.color-button')
       .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flushPromises();
     expect(buildWeakQuestions).toHaveBeenCalled();
   });
 

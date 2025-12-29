@@ -12,11 +12,11 @@ export function createStatsUI({
   showScreen,
   loadHistory,
 }) {
-  const getHistory = () => loadHistory();
+  const getHistory = async () => await loadHistory();
   const getPoems = () => (Array.isArray(quizState.allPoems) ? quizState.allPoems : []);
 
-  function renderColorSummaries() {
-    const history = getHistory();
+  async function renderColorSummaries() {
+    const history = await getHistory();
     const allStats = calculateAllColorStats(history, quizState.orderMode);
 
     allStats.forEach(stats => {
@@ -43,8 +43,8 @@ export function createStatsUI({
     }
   }
 
-  function renderSessionDetail(sessionId) {
-    const history = getHistory();
+  async function renderSessionDetail(sessionId) {
+    const history = await getHistory();
     const session = history.find(s => s.sessionId === sessionId);
     if (!session || !session.answers) return;
 
@@ -90,8 +90,8 @@ export function createStatsUI({
     }
   }
 
-  function renderDetailedColorStats(color) {
-    const history = getHistory();
+  async function renderDetailedColorStats(color) {
+    const history = await getHistory();
     const detailedStats = calculateDetailedColorStats(color, getPoems(), history);
     const container = document.getElementById('color-detail-container');
 
@@ -228,7 +228,7 @@ export function createStatsUI({
     container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
-  function renderStatsScreen(syncWithQuizState = false) {
+  async function renderStatsScreen(syncWithQuizState = false) {
     if (syncWithQuizState) {
       statsState.filterMode = quizState.orderMode;
     }
@@ -239,7 +239,7 @@ export function createStatsUI({
     }
 
     const orderModeFilter = statsState.filterMode;
-    const history = getHistory();
+    const history = await getHistory();
     const overall = calculateOverallStats(history, orderModeFilter);
     const colorStats = calculateAllColorStats(history, orderModeFilter);
 

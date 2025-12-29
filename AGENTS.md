@@ -8,6 +8,10 @@
     *   **Think in English.**
     *   **Interact with the user in Japanese.**
     *   Plans and artifacts (commit messages, PR descriptions) must be written in **Japanese**.
+2.  **Test-Driven Development (TDD)**:
+    *   Strictly adhere to the **t-wada style** of TDD.
+    *   **RED-GREEN-REFACTOR** cycle must be followed without exception.
+    *   Write a failing test first, then implement the minimal code to pass it, then refactor.
 
 ## Project Structure & Assets
 - Current files live at the repository root: `README.md` (requirements/design), `TODO.md` (implementation checklist), `LICENSE`, and `data/hyakunin_isshu_with_ruby.csv` (authoritative poem dataset).

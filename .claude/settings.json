@@ -5,7 +5,8 @@
       "Bash(cat:*)",
       "Bash(git:*)",
       "Bash(node:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npm:*)"
     ]
   }
 }

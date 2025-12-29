@@ -231,6 +231,7 @@ describe('app', () => {
     nextButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     document.getElementById('view-stats-from-result').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flushPromises();
     const statsScreen = document.getElementById('stats-screen');
     expect(statsScreen.classList.contains('hidden')).toBe(false);
 
@@ -409,6 +410,7 @@ describe('app', () => {
     await flushPromises();
 
     document.getElementById('view-stats').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flushPromises();
     const statsScreen = document.getElementById('stats-screen');
     expect(statsScreen.classList.contains('hidden')).toBe(false);
   });

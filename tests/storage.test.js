@@ -30,17 +30,17 @@ class MemoryStorage {
 }
 
 describe('storage', () => {
-  it('saveQuizSession stores history and version', () => {
+  it('saveQuizSession stores history and version', async () => {
     const storage = new MemoryStorage();
     const session = { timestamp: Date.now(), questionCount: 1 };
-    const ok = saveQuizSession(session, storage);
+    const ok = await saveQuizSession(session, storage);
     expect(ok).toBe(true);
     expect(storage.getItem(STORAGE_KEYS.VERSION)).toBe(STATS_VERSION);
     const history = JSON.parse(storage.getItem(STORAGE_KEYS.HISTORY));
     expect(history).toHaveLength(1);
   });
 
-  it('saveQuizSession handles quota exceeded by trimming', () => {
+  it('saveQuizSession handles quota exceeded by trimming', async () => {
     const storage = new MemoryStorage({
       [STORAGE_KEYS.HISTORY]: JSON.stringify([
         { timestamp: Date.now() - 1000 },
@@ -59,12 +59,12 @@ describe('storage', () => {
       originalSetItem(key, value);
     });
 
-    const ok = saveQuizSession({ timestamp: Date.now(), questionCount: 1 }, storage);
+    const ok = await saveQuizSession({ timestamp: Date.now(), questionCount: 1 }, storage);
     expect(ok).toBe(true);
     expect(storage.getItem(STORAGE_KEYS.HISTORY)).toBeTruthy();
   });
 
-  it('saveQuizSession returns false when retry fails', () => {
+  it('saveQuizSession returns false when retry fails', async () => {
     const storage = new MemoryStorage({
       [STORAGE_KEYS.HISTORY]: JSON.stringify([{ timestamp: Date.now() - 1000 }]),
     });
@@ -73,15 +73,15 @@ describe('storage', () => {
       err.name = 'QuotaExceededError';
       throw err;
     });
-    const ok = saveQuizSession({ timestamp: Date.now(), questionCount: 1 }, storage);
+    const ok = await saveQuizSession({ timestamp: Date.now(), questionCount: 1 }, storage);
     expect(ok).toBe(false);
   });
 
-  it('loadQuizHistory returns empty array on invalid JSON', () => {
+  it('loadQuizHistory returns empty array on invalid JSON', async () => {
     const storage = new MemoryStorage({
       [STORAGE_KEYS.HISTORY]: '{bad json}',
     });
-    expect(loadQuizHistory(storage)).toEqual([]);
+    expect(await loadQuizHistory(storage)).toEqual([]);
   });
 
   it('cleanOldHistory filters by retention', () => {
@@ -101,7 +101,7 @@ describe('storage', () => {
     expect(trimmed[0].id).toBe(2);
   });
 
-  it('clearAllHistory returns true when confirmed', () => {
+  it('clearAllHistory returns true when confirmed', async () => {
     const storage = new MemoryStorage({
       [STORAGE_KEYS.HISTORY]: '[]',
       [STORAGE_KEYS.VERSION]: '1',
@@ -110,12 +110,12 @@ describe('storage', () => {
       confirm: () => true,
       alert: vi.fn(),
     };
-    const ok = clearAllHistory(storage, dialog);
+    const ok = await clearAllHistory(storage, dialog);
     expect(ok).toBe(true);
     expect(storage.getItem(STORAGE_KEYS.HISTORY)).toBe(null);
   });
 
-  it('clearAllHistory returns false when remove fails', () => {
+  it('clearAllHistory returns false when remove fails', async () => {
     const storage = new MemoryStorage({
       [STORAGE_KEYS.HISTORY]: '[]',
       [STORAGE_KEYS.VERSION]: '1',
@@ -127,11 +127,11 @@ describe('storage', () => {
       confirm: () => true,
       alert: vi.fn(),
     };
-    const ok = clearAllHistory(storage, dialog);
+    const ok = await clearAllHistory(storage, dialog);
     expect(ok).toBe(false);
   });
 
-  it('clearAllHistory returns false when canceled', () => {
+  it('clearAllHistory returns false when canceled', async () => {
     const storage = new MemoryStorage({
       [STORAGE_KEYS.HISTORY]: '[]',
     });
@@ -139,7 +139,7 @@ describe('storage', () => {
       confirm: () => false,
       alert: vi.fn(),
     };
-    const ok = clearAllHistory(storage, dialog);
+    const ok = await clearAllHistory(storage, dialog);
     expect(ok).toBe(false);
   });
 

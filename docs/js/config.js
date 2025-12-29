@@ -22,6 +22,7 @@ export const MAX_HISTORY_ENTRIES = 1000;
 export const HISTORY_RETENTION_DAYS = 365;
 export const COLORS = ['青', 'ピンク', '黄', '緑', 'オレンジ'];
 export const ENABLE_FIREBASE_AUTH = true;
+export const ENABLE_FIRESTORE_SYNC = true;
 export const FIREBASE_CONFIG = {
   apiKey: "AIzaSyDFYHP1abh8ytAvfoK5cJ62ZdIN-w9RK7A",
   authDomain: "goshiki-hyakunin-isshu.firebaseapp.com",

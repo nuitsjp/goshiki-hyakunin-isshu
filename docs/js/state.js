@@ -11,6 +11,8 @@ export const quizState = {
   hintType: 'shoku',
   displayMode: 'kana',
   orderMode: 'normal',
+  sessionStartTime: 0,
+  questionStartTime: 0,
 };
 
 export const statsState = {

@@ -4,21 +4,42 @@ import {
   MAX_HISTORY_ENTRIES,
   HISTORY_RETENTION_DAYS,
 } from './config.js';
+import {
+  saveSessionToFirestore,
+  loadSessionsFromFirestore,
+  deleteAllSessionsFromFirestore
+} from './firestore.js';
 
-export function saveQuizSession(sessionData, storage = window.localStorage) {
+let getCurrentUserId = null;
+
+export function setAuthModule(authModule) {
+  getCurrentUserId = authModule.getCurrentUserId;
+}
+
+export async function saveQuizSession(sessionData, storage = window.localStorage) {
   try {
-    let history = loadQuizHistory(storage);
+    let history = await loadQuizHistory(storage);
     history.push(sessionData);
     history = cleanOldHistory(history);
     history = enforceHistoryLimit(history);
     storage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
     storage.setItem(STORAGE_KEYS.VERSION, STATS_VERSION);
+
+    const userId = getCurrentUserId?.();
+    if (userId) {
+      try {
+        await saveSessionToFirestore(userId, sessionData);
+      } catch (e) {
+        console.error('Firestore save failed:', e);
+      }
+    }
+
     return true;
   } catch (e) {
     console.error('Failed to save quiz session:', e);
     if (e.name === 'QuotaExceededError') {
       try {
-        let history = loadQuizHistory(storage);
+        let history = await loadQuizHistory(storage);
         history = history.slice(Math.floor(history.length * 0.2));
         storage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
         history.push(sessionData);
@@ -33,7 +54,16 @@ export function saveQuizSession(sessionData, storage = window.localStorage) {
   }
 }
 
-export function loadQuizHistory(storage = window.localStorage) {
+export async function loadQuizHistory(storage = window.localStorage) {
+  const userId = getCurrentUserId?.();
+  if (userId) {
+    try {
+      return await loadSessionsFromFirestore(userId);
+    } catch (e) {
+      console.error('Firestore load failed, fallback to localStorage:', e);
+    }
+  }
+
   try {
     const data = storage.getItem(STORAGE_KEYS.HISTORY);
     return data ? JSON.parse(data) : [];
@@ -55,9 +85,14 @@ export function enforceHistoryLimit(history, maxEntries = MAX_HISTORY_ENTRIES) {
   return history.slice(history.length - maxEntries);
 }
 
-export function clearAllHistory(storage = window.localStorage, dialog = window) {
+export async function clearAllHistory(storage = window.localStorage, dialog = window) {
   if (dialog.confirm('本当にすべての統計データを削除しますか？この操作は取り消せません。')) {
     try {
+      const userId = getCurrentUserId?.();
+      if (userId) {
+        await deleteAllSessionsFromFirestore(userId);
+      }
+
       storage.removeItem(STORAGE_KEYS.HISTORY);
       storage.removeItem(STORAGE_KEYS.VERSION);
       dialog.alert('統計データを削除しました。');

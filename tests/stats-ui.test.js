@@ -38,7 +38,7 @@ const setupDom = () => {
 };
 
 describe('stats-ui', () => {
-  it('renders empty summaries and recent activity when no history', () => {
+  it('renders empty summaries and recent activity when no history', async () => {
     setupDom();
     const quizState = { allPoems: [], orderMode: 'normal' };
     const statsState = { selectedColor: null, filterMode: 'normal' };
@@ -48,19 +48,19 @@ describe('stats-ui', () => {
       statsState,
       quizState,
       showScreen,
-      loadHistory: () => [],
+      loadHistory: async () => [],
     });
 
-    ui.renderColorSummaries();
+    await ui.renderColorSummaries();
     const summary = document.querySelector('[data-color-stats="青"]');
     expect(summary.textContent).toBe('青');
 
-    ui.renderStatsScreen();
+    await ui.renderStatsScreen();
     const recent = document.getElementById('recent-activity');
     expect(recent.innerHTML).toMatch(/まだプレイ履歴がありません/);
   });
 
-  it('renders summaries and stats screen', () => {
+  it('renders summaries and stats screen', async () => {
     setupDom();
     const history = [
       {
@@ -97,14 +97,14 @@ describe('stats-ui', () => {
       statsState,
       quizState,
       showScreen,
-      loadHistory: () => history,
+      loadHistory: async () => history,
     });
 
-    ui.renderColorSummaries();
+    await ui.renderColorSummaries();
     const summary = document.querySelector('[data-color-stats="青"]');
     expect(summary.innerHTML).toMatch(/正答率/);
 
-    ui.renderStatsScreen();
+    await ui.renderStatsScreen();
     expect(showScreen).toHaveBeenCalledWith('stats');
     const rows = document.querySelectorAll('#color-stats-tbody tr');
     expect(rows.length).toBe(5);
@@ -116,7 +116,7 @@ describe('stats-ui', () => {
     expect(detail.innerHTML).toBe('');
   });
 
-  it('renders detailed stats and session details', () => {
+  it('renders detailed stats and session details', async () => {
     setupDom();
     const history = [
       {
@@ -152,12 +152,13 @@ describe('stats-ui', () => {
       statsState,
       quizState,
       showScreen,
-      loadHistory: () => history,
+      loadHistory: async () => history,
     });
 
-    ui.renderStatsScreen();
+    await ui.renderStatsScreen();
     const row = document.querySelector('#color-stats-tbody tr[data-color="青"]');
     row.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await new Promise(resolve => setTimeout(resolve, 0));
 
     expect(statsState.selectedColor).toBe('青');
     const detail = document.getElementById('color-detail-container');
@@ -165,9 +166,11 @@ describe('stats-ui', () => {
 
     const sessionItem = detail.querySelector('.session-item');
     sessionItem.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await new Promise(resolve => setTimeout(resolve, 0));
     expect(sessionItem.classList.contains('expanded')).toBe(true);
     expect(detail.querySelector('.session-answers')).toBeTruthy();
     sessionItem.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await new Promise(resolve => setTimeout(resolve, 0));
     expect(sessionItem.classList.contains('expanded')).toBe(false);
 
     const closeButton = detail.querySelector('#close-detail-panel');
@@ -176,7 +179,7 @@ describe('stats-ui', () => {
     expect(detail.innerHTML).toBe('');
   });
 
-  it('renders kanji and reverse labels and ignores rows without color', () => {
+  it('renders kanji and reverse labels and ignores rows without color', async () => {
     setupDom();
     const history = [
       {
@@ -208,22 +211,22 @@ describe('stats-ui', () => {
       statsState,
       quizState,
       showScreen,
-      loadHistory: () => history,
+      loadHistory: async () => history,
     });
 
-    ui.renderDetailedColorStats('青');
+    await ui.renderDetailedColorStats('青');
     const detail = document.getElementById('color-detail-container');
     expect(detail.innerHTML).toMatch(/漢字/);
     expect(detail.innerHTML).toMatch(/下の句→上の句/);
 
-    ui.renderStatsScreen();
+    await ui.renderStatsScreen();
     const row = document.querySelector('#color-stats-tbody tr');
     row.removeAttribute('data-color');
     row.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(statsState.selectedColor).toBe(null);
   });
 
-  it('renders detail messages when no data exists', () => {
+  it('renders detail messages when no data exists', async () => {
     setupDom();
     const quizState = { allPoems: [], orderMode: 'normal' };
     const statsState = { selectedColor: null, filterMode: 'normal' };
@@ -233,16 +236,16 @@ describe('stats-ui', () => {
       statsState,
       quizState,
       showScreen,
-      loadHistory: () => [],
+      loadHistory: async () => [],
     });
 
-    ui.renderDetailedColorStats('青');
+    await ui.renderDetailedColorStats('青');
     const detail = document.getElementById('color-detail-container');
     expect(detail.innerHTML).toMatch(/まだデータがありません/);
     expect(detail.innerHTML).toMatch(/まだプレイ履歴がありません/);
   });
 
-  it('shows declining trend label', () => {
+  it('shows declining trend label', async () => {
     setupDom();
     const history = [
       { sessionId: 's1', color: '青', questionCount: 10, correctCount: 10, wrongCount: 0, passCount: 0, accuracyRate: 100, hintType: 'shoku', displayMode: 'kana', orderMode: 'normal', timestamp: 1, date: '2024-01-01', answers: [] },
@@ -265,15 +268,15 @@ describe('stats-ui', () => {
       statsState,
       quizState,
       showScreen,
-      loadHistory: () => history,
+      loadHistory: async () => history,
     });
 
-    ui.renderDetailedColorStats('青');
+    await ui.renderDetailedColorStats('青');
     const detail = document.getElementById('color-detail-container');
     expect(detail.innerHTML).toMatch(/下降気味/);
   });
 
-  it('shows improving trend label', () => {
+  it('shows improving trend label', async () => {
     setupDom();
     const history = [
       { sessionId: 's1', color: '青', questionCount: 10, correctCount: 1, wrongCount: 9, passCount: 0, accuracyRate: 10, hintType: 'shoku', displayMode: 'kana', orderMode: 'normal', timestamp: 1, date: '2024-01-01', answers: [] },
@@ -296,15 +299,15 @@ describe('stats-ui', () => {
       statsState,
       quizState,
       showScreen,
-      loadHistory: () => history,
+      loadHistory: async () => history,
     });
 
-    ui.renderDetailedColorStats('青');
+    await ui.renderDetailedColorStats('青');
     const detail = document.getElementById('color-detail-container');
     expect(detail.innerHTML).toMatch(/上昇中/);
   });
 
-  it('renders correct answer mark without hint usage', () => {
+  it('renders correct answer mark without hint usage', async () => {
     setupDom();
     const history = [
       {
@@ -338,12 +341,13 @@ describe('stats-ui', () => {
       statsState,
       quizState,
       showScreen,
-      loadHistory: () => history,
+      loadHistory: async () => history,
     });
 
-    ui.renderDetailedColorStats('青');
+    await ui.renderDetailedColorStats('青');
     const sessionItem = document.querySelector('.session-item');
     sessionItem.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await new Promise(resolve => setTimeout(resolve, 0));
     expect(document.querySelector('.answer-correct')).toBeTruthy();
   });
 });

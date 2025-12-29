@@ -1,5 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+const uploadLocalHistoryToFirestore = vi.fn(async () => 0);
+const initializeFirestore = vi.fn(async () => null);
+
+vi.mock('../docs/js/firestore.js', () => ({
+  uploadLocalHistoryToFirestore,
+  initializeFirestore,
+}));
+
 const buildElements = () => {
   document.body.innerHTML = `
     <div id="app-menu">
@@ -67,6 +75,8 @@ const flushPromises = async () => {
 describe('auth', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    initializeFirestore.mockResolvedValue(null);
+    uploadLocalHistoryToFirestore.mockResolvedValue(0);
   });
 
   it('returns early when auth controls are missing', async () => {
@@ -146,9 +156,10 @@ describe('auth', () => {
     });
 
     const callback = mocks.getAuthStateCallback();
-    const user = { displayName: 'テスト', photoURL: 'https://example.com/a.png' };
+    const user = { displayName: 'テスト', photoURL: 'https://example.com/a.png', uid: '123' };
     mocks.auth.currentUser = user;
-    callback(user);
+    await callback(user);
+    await flushPromises();
 
     expect(elements.authAvatar.classList.contains('hidden')).toBe(false);
     expect(elements.authAvatarFallback.classList.contains('hidden')).toBe(true);
@@ -172,7 +183,8 @@ describe('auth', () => {
     });
 
     const callback = mocks.getAuthStateCallback();
-    callback(null);
+    await callback(null);
+    await flushPromises();
 
     expect(elements.authLogout.classList.contains('hidden')).toBe(true);
     expect(elements.authLogin.classList.contains('hidden')).toBe(false);
@@ -189,7 +201,8 @@ describe('auth', () => {
     });
 
     const callback = mocks.getAuthStateCallback();
-    callback({ displayName: 'テスト', photoURL: '' });
+    await callback({ displayName: 'テスト', photoURL: '', uid: '123' });
+    await flushPromises();
 
     expect(elements.authAvatar.classList.contains('hidden')).toBe(true);
     expect(elements.authAvatarFallback.classList.contains('hidden')).toBe(false);
@@ -229,8 +242,9 @@ describe('auth', () => {
     });
 
     const callback = mocks.getAuthStateCallback();
-    callback({ displayName: 'テスト', photoURL: '' });
-    callback(null);
+    await callback({ displayName: 'テスト', photoURL: '', uid: '123' });
+    await callback(null);
+    await flushPromises();
 
     expect(closeMenu).toHaveBeenCalled();
   });
@@ -247,7 +261,8 @@ describe('auth', () => {
 
     mocks.auth.currentUser = { uid: '1' };
     const callback = mocks.getAuthStateCallback();
-    callback({ displayName: 'テスト', photoURL: '' });
+    await callback({ displayName: 'テスト', photoURL: '', uid: '1' });
+    await flushPromises();
 
     elements.authLogout.click();
     await flushPromises();
@@ -261,7 +276,8 @@ describe('auth', () => {
       loadModules: async () => successMocks,
     });
     successMocks.auth.currentUser = { uid: '1' };
-    successMocks.getAuthStateCallback()({ displayName: 'テスト', photoURL: '' });
+    await successMocks.getAuthStateCallback()({ displayName: 'テスト', photoURL: '', uid: '1' });
+    await flushPromises();
     successElements.authLogout.click();
     await flushPromises();
     expect(successMocks.authModule.signOut).toHaveBeenCalled();
