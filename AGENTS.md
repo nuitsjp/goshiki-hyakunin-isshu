@@ -32,6 +32,7 @@
 ## Testing Guidelines
 - Primary validation is manual. Cover the flows listed in `TODO.md` (CSV load, color selection, no duplicate questions, progress UI, result screen) on mobile, tablet, and desktop breakpoints.
 - If you add JS, create lightweight console-friendly helpers (e.g., `window.debugState()`) and remove them before merging.
+- テスト実行時の標準出力は `tests/setup-console.js` で `console.log`/`console.info` をモックして抑止する。
 - Consider smoke tests via Playwright only if you introduce a toolchain; otherwise keep the stack dependency-free.
 - When running `npm run test:coverage`, ensure **each file's coverage stays at 85% or higher** for:
   - **Statements (% Stmts)**: 85%以上

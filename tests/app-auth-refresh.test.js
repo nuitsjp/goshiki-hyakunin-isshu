@@ -24,12 +24,15 @@ vi.mock('../docs/js/auth.js', () => ({
 }));
 
 vi.mock('../docs/js/stats-ui.js', () => ({
-  createStatsUI: vi.fn(() => ({
-    renderColorSummaries,
-    renderStatsScreen,
-    clearHistoryCache,
-    clearDetailedView,
-  })),
+  createStatsUI: vi.fn(({ showScreen }) => {
+    renderStatsScreen.mockImplementation(() => showScreen('stats'));
+    return {
+      renderColorSummaries,
+      renderStatsScreen,
+      clearHistoryCache,
+      clearDetailedView,
+    };
+  }),
 }));
 
 vi.mock('../docs/js/storage.js', () => ({
@@ -152,6 +155,7 @@ const createMemoryStorage = () => {
 describe('app auth refresh', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.resetModules();
     authStateHandler = null;
     setupDom();
     const storage = createMemoryStorage();
@@ -179,5 +183,21 @@ describe('app auth refresh', () => {
 
     expect(refreshQuizHistory).toHaveBeenCalledTimes(2);
     expect(renderColorSummaries).toHaveBeenCalledTimes(2);
+  });
+
+  it('re-renders stats when auth state changes on stats screen', async () => {
+    await import('../docs/js/app.js');
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    await flushPromises();
+
+    renderStatsScreen();
+
+    expect(document.getElementById('stats-screen').classList.contains('hidden')).toBe(false);
+    expect(renderStatsScreen).toHaveBeenCalledTimes(1);
+
+    await authStateHandler({ user: { uid: 'u1' }, isSignedIn: true });
+    await flushPromises();
+
+    expect(renderStatsScreen).toHaveBeenCalledTimes(2);
   });
 });

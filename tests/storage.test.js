@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   checkLocalStorageAvailable,
   cleanOldHistory,
@@ -10,8 +10,10 @@ import {
   refreshQuizHistory,
   saveQuizSession,
   setCachedQuizHistory,
+  setAuthModule,
 } from '../docs/js/storage.js';
 import { STORAGE_KEYS, STATS_VERSION } from '../docs/js/config.js';
+import * as firestore from '../docs/js/firestore.js';
 
 class MemoryStorage {
   constructor(initial = {}) {
@@ -36,6 +38,10 @@ class MemoryStorage {
 describe('storage', () => {
   beforeEach(() => {
     clearCachedQuizHistory();
+    setAuthModule({ getCurrentUserId: () => null });
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('saveQuizSession stores history and version', async () => {
@@ -92,6 +98,34 @@ describe('storage', () => {
     expect(await loadQuizHistory(storage)).toEqual([]);
   });
 
+  it('loadQuizHistory prefers Firestore when signed in', async () => {
+    const storage = new MemoryStorage({
+      [STORAGE_KEYS.HISTORY]: JSON.stringify([{ timestamp: 1 }]),
+    });
+    setAuthModule({ getCurrentUserId: () => 'user1' });
+    const firestoreSpy = vi.spyOn(firestore, 'loadSessionsFromFirestore').mockResolvedValue([
+      { timestamp: 2 },
+    ]);
+
+    const history = await loadQuizHistory(storage);
+
+    expect(history).toHaveLength(1);
+    expect(firestoreSpy).toHaveBeenCalledWith('user1');
+  });
+
+  it('loadQuizHistory falls back to localStorage when Firestore fails', async () => {
+    const storage = new MemoryStorage({
+      [STORAGE_KEYS.HISTORY]: JSON.stringify([{ timestamp: 3 }]),
+    });
+    setAuthModule({ getCurrentUserId: () => 'user1' });
+    vi.spyOn(firestore, 'loadSessionsFromFirestore').mockRejectedValue(new Error('fail'));
+
+    const history = await loadQuizHistory(storage);
+
+    expect(history).toHaveLength(1);
+    expect(history[0].timestamp).toBe(3);
+  });
+
   it('loadQuizHistory caches results', async () => {
     const storage = new MemoryStorage({
       [STORAGE_KEYS.HISTORY]: JSON.stringify([{ timestamp: Date.now() }]),
@@ -125,6 +159,28 @@ describe('storage', () => {
     const ok = await saveQuizSession({ timestamp: now + 1, questionCount: 1 }, storage);
     expect(ok).toBe(true);
     expect(getCachedQuizHistory()).toHaveLength(2);
+  });
+
+  it('saveQuizSession syncs to Firestore when signed in', async () => {
+    const storage = new MemoryStorage();
+    setAuthModule({ getCurrentUserId: () => 'user1' });
+    const firestoreSpy = vi.spyOn(firestore, 'saveSessionToFirestore').mockResolvedValue(true);
+
+    const ok = await saveQuizSession({ timestamp: Date.now(), questionCount: 1 }, storage);
+
+    expect(ok).toBe(true);
+    expect(firestoreSpy).toHaveBeenCalled();
+  });
+
+  it('saveQuizSession continues when Firestore sync fails', async () => {
+    const storage = new MemoryStorage();
+    setAuthModule({ getCurrentUserId: () => 'user1' });
+    vi.spyOn(firestore, 'saveSessionToFirestore').mockRejectedValue(new Error('fail'));
+
+    const ok = await saveQuizSession({ timestamp: Date.now(), questionCount: 1 }, storage);
+
+    expect(ok).toBe(true);
+    expect(storage.getItem(STORAGE_KEYS.HISTORY)).toBeTruthy();
   });
 
   it('clearAllHistory clears cache when confirmed', async () => {

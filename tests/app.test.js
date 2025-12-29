@@ -97,6 +97,12 @@ const setupAppDom = () => {
       </table>
       <div id="color-detail-container"></div>
     </div>
+    <div id="settings-screen" class="hidden">
+      <button id="close-settings"></button>
+    </div>
+    <button id="menu-button"></button>
+    <div id="menu-panel"></div>
+    <button id="open-settings"></button>
     <div data-color-stats="青"></div>
     <div id="app-version"></div>
     <select id="question-count"></select>
@@ -372,6 +378,68 @@ describe('app', () => {
     giveUp.dispatchEvent(new MouseEvent('click', { bubbles: true }));
   });
 
+  it('returns to quiz screen when closing settings from quiz', async () => {
+    await import('../docs/js/app.js');
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    await flushPromises();
+
+    const questionCount = document.getElementById('question-count');
+    questionCount.value = '1';
+    questionCount.dispatchEvent(new Event('change'));
+
+    document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(document.getElementById('quiz-screen').classList.contains('hidden')).toBe(false);
+
+    document.getElementById('open-settings').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(document.getElementById('settings-screen').classList.contains('hidden')).toBe(false);
+
+    document.getElementById('close-settings').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(document.getElementById('quiz-screen').classList.contains('hidden')).toBe(false);
+  });
+
+  it('refreshes stats summaries after clearing history on stats screen', async () => {
+    const session = {
+      sessionId: 's1',
+      timestamp: 1700000000000,
+      date: '2023-11-14',
+      color: '青',
+      questionCount: 10,
+      correctCount: 8,
+      wrongCount: 2,
+      passCount: 0,
+      accuracyRate: 80,
+      hintType: 'shoku',
+      displayMode: 'kana',
+      orderMode: 'normal',
+      durationMs: 120000,
+      answers: [
+        { kimariji: 'あ', isCorrect: true, usedKami: false, answerTimeMs: 1000 },
+      ],
+    };
+    localStorage.setItem('goshiki_quiz_history', JSON.stringify([session]));
+
+    await import('../docs/js/app.js');
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    await flushPromises();
+    await flushPromises();
+
+    document.getElementById('view-stats').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flushPromises();
+    await flushPromises();
+
+    expect(document.getElementById('stats-screen').classList.contains('hidden')).toBe(false);
+    const statsLabel = document.querySelector('[data-color-stats="青"]');
+    expect(statsLabel.textContent).toMatch(/正答率/);
+
+    document.getElementById('clear-history').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flushPromises();
+    await flushPromises();
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(statsLabel.textContent).toBe('青');
+    expect(document.getElementById('stats-screen').classList.contains('hidden')).toBe(false);
+  });
+
   it('returns to start screen when choosing color from results', async () => {
     await import('../docs/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
@@ -502,6 +570,50 @@ describe('app', () => {
 
     const reverseButton = document.getElementById('order-reverse');
     expect(reverseButton.classList.contains('active')).toBe(true);
+  });
+
+  it('loads persisted top and settings values', async () => {
+    localStorage.setItem('goshiki_question_count', '5');
+    localStorage.setItem('goshiki_measure_time', 'false');
+    localStorage.setItem('goshiki_hint_type', 'kami');
+    localStorage.setItem('goshiki_display_mode', 'kanji');
+
+    await import('../docs/js/app.js');
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    await flushPromises();
+
+    expect(document.getElementById('question-count').value).toBe('5');
+    expect(document.getElementById('measure-time-toggle').checked).toBe(false);
+
+    document.getElementById('open-settings').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(document.getElementById('hint-type').value).toBe('kami');
+    expect(document.getElementById('display-mode').value).toBe('kanji');
+  });
+
+  it('saves settings immediately on change', async () => {
+    await import('../docs/js/app.js');
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    await flushPromises();
+
+    const questionCount = document.getElementById('question-count');
+    questionCount.value = '10';
+    questionCount.dispatchEvent(new Event('change'));
+    expect(localStorage.getItem('goshiki_question_count')).toBe('10');
+
+    const measureToggle = document.getElementById('measure-time-toggle');
+    measureToggle.checked = false;
+    measureToggle.dispatchEvent(new Event('change'));
+    expect(localStorage.getItem('goshiki_measure_time')).toBe('false');
+
+    const hintType = document.getElementById('hint-type');
+    hintType.value = 'kami';
+    hintType.dispatchEvent(new Event('change'));
+    expect(localStorage.getItem('goshiki_hint_type')).toBe('kami');
+
+    const displayMode = document.getElementById('display-mode');
+    displayMode.value = 'kanji';
+    displayMode.dispatchEvent(new Event('change'));
+    expect(localStorage.getItem('goshiki_display_mode')).toBe('kanji');
   });
 
   it('shows stats screen from start', async () => {

@@ -25,6 +25,70 @@ let elapsedTimerId = null;
 let currentScreen = 'start';
 let settingsReturnScreen = 'start';
 
+function readLocalSetting(key, fallback) {
+  try {
+    const value = localStorage.getItem(key);
+    return value === null ? fallback : value;
+  } catch (e) {
+    console.warn(e);
+    return fallback;
+  }
+}
+
+function writeLocalSetting(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch (e) {
+    console.warn(e);
+  }
+}
+
+function applyQuestionCount(value) {
+  if (!elements.questionCount) return;
+
+  if (value === 'weak5') {
+    elements.questionCount.value = 'weak5';
+    quizState.questionLimit = 5;
+    return;
+  }
+
+  const val = parseInt(value, 10);
+  if (Number.isFinite(val) && val >= 1 && val <= 20) {
+    elements.questionCount.value = String(val);
+    quizState.questionLimit = val;
+    return;
+  }
+
+  elements.questionCount.value = '20';
+  quizState.questionLimit = 20;
+}
+
+function loadStartSettings() {
+  if (elements.questionCount) {
+    const savedCount = readLocalSetting(STORAGE_KEYS.QUESTION_COUNT, null);
+    applyQuestionCount(savedCount ?? String(quizState.questionLimit));
+  }
+  if (elements.measureTimeToggle) {
+    const savedMeasure = readLocalSetting(STORAGE_KEYS.MEASURE_TIME, null);
+    elements.measureTimeToggle.checked = savedMeasure === null ? true : savedMeasure !== 'false';
+  }
+}
+
+function loadSettingsValues() {
+  if (elements.hintType) {
+    const savedHint = readLocalSetting(STORAGE_KEYS.HINT_TYPE, null);
+    const hintValue = savedHint === 'kami' ? 'kami' : 'shoku';
+    quizState.hintType = hintValue;
+    elements.hintType.value = hintValue;
+  }
+  if (elements.displayMode) {
+    const savedMode = readLocalSetting(STORAGE_KEYS.DISPLAY_MODE, null);
+    const displayValue = savedMode === 'kanji' ? 'kanji' : 'kana';
+    quizState.displayMode = displayValue;
+    elements.displayMode.value = displayValue;
+  }
+}
+
 function showScreen(screen) {
   Object.values(screens).forEach(node => {
     if (!node) return;
@@ -35,7 +99,11 @@ function showScreen(screen) {
     currentScreen = screen;
   }
   if (screen === 'start') {
+    loadStartSettings();
     updateWeak5Option(null);
+  }
+  if (screen === 'settings') {
+    loadSettingsValues();
   }
 }
 
@@ -625,15 +693,27 @@ function initEventHandlers() {
           elements.questionCount.value = 20;
         }
       }
+      writeLocalSetting(STORAGE_KEYS.QUESTION_COUNT, elements.questionCount.value);
+    });
+  }
+
+  if (elements.measureTimeToggle) {
+    elements.measureTimeToggle.addEventListener('change', () => {
+      writeLocalSetting(STORAGE_KEYS.MEASURE_TIME, String(elements.measureTimeToggle.checked));
+    });
+  }
+
+  if (elements.hintType) {
+    elements.hintType.addEventListener('change', () => {
+      quizState.hintType = elements.hintType.value || 'shoku';
+      writeLocalSetting(STORAGE_KEYS.HINT_TYPE, quizState.hintType);
     });
   }
 
   if (elements.displayMode) {
     elements.displayMode.addEventListener('change', () => {
       quizState.displayMode = elements.displayMode.value || 'kana';
-      try {
-        localStorage.setItem(STORAGE_KEYS.DISPLAY_MODE, quizState.displayMode);
-      } catch (e) { console.warn(e); }
+      writeLocalSetting(STORAGE_KEYS.DISPLAY_MODE, quizState.displayMode);
     });
   }
 
@@ -651,9 +731,7 @@ function initEventHandlers() {
     const setOrderMode = async (mode) => {
       quizState.orderMode = mode;
       updateOrderButtons(mode);
-      try {
-        localStorage.setItem(STORAGE_KEYS.ORDER_MODE, mode);
-      } catch (e) { console.warn(e); }
+      writeLocalSetting(STORAGE_KEYS.ORDER_MODE, mode);
       statsUI.clearHistoryCache();
       await statsUI.renderColorSummaries();
     };
@@ -662,9 +740,7 @@ function initEventHandlers() {
     elements.orderReverse.addEventListener('click', () => setOrderMode('reverse'));
 
     let savedOrder = 'normal';
-    try {
-      savedOrder = localStorage.getItem(STORAGE_KEYS.ORDER_MODE) || 'normal';
-    } catch (e) { console.warn(e); }
+    savedOrder = readLocalSetting(STORAGE_KEYS.ORDER_MODE, 'normal') || 'normal';
     quizState.orderMode = savedOrder;
     updateOrderButtons(savedOrder);
   }
@@ -815,14 +891,8 @@ function init() {
     elements.questionCount.innerHTML = normalOptions + weak5Option;
     elements.questionCount.value = quizState.questionLimit;
   }
-  if (elements.displayMode) {
-    let savedMode = 'kana';
-    try {
-      savedMode = localStorage.getItem(STORAGE_KEYS.DISPLAY_MODE) || 'kana';
-    } catch (e) { console.warn(e); }
-    quizState.displayMode = savedMode;
-    elements.displayMode.value = savedMode;
-  }
+  loadStartSettings();
+  loadSettingsValues();
 
   if (!checkLocalStorageAvailable()) {
     console.warn('Statistics disabled: localStorage not available');

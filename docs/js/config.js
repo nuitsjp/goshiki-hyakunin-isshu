@@ -1,4 +1,4 @@
-export const APP_VERSION = 'v0.1.5';
+export const APP_VERSION = 'v0.1.6';
 export const CSV_URL = new URL('data/hyakunin_isshu_with_ruby.csv', window.location.href).toString();
 export const CSV_FALLBACK_URL = 'https://nuitsjp.github.io/goshiki-hyakunin-isshu/data/hyakunin_isshu_with_ruby.csv';
 export const colorAccentMap = {
@@ -15,7 +15,10 @@ export const STORAGE_KEYS = {
   HISTORY: 'goshiki_quiz_history',
   VERSION: 'goshiki_stats_version',
   DISPLAY_MODE: 'goshiki_display_mode',
-  ORDER_MODE: 'goshiki_order_mode'
+  ORDER_MODE: 'goshiki_order_mode',
+  QUESTION_COUNT: 'goshiki_question_count',
+  MEASURE_TIME: 'goshiki_measure_time',
+  HINT_TYPE: 'goshiki_hint_type',
 };
 export const STATS_VERSION = '1.0.0';
 export const MAX_HISTORY_ENTRIES = 1000;

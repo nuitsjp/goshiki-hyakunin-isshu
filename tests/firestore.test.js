@@ -252,4 +252,98 @@ describe('firestore', () => {
     const db = getFirestoreDb();
     expect(db).toBe(mockDb);
   });
+
+  it('returns null when Firestore initialization throws', async () => {
+    vi.doMock('https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js', () => mockAppModule);
+    vi.doMock('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js', () => {
+      throw new Error('load failed');
+    });
+
+    const { initializeFirestore } = await import('../docs/js/firestore.js');
+    const result = await initializeFirestore({});
+
+    expect(result).toBeNull();
+  });
+
+  it('returns false when Firestore save fails', async () => {
+    vi.doMock('https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js', () => mockAppModule);
+    vi.doMock('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js', () => mockFirestoreModule);
+
+    mockFirestoreModule.initializeFirestore.mockReturnValue({});
+    mockFirestoreModule.setDoc.mockRejectedValue(new Error('fail'));
+
+    const { initializeFirestore, saveSessionToFirestore, loadFirestoreModules } = await import('../docs/js/firestore.js');
+
+    await loadFirestoreModules();
+    const app = mockAppModule.initializeApp();
+    await initializeFirestore(app);
+
+    const result = await saveSessionToFirestore('user123', { sessionId: 's1', timestamp: 1 });
+
+    expect(result).toBe(false);
+  });
+
+  it('returns empty array when Firestore load fails', async () => {
+    vi.doMock('https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js', () => mockAppModule);
+    vi.doMock('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js', () => mockFirestoreModule);
+
+    mockFirestoreModule.initializeFirestore.mockReturnValue({});
+    mockFirestoreModule.getDocs.mockRejectedValue(new Error('fail'));
+
+    const { initializeFirestore, loadSessionsFromFirestore, loadFirestoreModules } = await import('../docs/js/firestore.js');
+
+    await loadFirestoreModules();
+    const app = mockAppModule.initializeApp();
+    await initializeFirestore(app);
+
+    const result = await loadSessionsFromFirestore('user123');
+
+    expect(result).toEqual([]);
+  });
+
+  it('returns false when Firestore delete fails', async () => {
+    vi.doMock('https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js', () => mockAppModule);
+    vi.doMock('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js', () => mockFirestoreModule);
+
+    const mockBatch = {
+      delete: vi.fn(),
+      commit: vi.fn(() => {
+        throw new Error('fail');
+      }),
+    };
+
+    mockFirestoreModule.initializeFirestore.mockReturnValue({});
+    mockFirestoreModule.writeBatch.mockReturnValue(mockBatch);
+    mockFirestoreModule.getDocs.mockResolvedValue({
+      docs: [{ ref: 'ref1' }],
+    });
+
+    const { initializeFirestore, deleteAllSessionsFromFirestore, loadFirestoreModules } = await import('../docs/js/firestore.js');
+
+    await loadFirestoreModules();
+    const app = mockAppModule.initializeApp();
+    await initializeFirestore(app);
+
+    const result = await deleteAllSessionsFromFirestore('user123');
+
+    expect(result).toBe(false);
+  });
+
+  it('returns 0 when Firestore upload fails', async () => {
+    vi.doMock('https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js', () => mockAppModule);
+    vi.doMock('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js', () => mockFirestoreModule);
+
+    mockFirestoreModule.initializeFirestore.mockReturnValue({});
+    mockFirestoreModule.getDocs.mockRejectedValue(new Error('fail'));
+
+    const { initializeFirestore, uploadLocalHistoryToFirestore, loadFirestoreModules } = await import('../docs/js/firestore.js');
+
+    await loadFirestoreModules();
+    const app = mockAppModule.initializeApp();
+    await initializeFirestore(app);
+
+    const result = await uploadLocalHistoryToFirestore('user123', [{ sessionId: 's1', timestamp: 1 }]);
+
+    expect(result).toBe(0);
+  });
 });

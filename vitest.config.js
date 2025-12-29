@@ -8,7 +8,8 @@ module.exports = defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],
-      reportsDirectory: "coverage"
+      reportsDirectory: "coverage",
+      exclude: ["docs/js/debug.js"]
     }
   }
 });
