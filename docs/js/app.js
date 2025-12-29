@@ -243,8 +243,9 @@
 
     // Initialize kimariji map
     colorPoems.forEach(poem => {
-      if (poem.kimariji && !kimarijiMap.has(poem.kimariji)) {
-        kimarijiMap.set(poem.kimariji, { correct: 0, total: 0 });
+      const kimariji = poem.kimarijiShort || poem.kimarijiLong || '決まり字なし';
+      if (kimariji && !kimarijiMap.has(kimariji)) {
+        kimarijiMap.set(kimariji, { correct: 0, total: 0 });
       }
     });
 
@@ -417,7 +418,7 @@
       if (stats.totalQuizzes === 0) {
         statsElement.textContent = stats.color;
       } else {
-        statsElement.textContent = `${stats.color}（${stats.totalQuizzes}回／正答率${stats.accuracyRate}%）`;
+        statsElement.innerHTML = `${stats.color}<span class="color-btn-stats">（${stats.totalQuizzes}回／正答率${stats.accuracyRate}%）</span>`;
       }
     });
   }
@@ -739,6 +740,9 @@
     if (screens[screen]) {
       screens[screen].classList.remove('hidden');
     }
+    if (screen === 'start') {
+      updateWeak5Option(null);
+    }
   }
 
   function setAccentColor(color) {
@@ -793,6 +797,64 @@
       hint: poem.hint,
       options: generateOptions(poem, poemsByColor),
     }));
+  }
+
+  function buildWeakQuestions(color) {
+    const kimarijiPerf = calculateKimarijiPerformance(color);
+    const weakKimarijis = kimarijiPerf.filter(k => k.total > 0).slice(0, 5);
+
+    if (weakKimarijis.length === 0) {
+      throw new Error('苦手な決まり字のデータがありません。');
+    }
+
+    const poemsByColor = quizState.allPoems.filter(poem => poem.color === color);
+    const selectedPoems = [];
+
+    weakKimarijis.forEach(kimarijiStat => {
+      const poem = poemsByColor.find(p => {
+        const poemKimariji = p.kimarijiShort || p.kimarijiLong || '決まり字なし';
+        return poemKimariji === kimarijiStat.kimariji;
+      });
+      if (poem) {
+        selectedPoems.push(poem);
+      }
+    });
+
+    if (selectedPoems.length === 0) {
+      throw new Error('対応する歌が見つかりませんでした。');
+    }
+
+    return selectedPoems.map(poem => ({
+      kimariji: poem.kimarijiShort || poem.kimarijiLong || '決まり字なし',
+      correctShimo: poem.shimoNoKu,
+      correctShimoReading: poem.shimoReading,
+      kamiNoKu: poem.kamiNoKu,
+      kamiReading: poem.kamiReading,
+      hint: poem.hint,
+      options: generateOptions(poem, poemsByColor),
+    }));
+  }
+
+  function canUseWeak5(color) {
+    const kimarijiPerf = calculateKimarijiPerformance(color);
+    return kimarijiPerf.filter(k => k.total > 0).length >= 5;
+  }
+
+  function updateWeak5Option(color) {
+    if (!elements.questionCount) return;
+
+    const weak5Option = elements.questionCount.querySelector('option[value="weak5"]');
+    if (!weak5Option) return;
+
+    if (color && canUseWeak5(color)) {
+      weak5Option.disabled = false;
+    } else {
+      weak5Option.disabled = true;
+      if (elements.questionCount.value === 'weak5') {
+        elements.questionCount.value = '20';
+        quizState.questionLimit = 20;
+      }
+    }
   }
 
   function resetOptionButtons() {
@@ -1138,10 +1200,19 @@
       clearAdvanceTimer();
       quizState.showKami = false;
       quizState.selectedColor = color;
+
+      let isWeak5Mode = false;
       if (elements.questionCount) {
-        const val = parseInt(elements.questionCount.value, 10);
-        quizState.questionLimit = Number.isFinite(val) ? val : 20;
+        const selectedValue = elements.questionCount.value;
+        if (selectedValue === 'weak5') {
+          isWeak5Mode = true;
+          quizState.questionLimit = 5;
+        } else {
+          const val = parseInt(selectedValue, 10);
+          quizState.questionLimit = Number.isFinite(val) ? val : 20;
+        }
       }
+
       if (elements.hintType) {
         quizState.hintType = elements.hintType.value || 'shoku';
       }
@@ -1149,7 +1220,13 @@
         quizState.displayMode = elements.displayMode.value || 'kana';
       }
       // orderMode is already set by click handlers
-      quizState.currentQuestions = buildQuestions(color);
+
+      if (isWeak5Mode) {
+        quizState.currentQuestions = buildWeakQuestions(color);
+      } else {
+        quizState.currentQuestions = buildQuestions(color);
+      }
+
       quizState.currentIndex = 0;
       quizState.correctCount = 0;
       quizState.answers = [];
@@ -1263,16 +1340,23 @@
   function initEventHandlers() {
     elements.colorButtons.forEach(btn => {
       btn.addEventListener('click', () => handleChooseColor(btn.dataset.color));
+      btn.addEventListener('mouseenter', () => updateWeak5Option(btn.dataset.color));
+      btn.addEventListener('focus', () => updateWeak5Option(btn.dataset.color));
     });
 
     if (elements.questionCount) {
       elements.questionCount.addEventListener('change', () => {
-        const val = parseInt(elements.questionCount.value, 10);
-        if (Number.isFinite(val) && val >= 1 && val <= 20) {
-          quizState.questionLimit = val;
+        const selectedValue = elements.questionCount.value;
+        if (selectedValue === 'weak5') {
+          quizState.questionLimit = 5;
         } else {
-          quizState.questionLimit = 20;
-          elements.questionCount.value = 20;
+          const val = parseInt(selectedValue, 10);
+          if (Number.isFinite(val) && val >= 1 && val <= 20) {
+            quizState.questionLimit = val;
+          } else {
+            quizState.questionLimit = 20;
+            elements.questionCount.value = 20;
+          }
         }
       });
     }
@@ -1388,10 +1472,12 @@
       elements.version.textContent = APP_VERSION;
     }
     if (elements.questionCount) {
-      elements.questionCount.innerHTML = Array.from({ length: 20 }, (_, idx) => {
+      const normalOptions = Array.from({ length: 20 }, (_, idx) => {
         const val = idx + 1;
         return `<option value="${val}" ${val === quizState.questionLimit ? 'selected' : ''}>${val} 問</option>`;
       }).join('');
+      const weak5Option = '<option value="weak5" disabled>苦手5種</option>';
+      elements.questionCount.innerHTML = normalOptions + weak5Option;
       elements.questionCount.value = quizState.questionLimit;
     }
     if (elements.displayMode) {

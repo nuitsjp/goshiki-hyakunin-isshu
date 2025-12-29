@@ -360,6 +360,7 @@ h6,
     font-size: 1.7rem;
   }
 }
+
 /* Toggle Buttons (Settings) */
 .btn-toggle {
   background: transparent;
@@ -481,6 +482,13 @@ h6,
   font-weight: 600;
 }
 
+.color-btn-stats {
+  font-size: 0.85rem;
+  font-weight: 400;
+  margin-left: 0.1rem;
+  opacity: 0.9;
+}
+
 /* Auto Advance Progress Bar */
 .auto-advance-progress {
   height: 4px;
@@ -506,6 +514,7 @@ h6,
   from {
     width: 0%;
   }
+
   to {
     width: 100%;
   }
@@ -543,6 +552,7 @@ h6,
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
