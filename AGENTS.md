@@ -29,6 +29,7 @@
 - Primary validation is manual. Cover the flows listed in `TODO.md` (CSV load, color selection, no duplicate questions, progress UI, result screen) on mobile, tablet, and desktop breakpoints.
 - If you add JS, create lightweight console-friendly helpers (e.g., `window.debugState()`) and remove them before merging.
 - Consider smoke tests via Playwright only if you introduce a toolchain; otherwise keep the stack dependency-free.
+- When running `npm run test:coverage`, ensure each file's branch coverage stays at 85% or higher.
 
 ## Commit & Pull Request Practices
 - Use concise, present-tense commit messages; prefer prefixes like `feat:`, `fix:`, `style:`, `docs:`, `chore:` to mirror the TODO sections.

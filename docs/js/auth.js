@@ -6,21 +6,34 @@ const normalizeAuthConfig = () => {
   return FIREBASE_CONFIG;
 };
 
-const setAuthStatus = (elements, { statusText, userText, isSignedIn }) => {
-  if (elements.authStatus) {
-    elements.authStatus.textContent = statusText;
-    elements.authStatus.classList.toggle('is-signed-in', Boolean(isSignedIn));
+const setAuthStatus = (elements, { isSignedIn, photoUrl, userText }) => {
+  if (elements.authAvatar && elements.authAvatarFallback) {
+    if (photoUrl) {
+      elements.authAvatar.src = photoUrl;
+      elements.authAvatar.alt = 'ログイン中のアカウント';
+      elements.authAvatar.classList.remove('hidden');
+      elements.authAvatarFallback.classList.add('hidden');
+    } else {
+      elements.authAvatar.src = '';
+      elements.authAvatar.alt = '';
+      elements.authAvatar.classList.add('hidden');
+      elements.authAvatarFallback.classList.remove('hidden');
+    }
   }
-  if (elements.authUser) {
-    elements.authUser.textContent = userText;
+  if (elements.authButton) {
+    elements.authButton.setAttribute(
+      'aria-label',
+      isSignedIn ? 'アカウントメニューを開く' : 'Googleでログイン'
+    );
+    elements.authButton.disabled = false;
+    elements.authButton.setAttribute('aria-expanded', 'false');
   }
-  if (elements.authSignIn) {
-    elements.authSignIn.classList.toggle('hidden', Boolean(isSignedIn));
-    elements.authSignIn.disabled = false;
+  if (elements.authLogout) {
+    elements.authLogout.classList.toggle('hidden', !isSignedIn);
+    elements.authLogout.disabled = false;
   }
-  if (elements.authSignOut) {
-    elements.authSignOut.classList.toggle('hidden', !isSignedIn);
-    elements.authSignOut.disabled = false;
+  if (elements.authMenu && !isSignedIn) {
+    elements.authMenu.classList.add('hidden');
   }
 };
 
@@ -36,7 +49,13 @@ const resolveProvider = (authModule) => {
   return null;
 };
 
-export const initAuthUI = async ({ elements }) => {
+const loadFirebaseModules = async () => {
+  const appModule = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js');
+  const authModule = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js');
+  return { appModule, authModule };
+};
+
+export const initAuthUI = async ({ elements, loadModules = loadFirebaseModules } = {}) => {
   if (!elements || !elements.authSection) return;
 
   const firebaseConfig = normalizeAuthConfig();
@@ -47,73 +66,105 @@ export const initAuthUI = async ({ elements }) => {
 
   elements.authSection.classList.remove('hidden');
   setAuthStatus(elements, {
-    statusText: '未ログイン',
-    userText: 'ゲスト',
     isSignedIn: false,
+    photoUrl: '',
+    userText: 'ゲスト',
   });
 
   try {
-    const appModule = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js');
-    const authModule = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js');
+    const { appModule, authModule } = await loadModules();
 
     const app = appModule.initializeApp(firebaseConfig);
     const auth = authModule.getAuth(app);
     const provider = resolveProvider(authModule);
+    const closeMenu = () => {
+      if (elements.authMenu) elements.authMenu.classList.add('hidden');
+      if (elements.authButton) elements.authButton.setAttribute('aria-expanded', 'false');
+    };
+    const toggleMenu = () => {
+      if (!elements.authMenu) return;
+      const isOpen = !elements.authMenu.classList.contains('hidden');
+      elements.authMenu.classList.toggle('hidden', isOpen);
+      if (elements.authButton) {
+        elements.authButton.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+      }
+    };
 
     if (!provider) {
       setAuthMessage(elements, '未対応のログイン方式です。');
-      if (elements.authSignIn) elements.authSignIn.disabled = true;
+      if (elements.authButton) elements.authButton.disabled = true;
       return;
     }
 
     authModule.onAuthStateChanged(auth, (user) => {
       if (user) {
-        const name = user.displayName || user.email || 'ユーザー';
         setAuthStatus(elements, {
-          statusText: 'ログイン中',
-          userText: name,
           isSignedIn: true,
+          photoUrl: user.photoURL || '',
+          userText: user.displayName || user.email || 'ユーザー',
         });
+        closeMenu();
         setAuthMessage(elements, '');
         return;
       }
       setAuthStatus(elements, {
-        statusText: '未ログイン',
-        userText: 'ゲスト',
         isSignedIn: false,
+        photoUrl: '',
+        userText: 'ゲスト',
       });
+      closeMenu();
     });
 
-    if (elements.authSignIn) {
-      elements.authSignIn.addEventListener('click', async () => {
-        elements.authSignIn.disabled = true;
-        setAuthMessage(elements, '');
-        try {
-          await authModule.signInWithPopup(auth, provider);
-        } catch (error) {
-          console.error(error);
-          setAuthMessage(elements, 'ログインに失敗しました。もう一度お試しください。');
-          elements.authSignIn.disabled = false;
+    if (elements.authButton) {
+      elements.authButton.addEventListener('click', async () => {
+        if (!auth.currentUser) {
+          elements.authButton.disabled = true;
+          setAuthMessage(elements, '');
+          try {
+            await authModule.signInWithPopup(auth, provider);
+          } catch (error) {
+            console.error(error);
+            setAuthMessage(elements, 'ログインに失敗しました。もう一度お試しください。');
+          } finally {
+            elements.authButton.disabled = false;
+          }
+          return;
         }
+        toggleMenu();
       });
     }
-
-    if (elements.authSignOut) {
-      elements.authSignOut.addEventListener('click', async () => {
-        elements.authSignOut.disabled = true;
+    if (elements.authLogout) {
+      elements.authLogout.addEventListener('click', async () => {
+        elements.authLogout.disabled = true;
         setAuthMessage(elements, '');
+        closeMenu();
         try {
           await authModule.signOut(auth);
         } catch (error) {
           console.error(error);
           setAuthMessage(elements, 'ログアウトに失敗しました。');
-          elements.authSignOut.disabled = false;
+          elements.authLogout.disabled = false;
         }
       });
     }
+
+    document.addEventListener('click', (event) => {
+      if (!elements.authMenu || !elements.authButton) return;
+      const target = event.target;
+      if (!target) return;
+      const isInside = elements.authMenu.contains(target) || elements.authButton.contains(target);
+      if (!isInside) closeMenu();
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        closeMenu();
+      }
+    });
   } catch (error) {
     console.error(error);
     setAuthMessage(elements, '認証の初期化に失敗しました。');
-    if (elements.authSignIn) elements.authSignIn.disabled = true;
+    if (elements.authButton) elements.authButton.disabled = true;
+    if (elements.authLogout) elements.authLogout.disabled = true;
   }
 };
