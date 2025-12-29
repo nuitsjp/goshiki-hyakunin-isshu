@@ -14,6 +14,7 @@ export const quizState = {
   sessionStartTime: 0,
   questionStartTime: 0,
   sessionEndTime: null,
+  measureTime: true,
 };
 
 export const statsState = {

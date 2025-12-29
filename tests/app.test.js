@@ -111,6 +111,7 @@ const setupAppDom = () => {
     <button id="order-normal" class="active"></button>
     <button id="order-reverse"></button>
     <button class="color-button" data-color="青"></button>
+    <input type="checkbox" id="measure-time-toggle" checked>
     <button id="view-stats"></button>
   `;
 };
@@ -234,6 +235,38 @@ describe('app', () => {
     now = 8000;
     vi.advanceTimersByTime(1000);
     expect(document.getElementById('elapsed-time').textContent).toBe('0:05');
+
+    nowSpy.mockRestore();
+  });
+
+  it('does not measure time when measure toggle is off', async () => {
+    vi.useFakeTimers();
+    const nowSpy = vi.spyOn(performance, 'now');
+    let now = 0;
+    nowSpy.mockImplementation(() => now);
+
+    await import('../docs/js/app.js');
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    await flushPromises();
+
+    document.getElementById('measure-time-toggle').checked = false;
+    const questionCount = document.getElementById('question-count');
+    questionCount.value = '1';
+    questionCount.dispatchEvent(new Event('change'));
+
+    document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(document.getElementById('elapsed-time').classList.contains('hidden')).toBe(true);
+
+    now = 3000;
+    vi.advanceTimersByTime(1000);
+    expect(document.getElementById('elapsed-time').textContent).toBe('0:00');
+
+    const optionButtons = Array.from(document.querySelectorAll('.option-button'));
+    const correctButton = optionButtons.find(btn => btn.dataset.correct === 'true');
+    correctButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    const { quizState } = await import('../docs/js/state.js');
+    expect(quizState.answers[0].answerTimeMs).toBe(null);
 
     nowSpy.mockRestore();
   });

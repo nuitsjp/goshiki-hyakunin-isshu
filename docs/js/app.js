@@ -124,13 +124,18 @@ function clearElapsedTimer() {
 }
 
 function updateElapsedTime() {
-  if (!elements.elapsedTime) return;
+  if (!elements.elapsedTime || !quizState.measureTime) return;
   const elapsedMs = Math.max(0, Math.round(performance.now() - quizState.sessionStartTime));
   elements.elapsedTime.textContent = formatDurationMs(elapsedMs);
 }
 
-function startElapsedTimer() {
+function setElapsedVisibility(isVisible) {
   if (!elements.elapsedTime) return;
+  elements.elapsedTime.classList.toggle('hidden', !isVisible);
+}
+
+function startElapsedTimer() {
+  if (!elements.elapsedTime || !quizState.measureTime) return;
   clearElapsedTimer();
   updateElapsedTime();
   elapsedTimerId = setInterval(() => {
@@ -139,6 +144,7 @@ function startElapsedTimer() {
 }
 
 function finalizeSessionTiming() {
+  if (!quizState.measureTime) return;
   quizState.sessionEndTime = performance.now();
   updateElapsedTime();
   clearElapsedTimer();
@@ -176,6 +182,7 @@ function resetQuizView() {
   quizState.showKami = false;
   quizState.selectedColor = '';
   quizState.sessionEndTime = null;
+  quizState.measureTime = true;
   elements.feedback.textContent = '';
   elements.feedback.style.color = 'var(--color-text)';
   elements.kimariji.textContent = '---';
@@ -188,6 +195,7 @@ function resetQuizView() {
   if (elements.elapsedTime) {
     elements.elapsedTime.textContent = formatDurationMs(0);
   }
+  setElapsedVisibility(true);
   if (elements.nextQuestion) {
     elements.nextQuestion.disabled = true;
     elements.nextQuestion.textContent = '次へ';
@@ -284,7 +292,7 @@ function renderQuestion() {
 
   quizState.isAnswered = false;
   quizState.showKami = false;
-  quizState.questionStartTime = performance.now();
+  quizState.questionStartTime = quizState.measureTime ? performance.now() : null;
   hideAutoAdvanceProgress();
   renderKimariji(question);
 
@@ -319,7 +327,9 @@ function handleAnswer(event) {
   if (!question) return;
 
   const isCorrect = btn.dataset.correct === 'true';
-  const answerTimeMs = Math.round(performance.now() - quizState.questionStartTime);
+  const answerTimeMs = quizState.measureTime
+    ? Math.round(performance.now() - quizState.questionStartTime)
+    : null;
   quizState.answers.push({
     kimariji: question.kimariji,
     kamiNoKu: question.kamiNoKu,
@@ -332,7 +342,7 @@ function handleAnswer(event) {
     answerTimeMs,
   });
   quizState.isAnswered = true;
-  if (quizState.currentIndex + 1 >= quizState.currentQuestions.length) {
+  if (quizState.measureTime && quizState.currentIndex + 1 >= quizState.currentQuestions.length) {
     finalizeSessionTiming();
   }
   if (elements.giveUp) elements.giveUp.disabled = true;
@@ -426,7 +436,9 @@ async function showResults() {
   const endTime = Number.isFinite(quizState.sessionEndTime)
     ? quizState.sessionEndTime
     : performance.now();
-  const durationMs = Math.round(endTime - quizState.sessionStartTime);
+  const durationMs = quizState.measureTime
+    ? Math.round(endTime - quizState.sessionStartTime)
+    : null;
 
   const sessionData = {
     sessionId: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -522,8 +534,13 @@ async function startQuiz(color) {
     quizState.currentIndex = 0;
     quizState.correctCount = 0;
     quizState.answers = [];
-    quizState.sessionStartTime = performance.now();
+    quizState.measureTime = elements.measureTimeToggle ? elements.measureTimeToggle.checked : true;
+    quizState.sessionStartTime = quizState.measureTime ? performance.now() : 0;
     quizState.sessionEndTime = null;
+    if (elements.elapsedTime && !quizState.measureTime) {
+      elements.elapsedTime.textContent = formatDurationMs(0);
+    }
+    setElapsedVisibility(quizState.measureTime);
     startElapsedTimer();
     elements.selectedColorLabel.textContent = `${color}の歌`;
     setAccentColor(color);
@@ -548,7 +565,9 @@ function handleGiveUp() {
   const question = quizState.currentQuestions[quizState.currentIndex];
   if (!question) return;
 
-  const answerTimeMs = Math.round(performance.now() - quizState.questionStartTime);
+  const answerTimeMs = quizState.measureTime
+    ? Math.round(performance.now() - quizState.questionStartTime)
+    : null;
   quizState.answers.push({
     kimariji: question.kimariji,
     kamiNoKu: question.kamiNoKu,
@@ -561,7 +580,10 @@ function handleGiveUp() {
     answerTimeMs,
   });
   quizState.isAnswered = true;
-  if (quizState.currentIndex + 1 >= quizState.currentQuestions.length) {
+  if (quizState.measureTime && quizState.currentIndex + 1 >= quizState.currentQuestions.length) {
+    finalizeSessionTiming();
+  }
+  if (quizState.measureTime && quizState.currentIndex + 1 >= quizState.currentQuestions.length) {
     finalizeSessionTiming();
   }
 
