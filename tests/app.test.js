@@ -78,6 +78,7 @@ const setupAppDom = () => {
       <div id="result-comment"></div>
       <div id="result-list"></div>
       <button id="retry-same"></button>
+      <button id="retry-incorrect"></button>
       <button id="choose-color"></button>
       <button id="view-stats-from-result"></button>
     </div>
@@ -709,5 +710,93 @@ describe('app', () => {
     ];
     document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(window.alert).toHaveBeenCalled();
+  });
+
+  it('shows retry-incorrect button when there are incorrect answers', async () => {
+    vi.useFakeTimers();
+    await import('../docs/js/app.js');
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    await flushPromises();
+
+    const questionCount = document.getElementById('question-count');
+    questionCount.value = '2';
+    questionCount.dispatchEvent(new Event('change'));
+
+    document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    const optionButtons = Array.from(document.querySelectorAll('.option-button'));
+    const wrongButton = optionButtons.find(btn => btn.dataset.correct === 'false');
+    wrongButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    const nextButton = document.getElementById('next-question');
+    nextButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    const correctButton = optionButtons.find(btn => btn.dataset.correct === 'true');
+    correctButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    vi.runAllTimers();
+    await flushPromises();
+
+    const retryIncorrectButton = document.getElementById('retry-incorrect');
+    expect(retryIncorrectButton.classList.contains('hidden')).toBe(false);
+  });
+
+  it('hides retry-incorrect button when all answers are correct', async () => {
+    vi.useFakeTimers();
+    await import('../docs/js/app.js');
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    await flushPromises();
+
+    const questionCount = document.getElementById('question-count');
+    questionCount.value = '1';
+    questionCount.dispatchEvent(new Event('change'));
+
+    document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    const optionButtons = Array.from(document.querySelectorAll('.option-button'));
+    const correctButton = optionButtons.find(btn => btn.dataset.correct === 'true');
+    correctButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    vi.runAllTimers();
+    await flushPromises();
+
+    const retryIncorrectButton = document.getElementById('retry-incorrect');
+    expect(retryIncorrectButton.classList.contains('hidden')).toBe(true);
+  });
+
+  it('starts quiz with incorrect poems when retry-incorrect is clicked', async () => {
+    vi.useFakeTimers();
+    await import('../docs/js/app.js');
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    await flushPromises();
+
+    const questionCount = document.getElementById('question-count');
+    questionCount.value = '2';
+    questionCount.dispatchEvent(new Event('change'));
+
+    document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    const optionButtons = Array.from(document.querySelectorAll('.option-button'));
+    const wrongButton = optionButtons.find(btn => btn.dataset.correct === 'false');
+    wrongButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    const nextButton = document.getElementById('next-question');
+    nextButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    const correctButton = optionButtons.find(btn => btn.dataset.correct === 'true');
+    correctButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    vi.runAllTimers();
+    await flushPromises();
+
+    const retryIncorrectButton = document.getElementById('retry-incorrect');
+    retryIncorrectButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flushPromises();
+
+    const quizScreen = document.getElementById('quiz-screen');
+    expect(quizScreen.classList.contains('hidden')).toBe(false);
+
+    const { quizState } = await import('../docs/js/state.js');
+    expect(quizState.currentQuestions.length).toBe(1);
   });
 });
