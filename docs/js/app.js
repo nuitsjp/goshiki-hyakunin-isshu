@@ -67,6 +67,8 @@
     overallHintUsage: document.getElementById('overall-hint-usage'),
     colorStatsBody: document.getElementById('color-stats-tbody'),
     recentActivity: document.getElementById('recent-activity'),
+    statsFilterNormal: document.getElementById('stats-filter-normal'),
+    statsFilterReverse: document.getElementById('stats-filter-reverse'),
   };
 
   const quizState = {
@@ -86,6 +88,7 @@
 
   const statsState = {
     selectedColor: null, // null=全体表示, 色名=その色の詳細表示中
+    filterMode: 'normal', // 'normal', 'reverse'
   };
 
   let advanceTimerId = null;
@@ -172,9 +175,14 @@
 
   // ==================== Statistics Calculation Functions ====================
 
-  function calculateColorStats(color) {
+  function calculateColorStats(color, orderMode = null) {
     const history = loadQuizHistory();
-    const colorSessions = history.filter(s => s.color === color);
+    let colorSessions = history.filter(s => s.color === color);
+
+    // Filter by orderMode if specified
+    if (orderMode !== null) {
+      colorSessions = colorSessions.filter(s => s.orderMode === orderMode);
+    }
 
     if (colorSessions.length === 0) {
       return {
@@ -226,9 +234,9 @@
     };
   }
 
-  function calculateAllColorStats() {
+  function calculateAllColorStats(orderMode = null) {
     const colors = ['青', 'ピンク', '黄', '緑', 'オレンジ'];
-    return colors.map(color => calculateColorStats(color));
+    return colors.map(color => calculateColorStats(color, orderMode));
   }
 
   // ==================== Detailed Color Stats Functions ====================
@@ -356,8 +364,13 @@
     };
   }
 
-  function calculateOverallStats() {
-    const history = loadQuizHistory();
+  function calculateOverallStats(orderMode = null) {
+    let history = loadQuizHistory();
+
+    // Filter by orderMode if specified
+    if (orderMode !== null) {
+      history = history.filter(s => s.orderMode === orderMode);
+    }
 
     if (history.length === 0) {
       return {
@@ -409,7 +422,8 @@
   // ==================== UI Rendering Functions ====================
 
   function renderColorSummaries() {
-    const allStats = calculateAllColorStats();
+    // Use current orderMode from quizState
+    const allStats = calculateAllColorStats(quizState.orderMode);
 
     allStats.forEach(stats => {
       const statsElement = document.querySelector(`[data-color-stats="${stats.color}"]`);
@@ -423,9 +437,24 @@
     });
   }
 
-  function renderStatsScreen() {
-    const overall = calculateOverallStats();
-    const colorStats = calculateAllColorStats();
+  function renderStatsScreen(syncWithQuizState = false) {
+    // Only sync filter mode with quizState.orderMode when explicitly requested
+    // (e.g., when first opening stats screen from start screen)
+    if (syncWithQuizState) {
+      statsState.filterMode = quizState.orderMode;
+    }
+
+    // Update filter button states
+    if (elements.statsFilterNormal && elements.statsFilterReverse) {
+      elements.statsFilterNormal.classList.toggle('active', statsState.filterMode === 'normal');
+      elements.statsFilterReverse.classList.toggle('active', statsState.filterMode === 'reverse');
+    }
+
+    // Use filterMode as orderMode filter
+    const orderModeFilter = statsState.filterMode;
+
+    const overall = calculateOverallStats(orderModeFilter);
+    const colorStats = calculateAllColorStats(orderModeFilter);
     const history = loadQuizHistory();
 
     if (elements.totalQuizzes) elements.totalQuizzes.textContent = overall.totalQuizzes;
@@ -488,7 +517,13 @@
 
     const recentActivity = elements.recentActivity;
     if (recentActivity) {
-      const recent = history.slice(-10).reverse();
+      // Filter history based on orderModeFilter
+      let filteredHistory = history;
+      if (orderModeFilter !== null) {
+        filteredHistory = history.filter(s => s.orderMode === orderModeFilter);
+      }
+
+      const recent = filteredHistory.slice(-10).reverse();
 
       if (recent.length === 0) {
         recentActivity.innerHTML = '<p class="text-muted text-center">まだプレイ履歴がありません</p>';
@@ -1077,13 +1112,13 @@
       elements.feedback.textContent = '正解！';
       elements.feedback.style.color = 'var(--color-correct)';
 
-      // 正答時は1秒後に自動遷移
+      // 正答時は0.75秒後に自動遷移
       quizState.showKami = true;
       renderKimariji(question);
       showAutoAdvanceProgress();
       advanceTimerId = setTimeout(() => {
         goToNext();
-      }, 1000);
+      }, 750);
     } else {
       btn.classList.add('btn-danger');
       let correctText = '';
@@ -1192,6 +1227,7 @@
 
   function cancelQuiz() {
     resetQuizView();
+    renderColorSummaries();  // 統計を更新してからスタート画面へ
     showScreen('start');
   }
 
@@ -1387,6 +1423,8 @@
         try {
           localStorage.setItem('goshiki_order_mode', mode);
         } catch (e) { console.warn(e); }
+        // Update color summaries when order mode changes
+        renderColorSummaries();
       };
 
       elements.orderNormal.addEventListener('click', () => setOrderMode('normal'));
@@ -1428,6 +1466,7 @@
 
     elements.retrySame.addEventListener('click', () => {
       if (!quizState.selectedColor) {
+        renderColorSummaries();  // フォールバック時に統計を更新
         showScreen('start');
         return;
       }
@@ -1436,23 +1475,25 @@
 
     elements.chooseColor.addEventListener('click', () => {
       resetQuizView();
+      renderColorSummaries();
       showScreen('start');
     });
 
     if (elements.viewStats) {
       elements.viewStats.addEventListener('click', () => {
-        renderStatsScreen();
+        renderStatsScreen(true);
       });
     }
 
     if (elements.viewStatsFromResult) {
       elements.viewStatsFromResult.addEventListener('click', () => {
-        renderStatsScreen();
+        renderStatsScreen(true);
       });
     }
 
     if (elements.closeStats) {
       elements.closeStats.addEventListener('click', () => {
+        renderColorSummaries();  // 統計を更新してからスタート画面へ
         showScreen('start');
       });
     }
@@ -1460,10 +1501,27 @@
     if (elements.clearHistory) {
       elements.clearHistory.addEventListener('click', () => {
         if (clearAllHistory()) {
-          renderStatsScreen();
+          renderStatsScreen(false);
           renderColorSummaries();
         }
       });
+    }
+
+    if (elements.statsFilterNormal && elements.statsFilterReverse) {
+      const updateStatsFilterButtons = (mode) => {
+        elements.statsFilterNormal.classList.toggle('active', mode === 'normal');
+        elements.statsFilterReverse.classList.toggle('active', mode === 'reverse');
+      };
+
+      const setStatsFilterMode = (mode) => {
+        statsState.filterMode = mode;
+        updateStatsFilterButtons(mode);
+        clearDetailedView();
+        renderStatsScreen();
+      };
+
+      elements.statsFilterNormal.addEventListener('click', () => setStatsFilterMode('normal'));
+      elements.statsFilterReverse.addEventListener('click', () => setStatsFilterMode('reverse'));
     }
   }
 
