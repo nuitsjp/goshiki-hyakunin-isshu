@@ -12,7 +12,24 @@ export function createStatsUI({
   showScreen,
   loadHistory,
 }) {
-  const getHistory = async () => await loadHistory();
+  let historyCache = null;
+  let historyPromise = null;
+
+  const getHistory = async () => {
+    if (historyCache) return historyCache;
+    if (historyPromise) return historyPromise;
+    historyPromise = loadHistory()
+      .then(history => {
+        historyCache = history;
+        historyPromise = null;
+        return historyCache;
+      })
+      .catch(error => {
+        historyPromise = null;
+        throw error;
+      });
+    return historyPromise;
+  };
   const getPoems = () => (Array.isArray(quizState.allPoems) ? quizState.allPoems : []);
 
   async function renderColorSummaries() {
@@ -238,6 +255,8 @@ export function createStatsUI({
       elements.statsFilterReverse.classList.toggle('active', statsState.filterMode === 'reverse');
     }
 
+    showScreen('stats');
+
     const orderModeFilter = statsState.filterMode;
     const history = await getHistory();
     const overall = calculateOverallStats(history, orderModeFilter);
@@ -321,7 +340,6 @@ export function createStatsUI({
       }
     }
 
-    showScreen('stats');
   }
 
   return {
@@ -330,5 +348,9 @@ export function createStatsUI({
     clearDetailedView,
     renderDetailedColorStats,
     renderSessionDetail,
+    clearHistoryCache: () => {
+      historyCache = null;
+      historyPromise = null;
+    },
   };
 }

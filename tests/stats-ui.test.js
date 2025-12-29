@@ -60,6 +60,30 @@ describe('stats-ui', () => {
     expect(recent.innerHTML).toMatch(/まだプレイ履歴がありません/);
   });
 
+  it('shows stats screen before history resolves', async () => {
+    setupDom();
+    const deferred = {};
+    const historyPromise = new Promise(resolve => {
+      deferred.resolve = resolve;
+    });
+    const quizState = { allPoems: [], orderMode: 'normal' };
+    const statsState = { selectedColor: null, filterMode: 'normal' };
+    const showScreen = vi.fn();
+    const loadHistory = vi.fn(() => historyPromise);
+    const ui = createStatsUI({
+      elements: buildElements(),
+      statsState,
+      quizState,
+      showScreen,
+      loadHistory,
+    });
+
+    const renderPromise = ui.renderStatsScreen();
+    expect(showScreen).toHaveBeenCalledWith('stats');
+    deferred.resolve([]);
+    await renderPromise;
+  });
+
   it('renders summaries and stats screen', async () => {
     setupDom();
     const history = [
@@ -177,6 +201,47 @@ describe('stats-ui', () => {
     closeButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(statsState.selectedColor).toBe(null);
     expect(detail.innerHTML).toBe('');
+  });
+
+  it('reuses cached history across stats views', async () => {
+    setupDom();
+    const history = [
+      {
+        sessionId: 's1',
+        color: '青',
+        questionCount: 1,
+        correctCount: 1,
+        wrongCount: 0,
+        passCount: 0,
+        accuracyRate: 100,
+        hintType: 'shoku',
+        displayMode: 'kana',
+        orderMode: 'normal',
+        timestamp: 1,
+        date: '2024-01-01',
+        answers: [],
+      },
+    ];
+    const quizState = {
+      allPoems: [
+        { color: '青', kimarijiShort: 'あ', kimarijiLong: '', shimoNoKu: '下', shimoReading: 'しも', kamiNoKu: '上', kamiReading: 'かみ' },
+      ],
+      orderMode: 'normal',
+    };
+    const statsState = { selectedColor: null, filterMode: 'normal' };
+    const showScreen = vi.fn();
+    const loadHistory = vi.fn(async () => history);
+    const ui = createStatsUI({
+      elements: buildElements(),
+      statsState,
+      quizState,
+      showScreen,
+      loadHistory,
+    });
+
+    await ui.renderStatsScreen();
+    await ui.renderDetailedColorStats('青');
+    expect(loadHistory).toHaveBeenCalledTimes(1);
   });
 
   it('renders kanji and reverse labels and ignores rows without color', async () => {

@@ -398,6 +398,7 @@ function showResults() {
   };
 
   saveQuizSession(sessionData);
+  statsUI.clearHistoryCache();
 
   elements.resultCount.textContent = `${quizState.correctCount} / ${total} 問正解`;
   elements.resultRate.textContent = `正答率 ${rate}%`;
@@ -649,6 +650,7 @@ function initEventHandlers() {
   if (elements.clearHistory) {
     elements.clearHistory.addEventListener('click', () => {
       if (clearAllHistory()) {
+        statsUI.clearHistoryCache();
         statsUI.renderStatsScreen(false);
         statsUI.renderColorSummaries();
       }

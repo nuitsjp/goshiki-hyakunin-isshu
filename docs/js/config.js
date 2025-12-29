@@ -1,4 +1,4 @@
-export const APP_VERSION = 'v0.1.0';
+export const APP_VERSION = 'v0.1.1';
 export const CSV_URL = new URL('data/hyakunin_isshu_with_ruby.csv', window.location.href).toString();
 export const CSV_FALLBACK_URL = 'https://nuitsjp.github.io/goshiki-hyakunin-isshu/data/hyakunin_isshu_with_ruby.csv';
 export const colorAccentMap = {
