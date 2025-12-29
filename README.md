@@ -1,5 +1,9 @@
 # 五色百人一首 決まり字クイズ
 
+[![test](https://github.com/nuitsjp/goshiki-hyakunin-isshu/actions/workflows/test.yml/badge.svg)](https://github.com/nuitsjp/goshiki-hyakunin-isshu/actions/workflows/test.yml)
+
+公開URL: https://goshiki-hyakunin-isshu.web.app
+
 五色百人一首（青・ピンク・黄・緑・オレンジ）の決まり字を覚えるための学習Webアプリケーションです。
 
 ## 概要
@@ -54,9 +58,8 @@ HTMLレポートは `coverage/index.html` に出力されます。
 
 ## Firebase Hosting
 
-### 公開URL / コンソール
+### コンソール
 
-- 本番URL: https://goshiki-hyakunin-isshu.web.app
 - Firebase Console: https://console.firebase.google.com/project/goshiki-hyakunin-isshu/overview
 
 ### よく使う Firebase CLI
