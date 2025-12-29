@@ -16,9 +16,23 @@
 
 <body class="page-shell">
   <div class="container app-container py-4 d-flex flex-column">
-    <header class="mb-4 text-center">
-      <h1 class="fw-bold">五色百人一首 決まり字クイズ</h1>
-      <p class="text-muted mb-0">色を選んで決まり字を覚えよう</p>
+    <header class="mb-4">
+      <div class="text-center">
+        <h1 class="fw-bold">五色百人一首 決まり字クイズ</h1>
+        <p class="text-muted mb-0">色を選んで決まり字を覚えよう</p>
+      </div>
+      <div id="auth-section"
+        class="auth-panel hidden mt-3 d-flex flex-column flex-md-row align-items-center justify-content-center justify-content-md-end gap-2">
+        <div class="auth-status">
+          <span id="auth-status" class="auth-badge">未ログイン</span>
+          <span id="auth-user" class="auth-user">ゲスト</span>
+        </div>
+        <div class="auth-actions d-flex gap-2">
+          <button id="auth-signin" class="btn btn-outline-primary btn-auth" type="button">Googleでログイン</button>
+          <button id="auth-signout" class="btn btn-outline-secondary btn-auth hidden" type="button">ログアウト</button>
+        </div>
+        <div id="auth-message" class="auth-message" role="status" aria-live="polite"></div>
+      </div>
     </header>
 
     <main class="flex-grow-1">
@@ -237,7 +251,7 @@
   </div>
 
   <footer class="container text-center py-3 text-muted small">
-    <span>Version: <span id="app-version">v0.0.21</span></span>
+    <span>Version: <span id="app-version">v0.0.22</span></span>
     <span class="ms-2">|</span>
     <a href="credits.html" class="ms-2 text-decoration-none text-muted">OSSライセンス</a>
   </footer>

@@ -65,6 +65,60 @@ h6,
   flex: 1;
 }
 
+/* Auth Panel */
+.auth-panel {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.auth-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-family: var(--font-sans);
+}
+
+.auth-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: #f5f5f5;
+  color: #666;
+  font-weight: 600;
+}
+
+.auth-badge.is-signed-in {
+  background: rgba(108, 140, 45, 0.15);
+  color: var(--color-correct);
+}
+
+.auth-user {
+  font-weight: 600;
+}
+
+.auth-actions {
+  flex-wrap: wrap;
+}
+
+.btn-auth {
+  min-height: 44px;
+  min-width: 140px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.auth-message {
+  font-size: 0.85rem;
+  color: var(--color-incorrect);
+  min-height: 1.2rem;
+}
+
 /* --- Component Styles --- */
 
 @keyframes fadeIn {

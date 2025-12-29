@@ -12,6 +12,7 @@ import { buildQuestions, buildWeakQuestions, canUseWeak5 } from './questions.js'
 import { loadCsv } from './data.js';
 import { escapeHtml, toRubyHtml, toAriaLabel } from './text.js';
 import { createStatsUI } from './stats-ui.js';
+import { initAuthUI } from './auth.js';
 
 const screens = getScreens();
 const elements = getElements();
@@ -673,6 +674,7 @@ function init() {
   }
 
   initEventHandlers();
+  initAuthUI({ elements });
   resetQuizView();
   statsUI.renderColorSummaries();
   loadCsv()

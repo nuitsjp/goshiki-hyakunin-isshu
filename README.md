@@ -78,6 +78,25 @@ firebase deploy --only hosting
 - デプロイ履歴の確認: Hosting の "リリース" から確認
 - 確認後の公開URLアクセス: https://goshiki-hyakunin-isshu.web.app
 
+## Firebase Authentication（オプション）
+
+本アプリは Firebase Authentication（Googleログイン）を任意で有効化できます。
+
+1. Firebase Console で Authentication を有効化し、Google をサインインプロバイダに追加します。
+2. `docs/js/config.js` の `ENABLE_FIREBASE_AUTH` を `true` にし、`FIREBASE_CONFIG` をプロジェクト設定で埋めます。
+
+```js
+export const ENABLE_FIREBASE_AUTH = true;
+export const FIREBASE_CONFIG = {
+  apiKey: '...',
+  authDomain: '...',
+  projectId: '...',
+  appId: '...'
+};
+```
+
+有効化するとトップ画面にログインUIが表示されます。無効のままでもアプリは通常どおり動作します。
+
 ## 技術スタック
 
 - **Frontend**: HTML5, CSS3 (Modern Japanese Design), JavaScript (Vanilla ES6+)

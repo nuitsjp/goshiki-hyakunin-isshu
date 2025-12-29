@@ -7,6 +7,12 @@ export const getScreens = (doc = document) => ({
 
 export const getElements = (doc = document) => ({
   version: doc.getElementById('app-version'),
+  authSection: doc.getElementById('auth-section'),
+  authStatus: doc.getElementById('auth-status'),
+  authUser: doc.getElementById('auth-user'),
+  authSignIn: doc.getElementById('auth-signin'),
+  authSignOut: doc.getElementById('auth-signout'),
+  authMessage: doc.getElementById('auth-message'),
   questionCount: doc.getElementById('question-count'),
   hintType: doc.getElementById('hint-type'),
   displayMode: doc.getElementById('display-mode'),
