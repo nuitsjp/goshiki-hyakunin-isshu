@@ -211,7 +211,7 @@ describe('karuta-app', () => {
     expect(buildKarutaDeckMock).toHaveBeenCalled();
     expect(buildKarutaReadingsMock).toHaveBeenCalled();
     expect(document.documentElement.style.getPropertyValue('--current-accent')).toBe('var(--color-yellow)');
-    expect(document.getElementById('selected-color-label').textContent).toBe('黄');
+    expect(document.getElementById('selected-color-label').textContent).toBe('黄の歌');
     expect(document.getElementById('progress-text').textContent).toBe('問題 1 / 1');
     expect(document.getElementById('score-text').textContent).toBe('正解: 0枚');
     expect(document.getElementById('next-reading').disabled).toBe(true);
@@ -391,7 +391,7 @@ describe('karuta-app', () => {
     expect(document.getElementById('progress-text').textContent).toBe('問題 2 / 2');
   });
 
-  it('不正解後に次の札へを押すと札を非表示にして次へ進む', async () => {
+  it('不正解後に次の札へを押すと正解札だけ非表示にして次へ進む', async () => {
     setupDom();
     loadCsvMock.mockResolvedValue(createPoems(3));
     buildKarutaDeckMock.mockReturnValue(createDeck(3));
@@ -410,10 +410,12 @@ describe('karuta-app', () => {
     await wait(0);
 
     const takenCards = document.querySelectorAll('.karuta-card.is-taken');
-    expect(takenCards.length).toBe(2);
-    const activeCard = document.querySelector('.karuta-card.active');
-    expect(activeCard).toBeTruthy();
-    expect(activeCard.disabled).toBe(false);
+    expect(takenCards.length).toBe(1);
+    const activeCards = document.querySelectorAll('.karuta-card.active');
+    expect(activeCards.length).toBe(2);
+    activeCards.forEach(card => {
+      expect(card.disabled).toBe(false);
+    });
     expect(document.getElementById('kimariji-display').textContent).toBe('き1');
   });
 
@@ -898,5 +900,54 @@ describe('karuta-app', () => {
     expect(document.getElementById('total-correct').textContent).toBe('10');
     expect(document.getElementById('overall-accuracy').textContent).toBe('50%');
     expect(document.getElementById('overall-hint-usage').textContent).toBe('0%');
+  });
+
+  it('履歴削除後に統計画面を再描画する', async () => {
+    setupDomWithStats();
+    loadCsvMock.mockResolvedValue(createPoems(1));
+    loadKarutaHistoryMock.mockResolvedValue([
+      {
+        sessionId: 'k1',
+        timestamp: 1700000000000,
+        date: '2024-01-01',
+        color: '黄',
+        questionCount: 20,
+        correctCount: 10,
+        wrongCount: 10,
+        passCount: 0,
+        accuracyRate: 50,
+        hintType: null,
+        displayMode: null,
+        orderMode: 'karuta',
+        durationMs: 1234,
+        answers: [],
+      },
+    ]);
+    clearAllKarutaHistoryMock.mockResolvedValue(true);
+    await importApp();
+
+    document.getElementById('clear-history').click();
+    await flushPromises();
+
+    expect(loadKarutaHistoryMock).toHaveBeenCalled();
+    expect(document.getElementById('stats-screen').classList.contains('hidden')).toBe(false);
+  });
+
+  it('ゲーム画面表示中のリサイズでカードサイズを更新する', async () => {
+    setupDom();
+    loadCsvMock.mockResolvedValue(createPoems(1));
+    buildKarutaDeckMock.mockReturnValue(createDeck(1));
+    buildKarutaReadingsMock.mockReturnValue(createReadings(1));
+    await importApp();
+
+    const originalRect = document.body.getBoundingClientRect;
+    document.body.getBoundingClientRect = () => ({ width: 500, height: 400 });
+
+    document.querySelector('.color-button[data-color="黄"]').click();
+    window.dispatchEvent(new Event('resize'));
+
+    expect(document.documentElement.style.getPropertyValue('--karuta-card-width-current')).not.toBe('');
+
+    document.body.getBoundingClientRect = originalRect;
   });
 });

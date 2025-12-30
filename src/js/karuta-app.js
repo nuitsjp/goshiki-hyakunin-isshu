@@ -116,7 +116,7 @@ function setAccentColor(color) {
   }
 
   if (elements.selectedColorLabel) {
-    elements.selectedColorLabel.textContent = color;
+    elements.selectedColorLabel.textContent = `${color}の歌`;
     elements.selectedColorLabel.style.backgroundColor = accent;
     elements.selectedColorLabel.style.color = textColor;
   }
@@ -503,8 +503,8 @@ function handleCardClick(cardIndex) {
   }
 
     karutaState.locked = true;
-    karutaState.pendingHideCards = [correctCard, card].filter(Boolean);
-    karutaState.pendingResetCards = [];
+    karutaState.pendingHideCards = [correctCard].filter(Boolean);
+    karutaState.pendingResetCards = [card].filter(Boolean);
     renderCards();
     if (elements.nextReading) {
       elements.nextReading.disabled = false;

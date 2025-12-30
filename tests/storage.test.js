@@ -352,6 +352,14 @@ describe('storage', () => {
     expect(await loadKarutaHistory(storage)).toEqual([]);
   });
 
+  it('loadQuizHistory returns empty array when no local history exists', async () => {
+    const storage = new MemoryStorage();
+
+    const history = await loadQuizHistory(storage);
+
+    expect(history).toEqual([]);
+  });
+
   it('cleanOldHistory filters by retention', () => {
     const now = Date.now();
     const history = [
@@ -453,6 +461,38 @@ describe('storage', () => {
 
     expect(ok).toBe(true);
     expect(deleteSpy).toHaveBeenCalledWith('user1');
+  });
+
+  it('clearAllKarutaHistory returns false when remove fails', async () => {
+    const storage = new MemoryStorage({
+      [STORAGE_KEYS.KARUTA_HISTORY]: '[]',
+      [STORAGE_KEYS.KARUTA_VERSION]: '1',
+    });
+    storage.removeItem = vi.fn(() => {
+      throw new Error('fail');
+    });
+    const dialog = {
+      confirm: () => true,
+      alert: vi.fn(),
+    };
+
+    const ok = await clearAllKarutaHistory(storage, dialog);
+
+    expect(ok).toBe(false);
+  });
+
+  it('clearAllKarutaHistory returns false when canceled', async () => {
+    const storage = new MemoryStorage({
+      [STORAGE_KEYS.KARUTA_HISTORY]: '[]',
+    });
+    const dialog = {
+      confirm: () => false,
+      alert: vi.fn(),
+    };
+
+    const ok = await clearAllKarutaHistory(storage, dialog);
+
+    expect(ok).toBe(false);
   });
 
   it('loadKarutaHistory resets promise when fetch rejects', async () => {
