@@ -474,33 +474,6 @@ h6,
   }
 }
 
-/* ==================== Ad Banner Styles ==================== */
-/* Fixed bottom banner with safe-area adjustments */
-.ad-wrapper {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: env(safe-area-inset-bottom, 12px) 8px;
-  z-index: 9999;
-  pointer-events: auto;
-}
-
-.ad-banner {
-  max-width: 1000px;
-  width: 100%;
-  height: auto;
-  display: block !important;
-}
-
-/* Reserve space for the fixed banner so page content isn't hidden behind it */
-body {
-  padding-bottom: 88px; /* adjust if your banner height differs */
-}
-
 /* Toggle Buttons (Settings) */
 .btn-toggle {
   background: transparent;
@@ -938,10 +911,4 @@ body {
   .session-result {
     align-self: flex-end;
   }
-}
-
-/* Ensure footer links are clickable above fixed bottom ads */
-footer a {
-  position: relative;
-  z-index: 10001;
 }
