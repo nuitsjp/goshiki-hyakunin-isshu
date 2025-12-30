@@ -61,7 +61,8 @@ const resolveProvider = (authModule) => {
 const loadFirebaseModules = async () => {
   const appModule = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js');
   const authModule = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js');
-  return { appModule, authModule };
+  const analyticsModule = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-analytics.js');
+  return { appModule, authModule, analyticsModule };
 };
 
 export const initAuthUI = async ({
@@ -86,11 +87,21 @@ export const initAuthUI = async ({
   });
 
   try {
-    const { appModule, authModule } = await loadModules();
+    const { appModule, authModule, analyticsModule } = await loadModules();
 
     const app = appModule.initializeApp(firebaseConfig);
     const auth = authModule.getAuth(app);
     const provider = resolveProvider(authModule);
+
+    // Initialize Firebase Analytics
+    if (analyticsModule && firebaseConfig.measurementId) {
+      try {
+        analyticsModule.getAnalytics(app);
+        log('analytics', 'Google Analytics初期化成功', { measurementId: firebaseConfig.measurementId });
+      } catch (analyticsError) {
+        console.warn('Analytics initialization failed:', analyticsError);
+      }
+    }
 
     await initializeFirestore(app);
 
