@@ -113,7 +113,8 @@ const setupDom = () => {
     </div>
     <div data-color-stats="青"></div>
     <div id="app-version"></div>
-    <select id="question-count"></select>
+    <button id="question-mode-20" class="btn btn-toggle active"></button>
+    <button id="question-mode-weak5" class="btn btn-toggle"></button>
     <button id="order-normal" class="active"></button>
     <button id="order-reverse"></button>
     <button class="color-button" data-color="青"></button>

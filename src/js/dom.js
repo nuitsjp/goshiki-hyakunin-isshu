@@ -18,6 +18,8 @@ export const getElements = (doc = document) => ({
   authLogout: doc.getElementById('auth-logout'),
   authMessage: doc.getElementById('auth-message'),
   questionCount: doc.getElementById('question-count'),
+  questionMode20: doc.getElementById('question-mode-20'),
+  questionModeWeak5: doc.getElementById('question-mode-weak5'),
   hintType: doc.getElementById('hint-type'),
   displayMode: doc.getElementById('display-mode'),
   orderNormal: doc.getElementById('order-normal'),
