@@ -409,6 +409,34 @@ describe('firestore', () => {
     expect(result).toBe(false);
   });
 
+  it('returns false when Firestore karuta delete fails', async () => {
+    vi.doMock('https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js', () => mockAppModule);
+    vi.doMock('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js', () => mockFirestoreModule);
+
+    const mockBatch = {
+      delete: vi.fn(),
+      commit: vi.fn(() => {
+        throw new Error('fail');
+      }),
+    };
+
+    mockFirestoreModule.initializeFirestore.mockReturnValue({});
+    mockFirestoreModule.writeBatch.mockReturnValue(mockBatch);
+    mockFirestoreModule.getDocs.mockResolvedValue({
+      docs: [{ ref: 'ref1' }],
+    });
+
+    const { initializeFirestore, deleteAllKarutaSessionsFromFirestore, loadFirestoreModules } = await import('../src/js/firestore.js');
+
+    await loadFirestoreModules();
+    const app = mockAppModule.initializeApp();
+    await initializeFirestore(app);
+
+    const result = await deleteAllKarutaSessionsFromFirestore('user123');
+
+    expect(result).toBe(false);
+  });
+
   it('returns 0 when Firestore upload fails', async () => {
     vi.doMock('https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js', () => mockAppModule);
     vi.doMock('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js', () => mockFirestoreModule);

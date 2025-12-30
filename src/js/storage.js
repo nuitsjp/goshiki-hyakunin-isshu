@@ -8,6 +8,7 @@ import {
   saveSessionToFirestore,
   loadSessionsFromFirestore,
   deleteAllSessionsFromFirestore,
+  deleteAllKarutaSessionsFromFirestore,
   saveKarutaSessionToFirestore,
   loadKarutaSessionsFromFirestore
 } from './firestore.js';
@@ -350,6 +351,28 @@ export async function clearAllHistory(storage = window.localStorage, dialog = wi
       return true;
     } catch (e) {
       console.error('Failed to clear history:', e);
+      dialog.alert('データの削除に失敗しました。');
+      return false;
+    }
+  }
+  return false;
+}
+
+export async function clearAllKarutaHistory(storage = window.localStorage, dialog = window) {
+  if (dialog.confirm('本当にすべてのかるた履歴を削除しますか？この操作は取り消せません。')) {
+    try {
+      const userId = getCurrentUserId?.();
+      if (userId) {
+        await deleteAllKarutaSessionsFromFirestore(userId);
+      }
+
+      storage.removeItem(STORAGE_KEYS.KARUTA_HISTORY);
+      storage.removeItem(STORAGE_KEYS.KARUTA_VERSION);
+      setCachedKarutaHistory([]);
+      dialog.alert('かるた履歴を削除しました。');
+      return true;
+    } catch (e) {
+      console.error('Failed to clear karuta history:', e);
       dialog.alert('データの削除に失敗しました。');
       return false;
     }

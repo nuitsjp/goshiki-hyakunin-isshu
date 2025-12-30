@@ -122,6 +122,24 @@ export async function deleteAllSessionsFromFirestore(userId) {
   }
 }
 
+export async function deleteAllKarutaSessionsFromFirestore(userId) {
+  if (!db || !userId || !firestoreModule) return false;
+
+  try {
+    const colRef = firestoreModule.collection(db, 'users', userId, 'karutaSessions');
+    const snapshot = await firestoreModule.getDocs(colRef);
+
+    const batch = firestoreModule.writeBatch(db);
+    snapshot.docs.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+
+    return true;
+  } catch (error) {
+    console.error('Failed to delete karuta sessions from Firestore:', error);
+    return false;
+  }
+}
+
 export async function uploadLocalHistoryToFirestore(userId, localHistory) {
   if (!db || !userId || !localHistory.length || !firestoreModule) return 0;
 

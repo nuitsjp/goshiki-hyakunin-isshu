@@ -9,6 +9,7 @@ const mockConfig = vi.hoisted(() => ({
   colorTextMap: {
     '黄': '#333',
   },
+  COLORS: ['黄', '青'],
   STORAGE_KEYS: {
     MEASURE_TIME: 'goshiki_measure_time',
   },
@@ -21,6 +22,8 @@ let checkKarutaMatchMock;
 let escapeHtmlMock;
 let toRubyHtmlMock;
 let saveKarutaSessionMock;
+let loadKarutaHistoryMock;
+let clearAllKarutaHistoryMock;
 
 vi.mock('../src/js/config.js', () => mockConfig);
 vi.mock('../src/js/data.js', () => ({
@@ -37,6 +40,8 @@ vi.mock('../src/js/text.js', () => ({
 }));
 vi.mock('../src/js/storage.js', () => ({
   saveKarutaSession: (...args) => saveKarutaSessionMock(...args),
+  loadKarutaHistory: (...args) => loadKarutaHistoryMock(...args),
+  clearAllKarutaHistory: (...args) => clearAllKarutaHistoryMock(...args),
 }));
 
 const flushPromises = () => new Promise(resolve => setTimeout(resolve, 0));
@@ -108,6 +113,24 @@ const setupMinimalDom = () => {
   `;
 };
 
+const setupDomWithStats = () => {
+  setupDom();
+  document.body.insertAdjacentHTML('beforeend', `
+    <button id="view-stats"></button>
+    <button id="view-stats-from-result"></button>
+    <div id="stats-screen" class="hidden"></div>
+    <button id="close-stats"></button>
+    <button id="clear-history"></button>
+    <div id="total-quizzes"></div>
+    <div id="total-questions"></div>
+    <div id="total-correct"></div>
+    <div id="overall-accuracy"></div>
+    <div id="overall-hint-usage"></div>
+    <table><tbody id="color-stats-tbody"></tbody></table>
+    <div id="color-detail-container"></div>
+  `);
+};
+
 const importApp = async () => {
   await import('../src/js/karuta-app.js');
   await flushPromises();
@@ -148,6 +171,8 @@ beforeEach(() => {
   escapeHtmlMock = vi.fn(text => text);
   toRubyHtmlMock = vi.fn(text => `<span>${text}</span>`);
   saveKarutaSessionMock = vi.fn().mockResolvedValue(true);
+  loadKarutaHistoryMock = vi.fn().mockResolvedValue([]);
+  clearAllKarutaHistoryMock = vi.fn().mockResolvedValue(true);
 });
 
 afterEach(() => {
@@ -839,5 +864,39 @@ describe('karuta-app', () => {
 
     expect(setTimeoutSpy).toHaveBeenLastCalledWith(expect.any(Function), 500);
     setTimeoutSpy.mockRestore();
+  });
+
+  it('統計を見るボタンで統計画面を表示する', async () => {
+    setupDomWithStats();
+    loadCsvMock.mockResolvedValue(createPoems(1));
+    loadKarutaHistoryMock.mockResolvedValue([
+      {
+        sessionId: 'k1',
+        timestamp: 1700000000000,
+        date: '2024-01-01',
+        color: '黄',
+        questionCount: 20,
+        correctCount: 10,
+        wrongCount: 10,
+        passCount: 0,
+        accuracyRate: 50,
+        hintType: null,
+        displayMode: null,
+        orderMode: 'karuta',
+        durationMs: 1234,
+        answers: [],
+      },
+    ]);
+    await importApp();
+
+    document.getElementById('view-stats').click();
+    await flushPromises();
+
+    expect(document.getElementById('stats-screen').classList.contains('hidden')).toBe(false);
+    expect(document.getElementById('total-quizzes').textContent).toBe('1');
+    expect(document.getElementById('total-questions').textContent).toBe('20');
+    expect(document.getElementById('total-correct').textContent).toBe('10');
+    expect(document.getElementById('overall-accuracy').textContent).toBe('50%');
+    expect(document.getElementById('overall-hint-usage').textContent).toBe('0%');
   });
 });

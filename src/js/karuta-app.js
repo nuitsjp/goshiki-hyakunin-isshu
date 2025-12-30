@@ -1,9 +1,9 @@
 import { APP_VERSION, colorAccentMap, colorTextMap, STORAGE_KEYS } from './config.js';
 import { loadCsv } from './data.js';
 import { buildKarutaDeck, buildKarutaReadings, checkKarutaMatch } from './karuta.js';
-import { formatDurationMs } from './stats.js';
+import { calculateAllColorStats, calculateOverallStats, formatDurationMs } from './stats.js';
 import { escapeHtml, toRubyHtml } from './text.js';
-import { saveKarutaSession } from './storage.js';
+import { saveKarutaSession, loadKarutaHistory, clearAllKarutaHistory } from './storage.js';
 
 // Game state
 const karutaState = {
@@ -28,6 +28,7 @@ const screens = {
   start: document.getElementById('start-screen'),
   game: document.getElementById('game-screen'),
   result: document.getElementById('result-screen'),
+  stats: document.getElementById('stats-screen'),
 };
 
 const elements = {
@@ -53,6 +54,17 @@ const elements = {
   retrySame: document.getElementById('retry-same'),
   chooseColor: document.getElementById('choose-color'),
   appVersion: document.getElementById('app-version'),
+  viewStats: document.getElementById('view-stats'),
+  viewStatsFromResult: document.getElementById('view-stats-from-result'),
+  closeStats: document.getElementById('close-stats'),
+  clearHistory: document.getElementById('clear-history'),
+  totalQuizzes: document.getElementById('total-quizzes'),
+  totalQuestions: document.getElementById('total-questions'),
+  totalCorrect: document.getElementById('total-correct'),
+  overallAccuracy: document.getElementById('overall-accuracy'),
+  overallHintUsage: document.getElementById('overall-hint-usage'),
+  colorStatsBody: document.getElementById('color-stats-tbody'),
+  colorDetailContainer: document.getElementById('color-detail-container'),
 };
 
 let elapsedTimerId = null;
@@ -90,6 +102,7 @@ function showScreen(screenName) {
   if (screenName === 'game') {
     setTimeout(updateCardSizing, 0);
   }
+  document.body.dataset.screen = screenName;
 }
 
 function setAccentColor(color) {
@@ -180,6 +193,48 @@ function updateResultTime(durationMs) {
     elements.resultTime.textContent = '';
     elements.resultTime.classList.add('hidden');
   }
+}
+
+async function renderStatsScreen() {
+  if (!screens.stats) return;
+  const history = await loadKarutaHistory();
+  const overall = calculateOverallStats(history, 'karuta');
+  const colorStats = calculateAllColorStats(history, 'karuta');
+
+  if (elements.totalQuizzes) elements.totalQuizzes.textContent = overall.totalQuizzes;
+  if (elements.totalQuestions) elements.totalQuestions.textContent = overall.totalQuestions;
+  if (elements.totalCorrect) elements.totalCorrect.textContent = overall.totalCorrect;
+  if (elements.overallAccuracy) elements.overallAccuracy.textContent = `${overall.accuracyRate}%`;
+  if (elements.overallHintUsage) elements.overallHintUsage.textContent = `${overall.hintUsageRate}%`;
+
+  if (elements.colorStatsBody) {
+    elements.colorStatsBody.innerHTML = colorStats.map(stats => {
+      const rowClass = {
+        '青': 'row-blue',
+        'ピンク': 'row-pink',
+        '黄': 'row-yellow',
+        '緑': 'row-green',
+        'オレンジ': 'row-orange',
+      }[stats.color] || '';
+      return `
+        <tr class="stats-row ${rowClass}">
+          <td class="stats-cell">${stats.totalQuizzes}</td>
+          <td class="stats-cell">${stats.totalQuestions}</td>
+          <td class="stats-cell">${stats.totalCorrect}</td>
+          <td class="stats-cell">${stats.accuracyRate}%</td>
+          <td class="stats-cell">${stats.hintUsageRate}%</td>
+          <td class="stats-cell">${formatDurationMs(stats.fastestDurationMs)}</td>
+          <td class="stats-cell">${stats.lastPlayed || '-'}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  if (elements.colorDetailContainer) {
+    elements.colorDetailContainer.innerHTML = '';
+  }
+
+  showScreen('stats');
 }
 
 function buildResultItem(result, idx) {
@@ -381,9 +436,6 @@ function handleCardClick(cardIndex) {
 
   if (isCorrect) {
     // Correct answer
-    if (elements.kimarijiDisplay) {
-      elements.kimarijiDisplay.textContent = reading.kamiReading || reading.kamiNoKu || '';
-    }
     karutaState.score++;
     karutaState.results.push({
       kimariji: reading.kimariji,
@@ -420,6 +472,10 @@ function handleCardClick(cardIndex) {
     });
   }
 
+  if (elements.kimarijiDisplay) {
+    elements.kimarijiDisplay.textContent = reading.kamiReading || reading.kamiNoKu || reading.kimariji;
+  }
+
   renderCards();
   updateProgress();
 
@@ -447,8 +503,8 @@ function handleCardClick(cardIndex) {
   }
 
     karutaState.locked = true;
-    karutaState.pendingHideCards = [correctCard].filter(Boolean);
-    karutaState.pendingResetCards = [card].filter(Boolean);
+    karutaState.pendingHideCards = [correctCard, card].filter(Boolean);
+    karutaState.pendingResetCards = [];
     renderCards();
     if (elements.nextReading) {
       elements.nextReading.disabled = false;
@@ -721,6 +777,32 @@ function initEventListeners() {
   if (elements.chooseColor) {
     elements.chooseColor.addEventListener('click', () => {
       showScreen('start');
+    });
+  }
+
+  if (elements.viewStats) {
+    elements.viewStats.addEventListener('click', async () => {
+      await renderStatsScreen();
+    });
+  }
+
+  if (elements.viewStatsFromResult) {
+    elements.viewStatsFromResult.addEventListener('click', async () => {
+      await renderStatsScreen();
+    });
+  }
+
+  if (elements.closeStats) {
+    elements.closeStats.addEventListener('click', () => {
+      showScreen('start');
+    });
+  }
+
+  if (elements.clearHistory) {
+    elements.clearHistory.addEventListener('click', async () => {
+      if (await clearAllKarutaHistory()) {
+        await renderStatsScreen();
+      }
     });
   }
 

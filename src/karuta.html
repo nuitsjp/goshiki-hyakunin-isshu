@@ -31,7 +31,10 @@
         <div class="card-body">
           <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
             <h2 class="h4 mb-0">色を選んでください</h2>
-            <a href="index.html" class="btn btn-outline-secondary btn-sm">クイズへ</a>
+            <div class="d-flex align-items-center gap-2">
+              <button id="view-stats" class="btn btn-outline-secondary btn-sm" type="button">統計を見る</button>
+              <a href="index.html" class="btn btn-outline-secondary btn-sm">クイズへ</a>
+            </div>
           </div>
           <div class="d-flex align-items-center gap-2 flex-wrap mb-3">
             <p class="text-muted mb-0">選んだ色の20枚すべての札で遊びます</p>
@@ -137,7 +140,80 @@
             <button id="retry-same" class="btn btn-primary">同じ色で再挑戦</button>
             <button id="choose-color" class="btn btn-outline-secondary">別の色を選ぶ</button>
           </div>
+          <div class="text-center mb-3">
+            <button id="view-stats-from-result" class="btn btn-outline-secondary" type="button">統計を見る</button>
+          </div>
           <div id="result-list" class="result-list text-start" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section id="stats-screen" class="screen card shadow-sm hidden">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="h4 mb-0">統計情報（かるた）</h2>
+            <button id="close-stats" class="btn btn-outline-secondary btn-sm" type="button">閉じる</button>
+          </div>
+
+          <div class="stats-summary mb-4">
+            <div class="row g-3">
+              <div class="col-6 col-md-3">
+                <div class="stat-card">
+                  <div class="stat-label">総プレイ回数</div>
+                  <div class="stat-value" id="total-quizzes">-</div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="stat-card">
+                  <div class="stat-label">総問題数</div>
+                  <div class="stat-value" id="total-questions">-</div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="stat-card">
+                  <div class="stat-label">正解数</div>
+                  <div class="stat-value" id="total-correct">-</div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="stat-card">
+                  <div class="stat-label">平均正答率</div>
+                  <div class="stat-value" id="overall-accuracy">-%</div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="stat-card">
+                  <div class="stat-label">ヒント利用率</div>
+                  <div class="stat-value" id="overall-hint-usage">-%</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <h3 class="h5 mb-3">色別統計</h3>
+          <p class="text-muted small mb-2">※行をクリックすると詳細統計が表示されます</p>
+          <div class="table-responsive mb-4">
+            <table class="table table-sm stats-table">
+              <thead>
+                <tr>
+                  <th class="stats-header">プレイ回数</th>
+                  <th class="stats-header">問題数</th>
+                  <th class="stats-header">正解数</th>
+                  <th class="stats-header">正答率</th>
+                  <th class="stats-header">ヒント利用率</th>
+                  <th class="stats-header">最速</th>
+                  <th class="stats-header">最終プレイ</th>
+                </tr>
+              </thead>
+              <tbody id="color-stats-tbody">
+              </tbody>
+            </table>
+          </div>
+
+          <div id="color-detail-container" class="mb-4"></div>
+
+          <div class="mt-4 text-center">
+            <button id="clear-history" class="btn btn-outline-danger btn-sm" type="button">履歴をクリア</button>
+          </div>
         </div>
       </section>
     </main>
