@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { quizState } from '../docs/js/state.js';
+import { quizState } from '../src/js/state.js';
 
 const loadCsv = vi.fn();
-vi.mock('../docs/js/data.js', () => ({
+vi.mock('../src/js/data.js', () => ({
   loadCsv,
 }));
 
@@ -13,7 +13,7 @@ const checkLocalStorageAvailable = vi.fn(() => true);
 const setAuthModule = vi.fn();
 const refreshQuizHistory = vi.fn(async () => []);
 const getCachedQuizHistory = vi.fn(() => []);
-vi.mock('../docs/js/storage.js', () => ({
+vi.mock('../src/js/storage.js', () => ({
   loadQuizHistory,
   saveQuizSession,
   clearAllHistory,
@@ -41,21 +41,21 @@ const buildQuestions = vi.fn(() => ([
 ]));
 const buildWeakQuestions = vi.fn(() => buildQuestions());
 const canUseWeak5 = vi.fn(() => false);
-vi.mock('../docs/js/questions.js', () => ({
+vi.mock('../src/js/questions.js', () => ({
   buildQuestions,
   buildWeakQuestions,
   canUseWeak5,
 }));
 
-vi.mock('../docs/js/stats.js', async () => {
-  const actual = await vi.importActual('../docs/js/stats.js');
+vi.mock('../src/js/stats.js', async () => {
+  const actual = await vi.importActual('../src/js/stats.js');
   return {
     ...actual,
     calculateKimarijiPerformance: vi.fn(() => []),
   };
 });
 
-vi.mock('../docs/js/auth.js', () => ({
+vi.mock('../src/js/auth.js', () => ({
   initAuthUI: vi.fn(),
   getCurrentUserId: vi.fn(() => null),
 }));
@@ -164,7 +164,7 @@ describe('app branches', () => {
     setupBaseDom();
     loadCsv.mockResolvedValueOnce([]);
 
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     domReadyHandlers.forEach(handler => handler(new Event('DOMContentLoaded')));
     await flushPromises();
 
@@ -180,7 +180,7 @@ describe('app branches', () => {
     checkLocalStorageAvailable.mockReturnValue(false);
     loadCsv.mockRejectedValueOnce(new Error('csv failed'));
 
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     domReadyHandlers.forEach(handler => handler(new Event('DOMContentLoaded')));
     await flushPromises();
 
@@ -209,7 +209,7 @@ describe('app branches', () => {
       },
     ]);
 
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     domReadyHandlers.forEach(handler => handler(new Event('DOMContentLoaded')));
     await flushPromises();
 
@@ -231,7 +231,7 @@ describe('app branches', () => {
     `);
     loadCsv.mockResolvedValueOnce([]);
 
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     domReadyHandlers.forEach(handler => handler(new Event('DOMContentLoaded')));
     await flushPromises();
 
@@ -246,7 +246,7 @@ describe('app branches', () => {
     setupBaseDom();
     loadCsv.mockResolvedValueOnce([]);
 
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     domReadyHandlers.forEach(handler => handler(new Event('DOMContentLoaded')));
     await flushPromises();
 
@@ -277,7 +277,7 @@ describe('app branches', () => {
       },
     ]);
 
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     domReadyHandlers.forEach(handler => handler(new Event('DOMContentLoaded')));
     await flushPromises();
 
@@ -310,7 +310,7 @@ describe('app branches', () => {
       },
     ]);
 
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     domReadyHandlers.forEach(handler => handler(new Event('DOMContentLoaded')));
     await flushPromises();
 
@@ -332,7 +332,7 @@ describe('app branches', () => {
     `);
     loadCsv.mockResolvedValueOnce([]);
 
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     domReadyHandlers.forEach(handler => handler(new Event('DOMContentLoaded')));
     await flushPromises();
 

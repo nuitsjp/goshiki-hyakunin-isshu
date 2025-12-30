@@ -5,7 +5,7 @@ import {
   canUseWeak5,
   getIncorrectPoems,
   buildQuestionsFromPoems,
-} from '../docs/js/questions.js';
+} from '../src/js/questions.js';
 
 const samplePoems = [
   {

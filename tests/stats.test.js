@@ -6,7 +6,7 @@ import {
   calculateOverallStats,
   formatDurationMs,
   formatDateJapanese,
-} from '../docs/js/stats.js';
+} from '../src/js/stats.js';
 
 describe('stats', () => {
   it('calculateColorStats returns zeroed stats when no history', () => {

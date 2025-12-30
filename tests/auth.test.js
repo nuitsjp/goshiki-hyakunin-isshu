@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const uploadLocalHistoryToFirestore = vi.fn(async () => 0);
 const initializeFirestore = vi.fn(async () => null);
 
-vi.mock('../docs/js/firestore.js', () => ({
+vi.mock('../src/js/firestore.js', () => ({
   uploadLocalHistoryToFirestore,
   initializeFirestore,
 }));
@@ -58,13 +58,13 @@ const createFirebaseMocks = ({ signInReject = false, signOutReject = false } = {
 
 const loadAuthModule = async (configOverrides = {}) => {
   vi.resetModules();
-  vi.doMock('../docs/js/config.js', () => ({
+  vi.doMock('../src/js/config.js', () => ({
     ENABLE_FIREBASE_AUTH: true,
     FIREBASE_CONFIG: { projectId: 'test' },
     AUTH_PROVIDER: 'google',
     ...configOverrides,
   }));
-  return await import('../docs/js/auth.js');
+  return await import('../src/js/auth.js');
 };
 
 const flushPromises = async () => {

@@ -9,7 +9,7 @@ module.exports = defineConfig({
       provider: "v8",
       reporter: ["text", "html"],
       reportsDirectory: "coverage",
-      exclude: ["docs/js/debug.js"]
+      exclude: ["src/js/debug.js"]
     }
   }
 });

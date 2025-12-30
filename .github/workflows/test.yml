@@ -7,14 +7,14 @@ on:
       - main
     paths:
       - ".github/workflows/test.yml"
-      - "docs/js/**"
+      - "src/js/**"
       - "tests/**"
       - "package.json"
       - "package-lock.json"
   pull_request:
     paths:
       - ".github/workflows/test.yml"
-      - "docs/js/**"
+      - "src/js/**"
       - "tests/**"
       - "package.json"
       - "package-lock.json"

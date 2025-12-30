@@ -18,7 +18,7 @@ jobs:
       - name: Inject version from tag
         run: |
           VERSION="${GITHUB_REF_NAME}"
-          sed -i "s/0\\.0\\.0/${VERSION}/g" docs/index.html docs/js/config.js
+          sed -i "s/0\\.0\\.0/${VERSION}/g" src/index.html src/js/config.js
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:

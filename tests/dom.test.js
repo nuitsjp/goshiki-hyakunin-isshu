@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getElements, getScreens } from '../docs/js/dom.js';
+import { getElements, getScreens } from '../src/js/dom.js';
 
 describe('dom helpers', () => {
   it('getScreens returns screen elements', () => {

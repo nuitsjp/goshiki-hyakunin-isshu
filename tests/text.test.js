@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { escapeHtml, toAriaLabel, toRubyHtml } from '../docs/js/text.js';
+import { escapeHtml, toAriaLabel, toRubyHtml } from '../src/js/text.js';
 
 describe('text utils', () => {
   it('escapeHtml escapes HTML special characters', () => {

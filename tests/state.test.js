@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { quizState, statsState } from '../docs/js/state.js';
+import { quizState, statsState } from '../src/js/state.js';
 
 describe('state', () => {
   it('quizState has defaults', () => {

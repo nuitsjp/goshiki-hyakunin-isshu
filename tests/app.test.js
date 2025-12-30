@@ -1,7 +1,7 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
-import { loadCsv } from '../docs/js/data.js';
+import { loadCsv } from '../src/js/data.js';
 
-vi.mock('../docs/js/data.js', () => ({
+vi.mock('../src/js/data.js', () => ({
   loadCsv: vi.fn(() => Promise.resolve([
     {
       color: '青',
@@ -171,7 +171,7 @@ describe('app', () => {
       writable: true,
     });
 
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -188,7 +188,7 @@ describe('app', () => {
 
   it('starts quiz and auto-advances on correct answer', async () => {
     vi.useFakeTimers();
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -216,7 +216,7 @@ describe('app', () => {
     let now = 0;
     nowSpy.mockImplementation(() => now);
 
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -241,7 +241,7 @@ describe('app', () => {
     let now = 0;
     nowSpy.mockImplementation(() => now);
 
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -274,7 +274,7 @@ describe('app', () => {
     let now = 0;
     nowSpy.mockImplementation(() => now);
 
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -294,14 +294,14 @@ describe('app', () => {
     const correctButton = optionButtons.find(btn => btn.dataset.correct === 'true');
     correctButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-    const { quizState } = await import('../docs/js/state.js');
+    const { quizState } = await import('../src/js/state.js');
     expect(quizState.answers[0].answerTimeMs).toBe(null);
 
     nowSpy.mockRestore();
   });
 
   it('handles wrong answer and next button', async () => {
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -326,7 +326,7 @@ describe('app', () => {
   });
 
   it('supports give up, toggles, and stats navigation', async () => {
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -367,7 +367,7 @@ describe('app', () => {
   });
 
   it('handles retrySame when no color is selected', async () => {
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -380,7 +380,7 @@ describe('app', () => {
   });
 
   it('handles give up guard branches and display mode fallback', async () => {
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -402,7 +402,7 @@ describe('app', () => {
   });
 
   it('returns to quiz screen when closing settings from quiz', async () => {
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -441,7 +441,7 @@ describe('app', () => {
     };
     localStorage.setItem('goshiki_quiz_history', JSON.stringify([session]));
 
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
     await flushPromises();
@@ -464,7 +464,7 @@ describe('app', () => {
   });
 
   it('returns to start screen when choosing color from results', async () => {
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -484,7 +484,7 @@ describe('app', () => {
   });
 
   it('starts quiz in reverse mode and updates labels', async () => {
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -507,7 +507,7 @@ describe('app', () => {
   });
 
   it('shows kami text when hint type is kami', async () => {
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -525,7 +525,7 @@ describe('app', () => {
   });
 
   it('ignores toggle when no question is available', async () => {
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -536,7 +536,7 @@ describe('app', () => {
   });
 
   it('handles wrong answer in reverse mode', async () => {
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -554,7 +554,7 @@ describe('app', () => {
   });
 
   it('handles display mode storage errors', async () => {
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -566,7 +566,7 @@ describe('app', () => {
   });
 
   it('handles order mode storage errors', async () => {
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -577,7 +577,7 @@ describe('app', () => {
 
   it('handles saved mode read errors', async () => {
     localStorage.getItem = () => { throw new Error('fail'); };
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -587,7 +587,7 @@ describe('app', () => {
 
   it('applies saved order mode from localStorage', async () => {
     localStorage.setItem('goshiki_order_mode', 'reverse');
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -601,7 +601,7 @@ describe('app', () => {
     localStorage.setItem('goshiki_hint_type', 'kami');
     localStorage.setItem('goshiki_display_mode', 'kanji');
 
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -614,7 +614,7 @@ describe('app', () => {
   });
 
   it('saves settings immediately on change', async () => {
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -640,7 +640,7 @@ describe('app', () => {
   });
 
   it('shows stats screen from start', async () => {
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -651,7 +651,7 @@ describe('app', () => {
   });
 
   it('retries quiz when color is already selected', async () => {
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -666,7 +666,7 @@ describe('app', () => {
   });
 
   it('updates question limit when weak5 is selected', async () => {
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -677,7 +677,7 @@ describe('app', () => {
   });
 
   it('cancels quiz and returns to start screen', async () => {
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -694,7 +694,7 @@ describe('app', () => {
   });
 
   it('shows kami text on give up in reverse mode', async () => {
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -713,11 +713,11 @@ describe('app', () => {
   });
 
   it('handles startQuiz error when color data is missing', async () => {
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
-    const { quizState } = await import('../docs/js/state.js');
+    const { quizState } = await import('../src/js/state.js');
     quizState.allPoems = [
       {
         color: 'ピンク',
@@ -736,7 +736,7 @@ describe('app', () => {
 
   it('shows retry-incorrect button when there are incorrect answers', async () => {
     vi.useFakeTimers();
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -765,7 +765,7 @@ describe('app', () => {
 
   it('hides retry-incorrect button when all answers are correct', async () => {
     vi.useFakeTimers();
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -788,7 +788,7 @@ describe('app', () => {
 
   it('starts quiz with incorrect poems when retry-incorrect is clicked', async () => {
     vi.useFakeTimers();
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -818,7 +818,7 @@ describe('app', () => {
     const quizScreen = document.getElementById('quiz-screen');
     expect(quizScreen.classList.contains('hidden')).toBe(false);
 
-    const { quizState } = await import('../docs/js/state.js');
+    const { quizState } = await import('../src/js/state.js');
     expect(quizState.currentQuestions.length).toBe(1);
   });
 });

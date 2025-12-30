@@ -11,9 +11,9 @@ import {
   saveQuizSession,
   setCachedQuizHistory,
   setAuthModule,
-} from '../docs/js/storage.js';
-import { STORAGE_KEYS, STATS_VERSION } from '../docs/js/config.js';
-import * as firestore from '../docs/js/firestore.js';
+} from '../src/js/storage.js';
+import { STORAGE_KEYS, STATS_VERSION } from '../src/js/config.js';
+import * as firestore from '../src/js/firestore.js';
 
 class MemoryStorage {
   constructor(initial = {}) {

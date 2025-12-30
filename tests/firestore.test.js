@@ -24,7 +24,7 @@ describe('firestore', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
-    vi.doMock('../docs/js/config.js', () => ({
+    vi.doMock('../src/js/config.js', () => ({
       ENABLE_FIRESTORE_SYNC: true,
       FIREBASE_CONFIG: { projectId: 'test' },
     }));
@@ -34,7 +34,7 @@ describe('firestore', () => {
     vi.doMock('https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js', () => mockAppModule);
     vi.doMock('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js', () => mockFirestoreModule);
 
-    const { loadFirestoreModules } = await import('../docs/js/firestore.js');
+    const { loadFirestoreModules } = await import('../src/js/firestore.js');
     const modules = await loadFirestoreModules();
 
     expect(modules).toHaveProperty('appModule');
@@ -45,7 +45,7 @@ describe('firestore', () => {
     vi.doMock('https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js', () => mockAppModule);
     vi.doMock('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js', () => mockFirestoreModule);
 
-    const { initializeFirestore, loadFirestoreModules } = await import('../docs/js/firestore.js');
+    const { initializeFirestore, loadFirestoreModules } = await import('../src/js/firestore.js');
 
     await loadFirestoreModules();
     const app = mockAppModule.initializeApp();
@@ -57,12 +57,12 @@ describe('firestore', () => {
   });
 
   it('returns null when Firestore sync is disabled', async () => {
-    vi.doMock('../docs/js/config.js', () => ({
+    vi.doMock('../src/js/config.js', () => ({
       ENABLE_FIRESTORE_SYNC: false,
       FIREBASE_CONFIG: null,
     }));
 
-    const { initializeFirestore } = await import('../docs/js/firestore.js');
+    const { initializeFirestore } = await import('../src/js/firestore.js');
     const result = await initializeFirestore({});
 
     expect(result).toBeNull();
@@ -74,7 +74,7 @@ describe('firestore', () => {
 
     mockFirestoreModule.initializeFirestore.mockReturnValue({});
 
-    const { initializeFirestore, saveSessionToFirestore, loadFirestoreModules } = await import('../docs/js/firestore.js');
+    const { initializeFirestore, saveSessionToFirestore, loadFirestoreModules } = await import('../src/js/firestore.js');
 
     await loadFirestoreModules();
     const app = mockAppModule.initializeApp();
@@ -95,12 +95,12 @@ describe('firestore', () => {
   });
 
   it('returns false when saving without db', async () => {
-    vi.doMock('../docs/js/config.js', () => ({
+    vi.doMock('../src/js/config.js', () => ({
       ENABLE_FIRESTORE_SYNC: false,
       FIREBASE_CONFIG: null,
     }));
 
-    const { saveSessionToFirestore } = await import('../docs/js/firestore.js');
+    const { saveSessionToFirestore } = await import('../src/js/firestore.js');
     const result = await saveSessionToFirestore('user123', { sessionId: 's1' });
 
     expect(result).toBe(false);
@@ -123,7 +123,7 @@ describe('firestore', () => {
       ],
     });
 
-    const { initializeFirestore, loadSessionsFromFirestore, loadFirestoreModules } = await import('../docs/js/firestore.js');
+    const { initializeFirestore, loadSessionsFromFirestore, loadFirestoreModules } = await import('../src/js/firestore.js');
 
     await loadFirestoreModules();
     const app = mockAppModule.initializeApp();
@@ -137,12 +137,12 @@ describe('firestore', () => {
   });
 
   it('returns empty array when loading without db', async () => {
-    vi.doMock('../docs/js/config.js', () => ({
+    vi.doMock('../src/js/config.js', () => ({
       ENABLE_FIRESTORE_SYNC: false,
       FIREBASE_CONFIG: null,
     }));
 
-    const { loadSessionsFromFirestore } = await import('../docs/js/firestore.js');
+    const { loadSessionsFromFirestore } = await import('../src/js/firestore.js');
     const result = await loadSessionsFromFirestore('user123');
 
     expect(result).toEqual([]);
@@ -163,7 +163,7 @@ describe('firestore', () => {
       docs: [{ ref: 'ref1' }, { ref: 'ref2' }],
     });
 
-    const { initializeFirestore, deleteAllSessionsFromFirestore, loadFirestoreModules } = await import('../docs/js/firestore.js');
+    const { initializeFirestore, deleteAllSessionsFromFirestore, loadFirestoreModules } = await import('../src/js/firestore.js');
 
     await loadFirestoreModules();
     const app = mockAppModule.initializeApp();
@@ -176,12 +176,12 @@ describe('firestore', () => {
   });
 
   it('returns false when deleting without db', async () => {
-    vi.doMock('../docs/js/config.js', () => ({
+    vi.doMock('../src/js/config.js', () => ({
       ENABLE_FIRESTORE_SYNC: false,
       FIREBASE_CONFIG: null,
     }));
 
-    const { deleteAllSessionsFromFirestore } = await import('../docs/js/firestore.js');
+    const { deleteAllSessionsFromFirestore } = await import('../src/js/firestore.js');
     const result = await deleteAllSessionsFromFirestore('user123');
 
     expect(result).toBe(false);
@@ -202,7 +202,7 @@ describe('firestore', () => {
       docs: [{ id: 's1' }],
     });
 
-    const { initializeFirestore, uploadLocalHistoryToFirestore, loadFirestoreModules } = await import('../docs/js/firestore.js');
+    const { initializeFirestore, uploadLocalHistoryToFirestore, loadFirestoreModules } = await import('../src/js/firestore.js');
 
     await loadFirestoreModules();
     const app = mockAppModule.initializeApp();
@@ -225,7 +225,7 @@ describe('firestore', () => {
 
     mockFirestoreModule.initializeFirestore.mockReturnValue({});
 
-    const { initializeFirestore, uploadLocalHistoryToFirestore, loadFirestoreModules } = await import('../docs/js/firestore.js');
+    const { initializeFirestore, uploadLocalHistoryToFirestore, loadFirestoreModules } = await import('../src/js/firestore.js');
 
     await loadFirestoreModules();
     const app = mockAppModule.initializeApp();
@@ -243,7 +243,7 @@ describe('firestore', () => {
     const mockDb = {};
     mockFirestoreModule.initializeFirestore.mockReturnValue(mockDb);
 
-    const { initializeFirestore, getFirestoreDb, loadFirestoreModules } = await import('../docs/js/firestore.js');
+    const { initializeFirestore, getFirestoreDb, loadFirestoreModules } = await import('../src/js/firestore.js');
 
     await loadFirestoreModules();
     const app = mockAppModule.initializeApp();
@@ -259,7 +259,7 @@ describe('firestore', () => {
       throw new Error('load failed');
     });
 
-    const { initializeFirestore } = await import('../docs/js/firestore.js');
+    const { initializeFirestore } = await import('../src/js/firestore.js');
     const result = await initializeFirestore({});
 
     expect(result).toBeNull();
@@ -272,7 +272,7 @@ describe('firestore', () => {
     mockFirestoreModule.initializeFirestore.mockReturnValue({});
     mockFirestoreModule.setDoc.mockRejectedValue(new Error('fail'));
 
-    const { initializeFirestore, saveSessionToFirestore, loadFirestoreModules } = await import('../docs/js/firestore.js');
+    const { initializeFirestore, saveSessionToFirestore, loadFirestoreModules } = await import('../src/js/firestore.js');
 
     await loadFirestoreModules();
     const app = mockAppModule.initializeApp();
@@ -290,7 +290,7 @@ describe('firestore', () => {
     mockFirestoreModule.initializeFirestore.mockReturnValue({});
     mockFirestoreModule.getDocs.mockRejectedValue(new Error('fail'));
 
-    const { initializeFirestore, loadSessionsFromFirestore, loadFirestoreModules } = await import('../docs/js/firestore.js');
+    const { initializeFirestore, loadSessionsFromFirestore, loadFirestoreModules } = await import('../src/js/firestore.js');
 
     await loadFirestoreModules();
     const app = mockAppModule.initializeApp();
@@ -318,7 +318,7 @@ describe('firestore', () => {
       docs: [{ ref: 'ref1' }],
     });
 
-    const { initializeFirestore, deleteAllSessionsFromFirestore, loadFirestoreModules } = await import('../docs/js/firestore.js');
+    const { initializeFirestore, deleteAllSessionsFromFirestore, loadFirestoreModules } = await import('../src/js/firestore.js');
 
     await loadFirestoreModules();
     const app = mockAppModule.initializeApp();
@@ -336,7 +336,7 @@ describe('firestore', () => {
     mockFirestoreModule.initializeFirestore.mockReturnValue({});
     mockFirestoreModule.getDocs.mockRejectedValue(new Error('fail'));
 
-    const { initializeFirestore, uploadLocalHistoryToFirestore, loadFirestoreModules } = await import('../docs/js/firestore.js');
+    const { initializeFirestore, uploadLocalHistoryToFirestore, loadFirestoreModules } = await import('../src/js/firestore.js');
 
     await loadFirestoreModules();
     const app = mockAppModule.initializeApp();

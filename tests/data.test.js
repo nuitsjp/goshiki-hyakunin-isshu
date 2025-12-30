@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fetchCsv, loadCsv, parseCsvText } from '../docs/js/data.js';
+import { fetchCsv, loadCsv, parseCsvText } from '../src/js/data.js';
 
 describe('data', () => {
   it('parseCsvText throws when parser is missing', () => {

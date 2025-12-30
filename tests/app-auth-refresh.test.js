@@ -18,12 +18,12 @@ const clearAllHistory = vi.fn(async () => true);
 const checkLocalStorageAvailable = vi.fn(() => true);
 const setAuthModule = vi.fn();
 
-vi.mock('../docs/js/auth.js', () => ({
+vi.mock('../src/js/auth.js', () => ({
   initAuthUI,
   getCurrentUserId: vi.fn(() => null),
 }));
 
-vi.mock('../docs/js/stats-ui.js', () => ({
+vi.mock('../src/js/stats-ui.js', () => ({
   createStatsUI: vi.fn(({ showScreen }) => {
     renderStatsScreen.mockImplementation(() => showScreen('stats'));
     return {
@@ -35,7 +35,7 @@ vi.mock('../docs/js/stats-ui.js', () => ({
   }),
 }));
 
-vi.mock('../docs/js/storage.js', () => ({
+vi.mock('../src/js/storage.js', () => ({
   saveQuizSession,
   loadQuizHistory,
   refreshQuizHistory,
@@ -45,7 +45,7 @@ vi.mock('../docs/js/storage.js', () => ({
   setAuthModule,
 }));
 
-vi.mock('../docs/js/data.js', () => ({
+vi.mock('../src/js/data.js', () => ({
   loadCsv: vi.fn(() => Promise.resolve([])),
 }));
 
@@ -170,7 +170,7 @@ describe('app auth refresh', () => {
   });
 
   it('refreshes summaries when auth state becomes ready', async () => {
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
@@ -186,7 +186,7 @@ describe('app auth refresh', () => {
   });
 
   it('re-renders stats when auth state changes on stats screen', async () => {
-    await import('../docs/js/app.js');
+    await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 

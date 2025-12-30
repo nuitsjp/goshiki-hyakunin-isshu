@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createStatsUI } from '../docs/js/stats-ui.js';
+import { createStatsUI } from '../src/js/stats-ui.js';
 
 const buildElements = () => ({
   totalQuizzes: document.getElementById('total-quizzes'),
