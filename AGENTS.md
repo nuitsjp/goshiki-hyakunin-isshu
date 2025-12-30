@@ -48,6 +48,3 @@
 ## Data & Accessibility Notes
 - Preserve kana/kanji fidelity in the CSV. When displaying readings, respect line breaks and avoid truncation on small screens.
 - Honor the accessibility targets from README: minimum 16px fonts, color contrast, and 44x44px tap targets. Test with keyboard navigation for answer selection.
-
-## Versioning
-- When user-facing behavior or UI changes, bump the visible version badge in both `index.html` and `js/app.js` (`APP_VERSION`). Document the new version in the change summary. ***
