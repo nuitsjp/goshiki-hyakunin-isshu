@@ -52,6 +52,12 @@ const elements = {
 };
 
 let elapsedTimerId = null;
+const DEFAULT_RESULT_DELAY_MS = 500;
+
+function getResultDelayMs() {
+  const value = Number(window.__KARUTA_RESULT_DELAY_MS__);
+  return Number.isFinite(value) && value >= 0 ? value : DEFAULT_RESULT_DELAY_MS;
+}
 
 function readLocalSetting(key, fallback) {
   try {
@@ -226,6 +232,23 @@ function updateHintButton() {
   }
 }
 
+function setCardTextLines(cardElement, text) {
+  if (!cardElement) return;
+  cardElement.innerHTML = '';
+  const lines = (text || '').split(/\s+/).filter(Boolean);
+  if (lines.length === 0) return;
+
+  lines.forEach((line, idx) => {
+    const lineNode = document.createElement('span');
+    lineNode.className = 'karuta-card-line';
+    lineNode.textContent = line;
+    cardElement.appendChild(lineNode);
+    if (idx < lines.length - 1) {
+      cardElement.appendChild(document.createElement('br'));
+    }
+  });
+}
+
 function renderCards() {
   if (!elements.karutaGrid) return;
 
@@ -240,12 +263,12 @@ function renderCards() {
       // 非表示の札（配置は維持）
       cardElement.classList.add('is-taken');
       cardElement.disabled = true;
-      cardElement.textContent = card.shimoReading.replace(/\s/g, '');
+      setCardTextLines(cardElement, card.shimoReading);
     } else if (card.state === 'showing-result') {
       // 結果表示中（アイコン付き）
       cardElement.classList.add('showing-result');
       cardElement.disabled = true;
-      cardElement.textContent = card.shimoReading.replace(/\s/g, '');
+      setCardTextLines(cardElement, card.shimoReading);
 
       // 正解時は○アイコンを表示
       if (card.isCorrect && !card.showAsCorrect) {
@@ -272,7 +295,7 @@ function renderCards() {
       }
     } else {
       cardElement.classList.add('active');
-      cardElement.textContent = card.shimoReading.replace(/\s/g, '');
+      setCardTextLines(cardElement, card.shimoReading);
       cardElement.addEventListener('click', () => handleCardClick(index));
     }
 
@@ -364,7 +387,7 @@ function handleCardClick(cardIndex) {
       displayReading();
       updateProgress();
     }
-  }, 500);
+  }, getResultDelayMs());
 }
 
 function nextReading() {

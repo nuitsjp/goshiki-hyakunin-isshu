@@ -50,7 +50,13 @@
         <div class="card-body">
           <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
             <h2 class="h4 mb-0">色を選んでください</h2>
-            <a href="karuta.html" class="btn btn-outline-secondary btn-sm">かるたへ</a>
+            <div class="d-flex align-items-center gap-2">
+              <label for="measure-time-toggle" class="form-label mb-0">計測</label>
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="measure-time-toggle" checked>
+              </div>
+              <a href="karuta.html" class="btn btn-outline-secondary btn-sm">かるたへ</a>
+            </div>
           </div>
           <div class="mb-3 d-flex flex-wrap gap-3 align-items-center">
             <div class="d-flex gap-2 align-items-center">
@@ -65,12 +71,6 @@
               <div class="btn-group" role="group" aria-label="出題">
                 <button type="button" class="btn btn-toggle active" id="question-mode-20" data-value="20">20問</button>
                 <button type="button" class="btn btn-toggle" id="question-mode-weak5" data-value="weak5">苦手5種</button>
-              </div>
-            </div>
-            <div class="d-flex gap-2 align-items-center ms-auto">
-              <label for="measure-time-toggle" class="form-label mb-0">計測</label>
-              <div class="form-check form-switch mb-0">
-                <input class="form-check-input" type="checkbox" id="measure-time-toggle" checked>
               </div>
             </div>
           </div>

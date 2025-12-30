@@ -117,6 +117,7 @@ beforeEach(() => {
   vi.resetModules();
   document.body.innerHTML = '';
   document.documentElement.style.cssText = '';
+  window.__KARUTA_RESULT_DELAY_MS__ = 0;
   const alertMock = vi.fn();
   const confirmMock = vi.fn(() => true);
   vi.stubGlobal('alert', alertMock);
@@ -151,6 +152,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  delete window.__KARUTA_RESULT_DELAY_MS__;
 });
 
 describe('karuta-app', () => {
@@ -191,6 +193,29 @@ describe('karuta-app', () => {
     expect(document.getElementById('game-screen').classList.contains('hidden')).toBe(false);
     expect(document.getElementById('reading-display').innerHTML).toBe('');
     expect(document.getElementById('kimariji-display').textContent).toBe('き0');
+  });
+
+  it('取り札はスペース区切りで改行表示される', async () => {
+    setupDom();
+    loadCsvMock.mockResolvedValue(createPoems(1));
+    buildKarutaDeckMock.mockReturnValue([{
+      kimariji: 'き0',
+      shimoNoKu: '下0',
+      shimoReading: 'よしの の さと',
+      kamiNoKu: '上0',
+      kamiReading: 'かみ0',
+      state: 'active',
+    }]);
+    buildKarutaReadingsMock.mockReturnValue(createReadings(1));
+    await importApp();
+
+    document.querySelector('.color-button[data-color="黄"]').click();
+
+    const card = document.querySelector('.karuta-card');
+    const lines = Array.from(card.querySelectorAll('.karuta-card-line')).map(node => node.textContent);
+
+    expect(card.innerHTML).toContain('<br');
+    expect(lines).toEqual(['よしの', 'の', 'さと']);
   });
 
   it('計測オフならタイマーを非表示にする', async () => {
@@ -293,7 +318,7 @@ describe('karuta-app', () => {
     document.querySelectorAll('.karuta-card')[0].click();
 
     // 自動遷移を待つ
-    await wait(600);
+    await wait(0);
 
     expect(document.querySelectorAll('.karuta-card')).toHaveLength(2);
     expect(document.querySelector('.karuta-card.is-taken')).toBeTruthy();
@@ -313,7 +338,7 @@ describe('karuta-app', () => {
     document.querySelector('.karuta-card').click();
 
     // 自動遷移を待つ
-    await wait(600);
+    await wait(0);
 
     expect(document.getElementById('result-screen').classList.contains('hidden')).toBe(false);
     expect(document.getElementById('result-count').textContent).toBe('1 / 1 枚獲得');
@@ -339,7 +364,7 @@ describe('karuta-app', () => {
     document.querySelector('.karuta-card').click();
 
     // 自動遷移を待つ
-    await wait(600);
+    await wait(0);
 
     expect(saveKarutaSessionMock).toHaveBeenCalledTimes(1);
     const sessionData = saveKarutaSessionMock.mock.calls[0][0];
@@ -366,7 +391,7 @@ describe('karuta-app', () => {
     document.querySelectorAll('.karuta-card')[0].click();
 
     // 自動遷移を待つ
-    await wait(600);
+    await wait(0);
 
     expect(document.getElementById('kimariji-display').textContent).toBe('き1');
     expect(document.getElementById('progress-text').textContent).toBe('2 / 2');
@@ -385,7 +410,7 @@ describe('karuta-app', () => {
     document.getElementById('reading-display').innerHTML = '<p>dummy</p>';
 
     // 自動遷移を待つ
-    await wait(600);
+    await wait(0);
 
     expect(document.getElementById('reading-display').innerHTML).toBe('');
   });
@@ -404,7 +429,7 @@ describe('karuta-app', () => {
     document.querySelector('.karuta-card').click();
 
     // 自動遷移を待つ
-    await wait(600);
+    await wait(0);
 
     expect(document.getElementById('progress-bar').style.width).toBe('100%');
   });
@@ -421,7 +446,7 @@ describe('karuta-app', () => {
     document.querySelector('.karuta-card').click();
 
     // 自動遷移を待つ
-    await wait(600);
+    await wait(0);
 
     expect(document.getElementById('result-list').innerHTML).toContain('icon-wrong');
     expect(document.getElementById('result-list').innerHTML).toContain('×');
@@ -521,7 +546,7 @@ describe('karuta-app', () => {
     for (let i = 0; i < 10; i += 1) {
       document.querySelector('.karuta-card.active').click();
       // 自動遷移を待つ
-      await wait(600);
+      await wait(0);
     }
 
     expect(document.getElementById('result-comment').textContent).toBe('素晴らしい！ほぼ完璧です！');
@@ -549,7 +574,7 @@ describe('karuta-app', () => {
     for (let i = 0; i < 10; i += 1) {
       document.querySelector('.karuta-card.active').click();
       // 自動遷移を待つ
-      await wait(600);
+      await wait(0);
     }
 
     expect(document.getElementById('result-comment').textContent).toBe('よくできました！');
@@ -577,7 +602,7 @@ describe('karuta-app', () => {
     for (let i = 0; i < 10; i += 1) {
       document.querySelector('.karuta-card.active').click();
       // 自動遷移を待つ
-      await wait(600);
+      await wait(0);
     }
 
     expect(document.getElementById('result-comment').textContent).toBe('もう少し頑張りましょう！');
@@ -605,7 +630,7 @@ describe('karuta-app', () => {
     for (let i = 0; i < 10; i += 1) {
       document.querySelector('.karuta-card.active').click();
       // 自動遷移を待つ
-      await wait(600);
+      await wait(0);
     }
 
     expect(document.getElementById('result-comment').textContent).toBe('練習あるのみ！');
@@ -636,7 +661,7 @@ describe('karuta-app', () => {
     document.querySelector('.color-button[data-color="黄"]').click();
     document.querySelector('.karuta-card').click();
 
-    await wait(600);
+    await wait(0);
 
     expect(document.getElementById('result-time').classList.contains('hidden')).toBe(true);
     expect(document.getElementById('result-time').textContent).toBe('');
@@ -675,5 +700,38 @@ describe('karuta-app', () => {
     }).not.toThrow();
 
     localStorage.setItem = originalSetItem;
+  });
+
+  it('遅延指定がある場合はその値を使う', async () => {
+    setupDom();
+    loadCsvMock.mockResolvedValue(createPoems(1));
+    buildKarutaDeckMock.mockReturnValue(createDeck(1));
+    buildKarutaReadingsMock.mockReturnValue(createReadings(1));
+    checkKarutaMatchMock.mockReturnValue(true);
+    const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
+    await importApp();
+
+    document.querySelector('.color-button[data-color="黄"]').click();
+    document.querySelector('.karuta-card').click();
+
+    expect(setTimeoutSpy).toHaveBeenLastCalledWith(expect.any(Function), 0);
+    setTimeoutSpy.mockRestore();
+  });
+
+  it('遅延指定がない場合はデフォルトの待機時間を使う', async () => {
+    delete window.__KARUTA_RESULT_DELAY_MS__;
+    setupDom();
+    loadCsvMock.mockResolvedValue(createPoems(1));
+    buildKarutaDeckMock.mockReturnValue(createDeck(1));
+    buildKarutaReadingsMock.mockReturnValue(createReadings(1));
+    checkKarutaMatchMock.mockReturnValue(true);
+    const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
+    await importApp();
+
+    document.querySelector('.color-button[data-color="黄"]').click();
+    document.querySelector('.karuta-card').click();
+
+    expect(setTimeoutSpy).toHaveBeenLastCalledWith(expect.any(Function), 500);
+    setTimeoutSpy.mockRestore();
   });
 });
