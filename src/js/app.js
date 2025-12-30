@@ -98,6 +98,14 @@ function showScreen(screen) {
     screens[screen].classList.remove('hidden');
     currentScreen = screen;
   }
+  document.body.dataset.screen = screen;
+  if (elements.menuButton) {
+    const shouldHideMenu = screen === 'result';
+    elements.menuButton.classList.toggle('hidden', shouldHideMenu);
+    if (shouldHideMenu) {
+      closeMenu();
+    }
+  }
   if (screen === 'start') {
     loadStartSettings();
     updateColorButtonsForWeak5Mode();
@@ -212,6 +220,17 @@ function updateElapsedTime() {
   elements.elapsedTime.textContent = formatDurationMs(elapsedMs);
 }
 
+function updateResultTime(durationMs) {
+  if (!elements.resultTime) return;
+  if (quizState.measureTime && Number.isFinite(durationMs)) {
+    elements.resultTime.textContent = `クリアタイム ${formatDurationMs(durationMs)}`;
+    elements.resultTime.classList.remove('hidden');
+  } else {
+    elements.resultTime.textContent = '';
+    elements.resultTime.classList.add('hidden');
+  }
+}
+
 function setElapsedVisibility(isVisible) {
   if (!elements.elapsedTime) return;
   elements.elapsedTime.classList.toggle('hidden', !isVisible);
@@ -290,8 +309,12 @@ function resetQuizView() {
     btn.removeAttribute('data-option-index');
   });
   if (elements.toggleKimariji) {
-    const hintLabel = quizState.hintType === 'kami' ? '上の句' : '初句';
-    elements.toggleKimariji.textContent = `? ${hintLabel}表示`;
+    const label = elements.toggleKimariji.querySelector('.hint-button-label');
+    if (label) {
+      label.textContent = 'ヒント';
+    } else {
+      elements.toggleKimariji.textContent = 'ヒント';
+    }
     elements.toggleKimariji.setAttribute('aria-pressed', 'false');
     elements.toggleKimariji.disabled = true;
   }
@@ -318,7 +341,9 @@ function updateNextButton(ready = false) {
 function renderKimariji(question) {
   if (!question) return;
   const isReverse = quizState.orderMode === 'reverse';
-  const hintLabel = quizState.hintType === 'shoku' ? '初句' : '上の句';
+  const useKana = quizState.displayMode === 'kana';
+  const kamiText = useKana ? (question.kamiReading || '') : (question.kamiNoKu || '');
+  const shimoText = useKana ? (question.correctShimoReading || '') : (question.correctShimo || '');
 
   if (elements.mainDisplayLabel) {
     elements.mainDisplayLabel.textContent = isReverse ? '下の句 (問題)' : '決まり字';
@@ -326,43 +351,46 @@ function renderKimariji(question) {
 
   if (isReverse) {
     if (quizState.showKami) {
-      const text = quizState.displayMode === 'kana'
-        ? (question.kamiReading || '')
-        : (question.kamiNoKu || '');
-      elements.kimariji.innerHTML = toRubyHtml(text);
+      elements.kimariji.innerHTML = toRubyHtml(kamiText);
     } else {
-      const text = quizState.displayMode === 'kana'
-        ? (question.correctShimoReading || '')
-        : (question.correctShimo || '');
-      elements.kimariji.innerHTML = toRubyHtml(text);
+      elements.kimariji.innerHTML = toRubyHtml(shimoText);
     }
 
     if (elements.toggleKimariji) {
       const showingKami = quizState.showKami;
-      elements.toggleKimariji.textContent = showingKami ? '? 下の句表示' : '? 上の句表示';
-      elements.toggleKimariji.setAttribute('aria-pressed', showingKami ? 'true' : 'false');
+      updateHintToggleButton(showingKami);
       elements.toggleKimariji.disabled = false;
     }
     return;
   }
 
   if (quizState.showKami) {
-    if (quizState.hintType === 'shoku') {
+    if (quizState.isAnswered) {
+      elements.kimariji.innerHTML = toRubyHtml(kamiText);
+    } else if (quizState.hintType === 'shoku') {
       elements.kimariji.textContent = question.hint || '';
     } else {
-      const text = quizState.displayMode === 'kana'
-        ? (question.kamiReading || '')
-        : (question.kamiNoKu || '');
-      elements.kimariji.innerHTML = toRubyHtml(text);
+      elements.kimariji.innerHTML = toRubyHtml(kamiText);
     }
   } else {
     elements.kimariji.textContent = question.kimariji;
   }
   if (elements.toggleKimariji) {
     const showingKami = quizState.showKami;
-    elements.toggleKimariji.textContent = showingKami ? '? 決まり字表示' : `? ${hintLabel}表示`;
-    elements.toggleKimariji.setAttribute('aria-pressed', showingKami ? 'true' : 'false');
+    updateHintToggleButton(showingKami);
     elements.toggleKimariji.disabled = false;
+  }
+}
+
+function updateHintToggleButton(showHint) {
+  if (!elements.toggleKimariji) return;
+  elements.toggleKimariji.setAttribute('aria-pressed', showHint ? 'true' : 'false');
+  const label = elements.toggleKimariji.querySelector('.hint-button-label');
+  const labelText = showHint ? '決まり字' : 'ヒント';
+  if (label) {
+    label.textContent = labelText;
+  } else {
+    elements.toggleKimariji.textContent = labelText;
   }
 }
 
@@ -551,6 +579,7 @@ async function showResults() {
   elements.resultCount.textContent = `${quizState.correctCount} / ${total} 問正解`;
   elements.resultRate.textContent = `正答率 ${rate}%`;
   elements.resultComment.textContent = getResultComment(rate);
+  updateResultTime(durationMs);
   renderResultList();
 
   const hasIncorrect = quizState.answers.some(a => !a.isCorrect);

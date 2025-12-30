@@ -8,7 +8,6 @@ const buildElements = () => ({
   overallAccuracy: document.getElementById('overall-accuracy'),
   overallHintUsage: document.getElementById('overall-hint-usage'),
   colorStatsBody: document.getElementById('color-stats-tbody'),
-  recentActivity: document.getElementById('recent-activity'),
   statsFilterNormal: document.getElementById('stats-filter-normal'),
   statsFilterReverse: document.getElementById('stats-filter-reverse'),
 });
@@ -21,7 +20,6 @@ const setupDom = () => {
     <div data-color-stats="緑"></div>
     <div data-color-stats="オレンジ"></div>
     <div id="color-detail-container"></div>
-    <div id="recent-activity"></div>
     <div id="total-quizzes"></div>
     <div id="total-questions"></div>
     <div id="total-correct"></div>
@@ -38,7 +36,7 @@ const setupDom = () => {
 };
 
 describe('stats-ui', () => {
-  it('renders empty summaries and recent activity when no history', async () => {
+  it('renders empty summaries when no history', async () => {
     setupDom();
     const quizState = { allPoems: [], orderMode: 'normal' };
     const statsState = { selectedColor: null, filterMode: 'normal' };
@@ -54,10 +52,6 @@ describe('stats-ui', () => {
     await ui.renderColorSummaries();
     const summary = document.querySelector('[data-color-stats="青"]');
     expect(summary.textContent).toBe('青');
-
-    await ui.renderStatsScreen();
-    const recent = document.getElementById('recent-activity');
-    expect(recent.innerHTML).toMatch(/まだプレイ履歴がありません/);
   });
 
   it('shows stats screen before history resolves', async () => {
@@ -90,12 +84,12 @@ describe('stats-ui', () => {
       {
         sessionId: 's1',
         color: '青',
-        questionCount: 10,
-        correctCount: 8,
-        wrongCount: 1,
-        passCount: 1,
-        durationMs: 90000,
-        accuracyRate: 80,
+        questionCount: 20,
+        correctCount: 18,
+        wrongCount: 2,
+        passCount: 0,
+        durationMs: 120000,
+        accuracyRate: 90,
         hintType: 'shoku',
         displayMode: 'kana',
         orderMode: 'normal',
@@ -131,7 +125,6 @@ describe('stats-ui', () => {
 
     await ui.renderStatsScreen();
     expect(showScreen).toHaveBeenCalledWith('stats');
-    expect(document.getElementById('recent-activity').textContent).toMatch(/1:30 - 8\/10/);
     const rows = document.querySelectorAll('#color-stats-tbody tr');
     expect(rows.length).toBe(5);
 

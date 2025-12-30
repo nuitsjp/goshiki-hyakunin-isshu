@@ -1,6 +1,7 @@
 import { COLORS } from './config.js';
 
 const normalizeHistory = (history) => (Array.isArray(history) ? history : []);
+const isFullQuizSession = (session) => session && session.questionCount === 20;
 
 export function calculateColorStats(color, history, orderMode = null) {
   const normalized = normalizeHistory(history);
@@ -25,7 +26,7 @@ export function calculateColorStats(color, history, orderMode = null) {
     };
   }
 
-  const totalQuizzes = colorSessions.length;
+  const totalQuizzes = colorSessions.filter(isFullQuizSession).length;
   const totalQuestions = colorSessions.reduce((sum, s) => sum + s.questionCount, 0);
   const totalCorrect = colorSessions.reduce((sum, s) => sum + s.correctCount, 0);
   const totalWrong = colorSessions.reduce((sum, s) => sum + s.wrongCount, 0);
@@ -48,7 +49,7 @@ export function calculateColorStats(color, history, orderMode = null) {
     current.timestamp > latest.timestamp ? current : latest
   );
   const durations = colorSessions
-    .filter(session => session.correctCount === session.questionCount)
+    .filter(session => isFullQuizSession(session) && session.correctCount === session.questionCount)
     .map(session => session.durationMs)
     .filter(value => Number.isFinite(value));
   const fastestDurationMs = durations.length ? Math.min(...durations) : null;
@@ -213,7 +214,7 @@ export function calculateOverallStats(history, orderMode = null) {
     };
   }
 
-  const totalQuizzes = filtered.length;
+  const totalQuizzes = filtered.filter(isFullQuizSession).length;
   const totalQuestions = filtered.reduce((sum, s) => sum + s.questionCount, 0);
   const totalCorrect = filtered.reduce((sum, s) => sum + s.correctCount, 0);
   const totalWrong = filtered.reduce((sum, s) => sum + s.wrongCount, 0);

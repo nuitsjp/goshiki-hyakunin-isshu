@@ -20,6 +20,16 @@
   --color-assist: #dcb879;
   /* Same as Yamabuki for consistency */
 
+  --karuta-card-base-width: clamp(88px, 11vw, 116px);
+  --karuta-card-width-current: var(--karuta-card-base-width);
+  --karuta-card-height-current: calc(var(--karuta-card-width-current) * var(--karuta-card-aspect));
+  --karuta-grid-gap: 0.5rem;
+  --karuta-card-aspect: 1.4142135623;
+  --karuta-card-size: var(--karuta-card-base-width);
+  --karuta-board-inner-width: calc(var(--karuta-card-width-current) * 5 + var(--karuta-grid-gap) * 4);
+  --karuta-board-max-width: calc(var(--karuta-card-base-width) * 5 + var(--karuta-grid-gap) * 4 + 2rem);
+  --karuta-board-outer-width: calc(var(--karuta-board-inner-width) + 2rem);
+
   --color-bg: #fcfaf2;
   /* Washi (Japanese paper) off-white */
   --color-text: #333333;
@@ -63,6 +73,25 @@ h6,
 
 .app-container {
   flex: 1;
+  min-height: 100vh;
+}
+
+.karuta-header {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+}
+
+.karuta-header-inner {
+  width: 100%;
+  max-width: var(--karuta-board-outer-width);
+}
+
+.karuta-page main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 /* App Menu */
@@ -181,12 +210,21 @@ h6,
 }
 
 .screen {
-  margin-bottom: 2rem;
+  margin-bottom: 1.25rem;
   animation: fadeIn 0.4s ease-out;
 }
 
 .hidden {
   display: none !important;
+}
+
+.karuta-page #game-screen.screen {
+  flex: 1;
+  display: flex;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
 }
 
 /* Color Choice Buttons */
@@ -295,7 +333,7 @@ h6,
   font-weight: 600;
   letter-spacing: 0.1em;
   color: var(--color-text);
-  margin: 1.5rem 0;
+  margin: 0.15rem 0 !important;
   text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.03);
 }
 
@@ -475,6 +513,7 @@ h6,
 }
 
 /* Toggle Buttons (Settings) */
+
 .btn-toggle {
   background: transparent;
   color: var(--color-text);
@@ -494,11 +533,26 @@ h6,
   color: #fff;
   border-color: var(--color-text);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  animation: togglePulse 220ms ease-out;
 }
 
 .btn-toggle:focus-visible {
   outline: 2px solid var(--current-accent);
   outline-offset: 2px;
+}
+
+@keyframes togglePulse {
+  0% {
+    transform: scale(0.98);
+  }
+
+  60% {
+    transform: scale(1.04);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* ==================== Statistics Screen Styles ==================== */
@@ -910,5 +964,280 @@ h6,
 
   .session-result {
     align-self: flex-end;
+  }
+}
+
+/* ===== Karuta Game Styles ===== */
+
+.karuta-board {
+  border-color: var(--color-border);
+  width: 100%;
+  max-width: var(--karuta-board-outer-width);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.karuta-board .card-body {
+  padding: 0.75rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 0;
+  flex: 1;
+}
+
+.karuta-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+  min-height: 0;
+}
+
+.karuta-label-row {
+  gap: 0.35rem;
+  row-gap: 0.25rem;
+  margin-bottom: 0.1rem;
+  width: 100%;
+  max-width: var(--karuta-board-inner-width);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.karuta-progress-row {
+  flex: 0 0 84px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+
+.karuta-info-container {
+  width: 100%;
+  max-width: var(--karuta-board-outer-width);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.karuta-progress-row .progress {
+  height: 8px;
+  margin-bottom: 0;
+  width: 100%;
+  max-width: var(--karuta-board-outer-width);
+}
+
+.karuta-reading-row {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  align-items: center;
+}
+
+.karuta-action-row {
+  flex: 0 0 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.karuta-action-container {
+  width: 100%;
+  max-width: var(--karuta-board-max-width);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.karuta-grid-area {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+}
+
+.karuta-board .display-panel,
+.karuta-board .karuta-grid {
+  max-width: var(--karuta-board-inner-width);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.karuta-board .display-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  align-items: flex-start;
+  text-align: left;
+  width: 100%;
+  padding: 0.2rem 0;
+}
+
+.hint-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.hint-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.reading-display {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  line-height: 1.6;
+  color: var(--color-text);
+  font-weight: 500;
+  margin: 0.05rem 0 !important;
+}
+
+.karuta-board .kimariji-display {
+  font-size: clamp(1.1rem, 2.4vw + 0.2rem, 1.6rem);
+}
+
+.karuta-board .reading-display {
+  font-size: clamp(1rem, 3vw + 0.1rem, 1.3rem);
+}
+
+.karuta-grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(var(--karuta-card-width-current), 1fr));
+  grid-auto-columns: minmax(var(--karuta-card-width-current), 1fr);
+  grid-auto-rows: var(--karuta-card-height-current);
+  gap: var(--karuta-grid-gap);
+  margin: 0 auto;
+  width: 100%;
+  max-width: calc(var(--karuta-card-width-current) * 5 + var(--karuta-grid-gap) * 4);
+  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  align-items: stretch;
+  align-content: stretch;
+  justify-items: stretch;
+}
+
+.karuta-card {
+  width: 100%;
+  height: 100%;
+  padding: 0.45rem 0.5rem;
+  font-family: var(--font-serif);
+  font-size: clamp(0.9rem, calc(var(--karuta-card-size) / 105 * 1rem), 1.35rem);
+  line-height: 1.2;
+  letter-spacing: 0.05em;
+  border: 2px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  overflow: hidden;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+}
+
+.karuta-card-content {
+  display: inline-block;
+  transform-origin: center;
+}
+
+.karuta-card.is-upside-down .karuta-card-content {
+  transform: rotate(180deg);
+}
+
+.karuta-card-line {
+  display: inline-block;
+  line-height: 1.2;
+  padding-inline: 0.1em;
+}
+
+.karuta-card.active:hover {
+  border-color: var(--current-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.karuta-card.active:active {
+  transform: translateY(0);
+}
+
+.karuta-card.showing-result {
+  position: relative;
+  cursor: not-allowed;
+}
+
+.karuta-card.is-taken {
+  visibility: hidden;
+}
+
+.karuta-card .result-icon {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  font-size: 2.5rem;
+  font-weight: 900;
+  writing-mode: horizontal-tb;
+  line-height: 1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border: none;
+}
+
+.karuta-card .result-icon.correct {
+  color: #22c55e;
+}
+
+.karuta-card .result-icon.incorrect {
+  color: #ef4444;
+}
+
+/* Responsive adjustments for karuta grid */
+@media (max-width: 768px) {
+  .karuta-grid {
+    grid-template-columns: repeat(4, minmax(var(--karuta-card-width-final), 1fr));
+    grid-auto-columns: minmax(var(--karuta-card-width-final), 1fr);
+    gap: 0.4rem;
+  }
+
+  .karuta-card {
+    font-size: 0.65rem;
+    padding: 0.4rem;
+  }
+
+  .reading-display {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .karuta-grid {
+    grid-template-columns: repeat(3, minmax(var(--karuta-card-width-final), 1fr));
+    grid-auto-columns: minmax(var(--karuta-card-width-final), 1fr);
+    gap: 0.3rem;
+  }
+
+  .karuta-card {
+    font-size: 0.6rem;
+    padding: 0.3rem;
+  }
+
+  .reading-display {
+    font-size: 1rem;
+  }
+
+  .card-taken-mark {
+    font-size: 2rem;
   }
 }

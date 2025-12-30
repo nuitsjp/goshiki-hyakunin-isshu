@@ -3,13 +3,19 @@ import {
   checkLocalStorageAvailable,
   cleanOldHistory,
   clearAllHistory,
+  clearAllKarutaHistory,
   clearCachedQuizHistory,
+  getCachedKarutaHistory,
   enforceHistoryLimit,
   getCachedQuizHistory,
+  loadKarutaHistory,
   loadQuizHistory,
+  refreshKarutaHistory,
   refreshQuizHistory,
+  saveKarutaSession,
   saveQuizSession,
   setCachedQuizHistory,
+  setCachedKarutaHistory,
   setAuthModule,
 } from '../src/js/storage.js';
 import { STORAGE_KEYS, STATS_VERSION } from '../src/js/config.js';
@@ -38,6 +44,7 @@ class MemoryStorage {
 describe('storage', () => {
   beforeEach(() => {
     clearCachedQuizHistory();
+    setCachedKarutaHistory(null);
     setAuthModule({ getCurrentUserId: () => null });
   });
   afterEach(() => {
@@ -52,6 +59,53 @@ describe('storage', () => {
     expect(storage.getItem(STORAGE_KEYS.VERSION)).toBe(STATS_VERSION);
     const history = JSON.parse(storage.getItem(STORAGE_KEYS.HISTORY));
     expect(history).toHaveLength(1);
+  });
+
+  it('saveKarutaSession stores history and version separately', async () => {
+    const storage = new MemoryStorage();
+    const session = { timestamp: Date.now(), questionCount: 1 };
+    const ok = await saveKarutaSession(session, storage);
+    expect(ok).toBe(true);
+    expect(storage.getItem(STORAGE_KEYS.KARUTA_VERSION)).toBe(STATS_VERSION);
+    const history = JSON.parse(storage.getItem(STORAGE_KEYS.KARUTA_HISTORY));
+    expect(history).toHaveLength(1);
+  });
+
+  it('saveKarutaSession handles quota exceeded by trimming', async () => {
+    const storage = new MemoryStorage({
+      [STORAGE_KEYS.KARUTA_HISTORY]: JSON.stringify([
+        { timestamp: Date.now() - 1000 },
+        { timestamp: Date.now() - 500 },
+      ]),
+    });
+    const originalSetItem = storage.setItem.bind(storage);
+    let throwOnce = true;
+    storage.setItem = vi.fn((key, value) => {
+      if (key === STORAGE_KEYS.KARUTA_HISTORY && throwOnce) {
+        throwOnce = false;
+        const err = new Error('quota');
+        err.name = 'QuotaExceededError';
+        throw err;
+      }
+      originalSetItem(key, value);
+    });
+
+    const ok = await saveKarutaSession({ timestamp: Date.now(), questionCount: 1 }, storage);
+    expect(ok).toBe(true);
+    expect(storage.getItem(STORAGE_KEYS.KARUTA_HISTORY)).toBeTruthy();
+  });
+
+  it('saveKarutaSession returns false when retry fails', async () => {
+    const storage = new MemoryStorage({
+      [STORAGE_KEYS.KARUTA_HISTORY]: JSON.stringify([{ timestamp: Date.now() - 1000 }]),
+    });
+    storage.setItem = vi.fn(() => {
+      const err = new Error('quota');
+      err.name = 'QuotaExceededError';
+      throw err;
+    });
+    const ok = await saveKarutaSession({ timestamp: Date.now(), questionCount: 1 }, storage);
+    expect(ok).toBe(false);
   });
 
   it('saveQuizSession handles quota exceeded by trimming', async () => {
@@ -98,6 +152,13 @@ describe('storage', () => {
     expect(await loadQuizHistory(storage)).toEqual([]);
   });
 
+  it('loadKarutaHistory returns empty array on invalid JSON', async () => {
+    const storage = new MemoryStorage({
+      [STORAGE_KEYS.KARUTA_HISTORY]: '{bad json}',
+    });
+    expect(await loadKarutaHistory(storage)).toEqual([]);
+  });
+
   it('loadQuizHistory prefers Firestore when signed in', async () => {
     const storage = new MemoryStorage({
       [STORAGE_KEYS.HISTORY]: JSON.stringify([{ timestamp: 1 }]),
@@ -108,6 +169,21 @@ describe('storage', () => {
     ]);
 
     const history = await loadQuizHistory(storage);
+
+    expect(history).toHaveLength(1);
+    expect(firestoreSpy).toHaveBeenCalledWith('user1');
+  });
+
+  it('loadKarutaHistory prefers Firestore when signed in', async () => {
+    const storage = new MemoryStorage({
+      [STORAGE_KEYS.KARUTA_HISTORY]: JSON.stringify([{ timestamp: 1 }]),
+    });
+    setAuthModule({ getCurrentUserId: () => 'user1' });
+    const firestoreSpy = vi.spyOn(firestore, 'loadKarutaSessionsFromFirestore').mockResolvedValue([
+      { timestamp: 2 },
+    ]);
+
+    const history = await loadKarutaHistory(storage);
 
     expect(history).toHaveLength(1);
     expect(firestoreSpy).toHaveBeenCalledWith('user1');
@@ -126,6 +202,19 @@ describe('storage', () => {
     expect(history[0].timestamp).toBe(3);
   });
 
+  it('loadKarutaHistory falls back to localStorage when Firestore fails', async () => {
+    const storage = new MemoryStorage({
+      [STORAGE_KEYS.KARUTA_HISTORY]: JSON.stringify([{ timestamp: 3 }]),
+    });
+    setAuthModule({ getCurrentUserId: () => 'user1' });
+    vi.spyOn(firestore, 'loadKarutaSessionsFromFirestore').mockRejectedValue(new Error('fail'));
+
+    const history = await loadKarutaHistory(storage);
+
+    expect(history).toHaveLength(1);
+    expect(history[0].timestamp).toBe(3);
+  });
+
   it('loadQuizHistory caches results', async () => {
     const storage = new MemoryStorage({
       [STORAGE_KEYS.HISTORY]: JSON.stringify([{ timestamp: Date.now() }]),
@@ -134,6 +223,18 @@ describe('storage', () => {
 
     await loadQuizHistory(storage);
     await loadQuizHistory(storage);
+
+    expect(getItemSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('loadKarutaHistory caches results', async () => {
+    const storage = new MemoryStorage({
+      [STORAGE_KEYS.KARUTA_HISTORY]: JSON.stringify([{ timestamp: Date.now() }]),
+    });
+    const getItemSpy = vi.spyOn(storage, 'getItem');
+
+    await loadKarutaHistory(storage);
+    await loadKarutaHistory(storage);
 
     expect(getItemSpy).toHaveBeenCalledTimes(1);
   });
@@ -149,6 +250,19 @@ describe('storage', () => {
     storage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify([{ timestamp: 1 }, { timestamp: 2 }]));
     await refreshQuizHistory(storage);
     expect(getCachedQuizHistory()).toHaveLength(2);
+  });
+
+  it('refreshKarutaHistory reloads and updates cache', async () => {
+    const storage = new MemoryStorage({
+      [STORAGE_KEYS.KARUTA_HISTORY]: JSON.stringify([{ timestamp: 1 }]),
+    });
+
+    await refreshKarutaHistory(storage);
+    expect(await loadKarutaHistory(storage)).toHaveLength(1);
+
+    storage.setItem(STORAGE_KEYS.KARUTA_HISTORY, JSON.stringify([{ timestamp: 1 }, { timestamp: 2 }]));
+    await refreshKarutaHistory(storage);
+    expect(await loadKarutaHistory(storage)).toHaveLength(2);
   });
 
   it('saveQuizSession updates cached history when present', async () => {
@@ -172,6 +286,17 @@ describe('storage', () => {
     expect(firestoreSpy).toHaveBeenCalled();
   });
 
+  it('saveKarutaSession syncs to Firestore when signed in', async () => {
+    const storage = new MemoryStorage();
+    setAuthModule({ getCurrentUserId: () => 'user1' });
+    const firestoreSpy = vi.spyOn(firestore, 'saveKarutaSessionToFirestore').mockResolvedValue(true);
+
+    const ok = await saveKarutaSession({ timestamp: Date.now(), questionCount: 1 }, storage);
+
+    expect(ok).toBe(true);
+    expect(firestoreSpy).toHaveBeenCalled();
+  });
+
   it('saveQuizSession continues when Firestore sync fails', async () => {
     const storage = new MemoryStorage();
     setAuthModule({ getCurrentUserId: () => 'user1' });
@@ -181,6 +306,17 @@ describe('storage', () => {
 
     expect(ok).toBe(true);
     expect(storage.getItem(STORAGE_KEYS.HISTORY)).toBeTruthy();
+  });
+
+  it('saveKarutaSession continues when Firestore sync fails', async () => {
+    const storage = new MemoryStorage();
+    setAuthModule({ getCurrentUserId: () => 'user1' });
+    vi.spyOn(firestore, 'saveKarutaSessionToFirestore').mockRejectedValue(new Error('fail'));
+
+    const ok = await saveKarutaSession({ timestamp: Date.now(), questionCount: 1 }, storage);
+
+    expect(ok).toBe(true);
+    expect(storage.getItem(STORAGE_KEYS.KARUTA_HISTORY)).toBeTruthy();
   });
 
   it('clearAllHistory clears cache when confirmed', async () => {
@@ -197,6 +333,31 @@ describe('storage', () => {
     const ok = await clearAllHistory(storage, dialog);
     expect(ok).toBe(true);
     expect(getCachedQuizHistory()).toEqual([]);
+  });
+
+  it('clearAllKarutaHistory clears karuta cache when confirmed', async () => {
+    const storage = new MemoryStorage({
+      [STORAGE_KEYS.KARUTA_HISTORY]: '[]',
+      [STORAGE_KEYS.KARUTA_VERSION]: '1',
+    });
+    const dialog = {
+      confirm: () => true,
+      alert: vi.fn(),
+    };
+    setCachedKarutaHistory([{ timestamp: 1 }]);
+
+    const ok = await clearAllKarutaHistory(storage, dialog);
+    expect(ok).toBe(true);
+    expect(getCachedKarutaHistory()).toEqual([]);
+    expect(await loadKarutaHistory(storage)).toEqual([]);
+  });
+
+  it('loadQuizHistory returns empty array when no local history exists', async () => {
+    const storage = new MemoryStorage();
+
+    const history = await loadQuizHistory(storage);
+
+    expect(history).toEqual([]);
   });
 
   it('cleanOldHistory filters by retention', () => {
@@ -264,5 +425,111 @@ describe('storage', () => {
       removeItem: () => {},
     };
     expect(checkLocalStorageAvailable(storage)).toBe(false);
+  });
+
+  it('clearAllHistory deletes Firestore history when signed in', async () => {
+    const storage = new MemoryStorage({
+      [STORAGE_KEYS.HISTORY]: '[]',
+      [STORAGE_KEYS.VERSION]: '1',
+    });
+    const dialog = {
+      confirm: () => true,
+      alert: vi.fn(),
+    };
+    setAuthModule({ getCurrentUserId: () => 'user1' });
+    const deleteSpy = vi.spyOn(firestore, 'deleteAllSessionsFromFirestore').mockResolvedValue(true);
+
+    const ok = await clearAllHistory(storage, dialog);
+
+    expect(ok).toBe(true);
+    expect(deleteSpy).toHaveBeenCalledWith('user1');
+  });
+
+  it('clearAllKarutaHistory deletes Firestore karuta history when signed in', async () => {
+    const storage = new MemoryStorage({
+      [STORAGE_KEYS.KARUTA_HISTORY]: '[]',
+      [STORAGE_KEYS.KARUTA_VERSION]: '1',
+    });
+    const dialog = {
+      confirm: () => true,
+      alert: vi.fn(),
+    };
+    setAuthModule({ getCurrentUserId: () => 'user1' });
+    const deleteSpy = vi.spyOn(firestore, 'deleteAllKarutaSessionsFromFirestore').mockResolvedValue(true);
+
+    const ok = await clearAllKarutaHistory(storage, dialog);
+
+    expect(ok).toBe(true);
+    expect(deleteSpy).toHaveBeenCalledWith('user1');
+  });
+
+  it('clearAllKarutaHistory returns false when remove fails', async () => {
+    const storage = new MemoryStorage({
+      [STORAGE_KEYS.KARUTA_HISTORY]: '[]',
+      [STORAGE_KEYS.KARUTA_VERSION]: '1',
+    });
+    storage.removeItem = vi.fn(() => {
+      throw new Error('fail');
+    });
+    const dialog = {
+      confirm: () => true,
+      alert: vi.fn(),
+    };
+
+    const ok = await clearAllKarutaHistory(storage, dialog);
+
+    expect(ok).toBe(false);
+  });
+
+  it('clearAllKarutaHistory returns false when canceled', async () => {
+    const storage = new MemoryStorage({
+      [STORAGE_KEYS.KARUTA_HISTORY]: '[]',
+    });
+    const dialog = {
+      confirm: () => false,
+      alert: vi.fn(),
+    };
+
+    const ok = await clearAllKarutaHistory(storage, dialog);
+
+    expect(ok).toBe(false);
+  });
+
+  it('loadKarutaHistory resets promise when fetch rejects', async () => {
+    const storage = new MemoryStorage();
+    setAuthModule({
+      getCurrentUserId: () => {
+        throw new Error('boom');
+      },
+    });
+
+    await expect(loadKarutaHistory(storage)).rejects.toThrow('boom');
+  });
+
+  it('checkLocalStorageAvailable returns true on success', () => {
+    const storage = new MemoryStorage();
+    expect(checkLocalStorageAvailable(storage)).toBe(true);
+  });
+
+  it('loadQuizHistory resets promise when fetch rejects', async () => {
+    const storage = new MemoryStorage();
+    setAuthModule({
+      getCurrentUserId: () => {
+        throw new Error('boom');
+      },
+    });
+
+    await expect(loadQuizHistory(storage)).rejects.toThrow('boom');
+  });
+
+  it('saveKarutaSession returns false on unexpected error', async () => {
+    const storage = new MemoryStorage();
+    storage.setItem = vi.fn(() => {
+      throw new Error('boom');
+    });
+
+    const ok = await saveKarutaSession({ timestamp: Date.now(), questionCount: 1 }, storage);
+
+    expect(ok).toBe(false);
   });
 });

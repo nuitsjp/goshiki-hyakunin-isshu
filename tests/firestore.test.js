@@ -94,6 +94,32 @@ describe('firestore', () => {
     expect(mockFirestoreModule.setDoc).toHaveBeenCalled();
   });
 
+  it('saves karuta session to Firestore', async () => {
+    vi.doMock('https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js', () => mockAppModule);
+    vi.doMock('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js', () => mockFirestoreModule);
+
+    mockFirestoreModule.initializeFirestore.mockReturnValue({});
+
+    const { initializeFirestore, saveKarutaSessionToFirestore, loadFirestoreModules } = await import('../src/js/firestore.js');
+
+    await loadFirestoreModules();
+    const app = mockAppModule.initializeApp();
+    await initializeFirestore(app);
+
+    const sessionData = {
+      sessionId: 'k1',
+      timestamp: 1700000000000,
+      color: '青',
+      questionCount: 10,
+    };
+
+    const result = await saveKarutaSessionToFirestore('user123', sessionData);
+
+    expect(result).toBe(true);
+    expect(mockFirestoreModule.doc).toHaveBeenCalled();
+    expect(mockFirestoreModule.setDoc).toHaveBeenCalled();
+  });
+
   it('returns false when saving without db', async () => {
     vi.doMock('../src/js/config.js', () => ({
       ENABLE_FIRESTORE_SYNC: false,
@@ -102,6 +128,18 @@ describe('firestore', () => {
 
     const { saveSessionToFirestore } = await import('../src/js/firestore.js');
     const result = await saveSessionToFirestore('user123', { sessionId: 's1' });
+
+    expect(result).toBe(false);
+  });
+
+  it('returns false when saving karuta without db', async () => {
+    vi.doMock('../src/js/config.js', () => ({
+      ENABLE_FIRESTORE_SYNC: false,
+      FIREBASE_CONFIG: null,
+    }));
+
+    const { saveKarutaSessionToFirestore } = await import('../src/js/firestore.js');
+    const result = await saveKarutaSessionToFirestore('user123', { sessionId: 'k1' });
 
     expect(result).toBe(false);
   });
@@ -136,6 +174,36 @@ describe('firestore', () => {
     expect(mockFirestoreModule.query).toHaveBeenCalled();
   });
 
+  it('loads karuta sessions from Firestore', async () => {
+    vi.doMock('https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js', () => mockAppModule);
+    vi.doMock('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js', () => mockFirestoreModule);
+
+    mockFirestoreModule.initializeFirestore.mockReturnValue({});
+    mockFirestoreModule.getDocs.mockResolvedValue({
+      docs: [
+        {
+          data: () => ({
+            sessionId: 'k1',
+            timestamp: { toMillis: () => 1700000000000 },
+            color: '青',
+          }),
+        },
+      ],
+    });
+
+    const { initializeFirestore, loadKarutaSessionsFromFirestore, loadFirestoreModules } = await import('../src/js/firestore.js');
+
+    await loadFirestoreModules();
+    const app = mockAppModule.initializeApp();
+    await initializeFirestore(app);
+
+    const sessions = await loadKarutaSessionsFromFirestore('user123');
+
+    expect(Array.isArray(sessions)).toBe(true);
+    expect(mockFirestoreModule.collection).toHaveBeenCalled();
+    expect(mockFirestoreModule.query).toHaveBeenCalled();
+  });
+
   it('returns empty array when loading without db', async () => {
     vi.doMock('../src/js/config.js', () => ({
       ENABLE_FIRESTORE_SYNC: false,
@@ -144,6 +212,18 @@ describe('firestore', () => {
 
     const { loadSessionsFromFirestore } = await import('../src/js/firestore.js');
     const result = await loadSessionsFromFirestore('user123');
+
+    expect(result).toEqual([]);
+  });
+
+  it('returns empty array when loading karuta without db', async () => {
+    vi.doMock('../src/js/config.js', () => ({
+      ENABLE_FIRESTORE_SYNC: false,
+      FIREBASE_CONFIG: null,
+    }));
+
+    const { loadKarutaSessionsFromFirestore } = await import('../src/js/firestore.js');
+    const result = await loadKarutaSessionsFromFirestore('user123');
 
     expect(result).toEqual([]);
   });
@@ -325,6 +405,34 @@ describe('firestore', () => {
     await initializeFirestore(app);
 
     const result = await deleteAllSessionsFromFirestore('user123');
+
+    expect(result).toBe(false);
+  });
+
+  it('returns false when Firestore karuta delete fails', async () => {
+    vi.doMock('https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js', () => mockAppModule);
+    vi.doMock('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js', () => mockFirestoreModule);
+
+    const mockBatch = {
+      delete: vi.fn(),
+      commit: vi.fn(() => {
+        throw new Error('fail');
+      }),
+    };
+
+    mockFirestoreModule.initializeFirestore.mockReturnValue({});
+    mockFirestoreModule.writeBatch.mockReturnValue(mockBatch);
+    mockFirestoreModule.getDocs.mockResolvedValue({
+      docs: [{ ref: 'ref1' }],
+    });
+
+    const { initializeFirestore, deleteAllKarutaSessionsFromFirestore, loadFirestoreModules } = await import('../src/js/firestore.js');
+
+    await loadFirestoreModules();
+    const app = mockAppModule.initializeApp();
+    await initializeFirestore(app);
+
+    const result = await deleteAllKarutaSessionsFromFirestore('user123');
 
     expect(result).toBe(false);
   });

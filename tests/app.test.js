@@ -56,7 +56,7 @@ const setupAppDom = () => {
       <div id="main-display-label"></div>
       <div id="kimariji"></div>
       <div class="text-muted"></div>
-      <button id="toggle-kimariji"></button>
+      <button id="toggle-kimariji"><span class="hint-button-label"></span></button>
       <div id="options-container">
         <button class="option-button btn btn-outline-secondary"></button>
         <button class="option-button btn btn-outline-secondary"></button>
@@ -75,6 +75,7 @@ const setupAppDom = () => {
     <div id="result-screen" class="hidden">
       <div id="result-count"></div>
       <div id="result-rate"></div>
+      <div id="result-time" class="hidden"></div>
       <div id="result-comment"></div>
       <div id="result-list"></div>
       <button id="retry-same"></button>
@@ -265,6 +266,64 @@ describe('app', () => {
     nowSpy.mockRestore();
   });
 
+  it('shows clear time and hides menu button on result screen', async () => {
+    vi.useFakeTimers();
+    const nowSpy = vi.spyOn(performance, 'now');
+    let now = 0;
+    nowSpy.mockImplementation(() => now);
+
+    await import('../src/js/app.js');
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    await flushPromises();
+
+    document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    for (let i = 0; i < 4; i++) {
+      const optionButtons = Array.from(document.querySelectorAll('.option-button'));
+      const correctButton = optionButtons.find(btn => btn.dataset.correct === 'true');
+      now = (i + 1) * 1000;
+      correctButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      vi.advanceTimersByTime(750);
+      await flushPromises();
+    }
+
+    const resultTime = document.getElementById('result-time');
+    expect(resultTime.classList.contains('hidden')).toBe(false);
+    expect(resultTime.textContent).toBe('クリアタイム 0:04');
+    expect(document.getElementById('menu-button').classList.contains('hidden')).toBe(true);
+
+    nowSpy.mockRestore();
+  });
+
+  it('hides clear time when measure toggle is off', async () => {
+    vi.useFakeTimers();
+    const nowSpy = vi.spyOn(performance, 'now');
+    let now = 0;
+    nowSpy.mockImplementation(() => now);
+
+    await import('../src/js/app.js');
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    await flushPromises();
+
+    document.getElementById('measure-time-toggle').checked = false;
+    document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    for (let i = 0; i < 4; i++) {
+      const optionButtons = Array.from(document.querySelectorAll('.option-button'));
+      const correctButton = optionButtons.find(btn => btn.dataset.correct === 'true');
+      now = (i + 1) * 1000;
+      correctButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      vi.advanceTimersByTime(750);
+      await flushPromises();
+    }
+
+    const resultTime = document.getElementById('result-time');
+    expect(resultTime.classList.contains('hidden')).toBe(true);
+    expect(resultTime.textContent).toBe('');
+
+    nowSpy.mockRestore();
+  });
+
   it('does not measure time when measure toggle is off', async () => {
     vi.useFakeTimers();
     const nowSpy = vi.spyOn(performance, 'now');
@@ -369,6 +428,19 @@ describe('app', () => {
     expect(startScreen.classList.contains('hidden')).toBe(false);
   });
 
+  it('handles retryIncorrect when no color is selected', async () => {
+    await import('../src/js/app.js');
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    await flushPromises();
+
+    const startScreen = document.getElementById('start-screen');
+    startScreen.classList.add('hidden');
+    document.getElementById('retry-incorrect').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flushPromises();
+    await flushPromises();
+    expect(startScreen.classList.contains('hidden')).toBe(false);
+  });
+
   it('handles give up guard branches and display mode fallback', async () => {
     await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
@@ -413,11 +485,11 @@ describe('app', () => {
       timestamp: 1700000000000,
       date: '2023-11-14',
       color: '青',
-      questionCount: 10,
-      correctCount: 8,
+      questionCount: 20,
+      correctCount: 18,
       wrongCount: 2,
       passCount: 0,
-      accuracyRate: 80,
+      accuracyRate: 90,
       hintType: 'shoku',
       displayMode: 'kana',
       orderMode: 'normal',
@@ -482,9 +554,10 @@ describe('app', () => {
 
     expect(document.getElementById('main-display-label').textContent).toBe('下の句 (問題)');
     const toggle = document.getElementById('toggle-kimariji');
-    expect(toggle.textContent).toMatch(/上の句表示/);
+    const toggleLabel = document.querySelector('#toggle-kimariji .hint-button-label');
+    expect(toggleLabel.textContent).toBe('ヒント');
     toggle.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    expect(toggle.textContent).toMatch(/下の句表示/);
+    expect(toggleLabel.textContent).toBe('決まり字');
   });
 
   it('shows kami text when hint type is kami', async () => {
@@ -500,6 +573,44 @@ describe('app', () => {
     document.getElementById('toggle-kimariji').dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     expect(document.getElementById('kimariji').textContent).toMatch(/かみ|上/);
+  });
+
+  it('解答後は設定の表示モードに合わせて上の句と下の句を決まり字欄に表示する（よみがな）', async () => {
+    vi.useFakeTimers();
+    await import('../src/js/app.js');
+    const { quizState } = await import('../src/js/state.js');
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    await flushPromises();
+
+    document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    const optionButtons = Array.from(document.querySelectorAll('.option-button'));
+    const correctButton = optionButtons.find(btn => btn.dataset.correct === 'true');
+    correctButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    const currentQuestion = quizState.currentQuestions[quizState.currentIndex];
+    const expected = currentQuestion.kamiReading;
+    expect(document.getElementById('kimariji').textContent).toBe(expected);
+  });
+
+  it('解答後は漢字設定なら漢字で上の句と下の句を表示する', async () => {
+    vi.useFakeTimers();
+    await import('../src/js/app.js');
+    const { quizState } = await import('../src/js/state.js');
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    await flushPromises();
+
+    const displayMode = document.getElementById('display-mode');
+    displayMode.value = 'kanji';
+    displayMode.dispatchEvent(new Event('change'));
+
+    document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    const optionButtons = Array.from(document.querySelectorAll('.option-button'));
+    const correctButton = optionButtons.find(btn => btn.dataset.correct === 'true');
+    correctButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    const currentQuestion = quizState.currentQuestions[quizState.currentIndex];
+    const expected = currentQuestion.kamiNoKu;
+    expect(document.getElementById('kimariji').textContent).toBe(expected);
   });
 
   it('ignores toggle when no question is available', async () => {
@@ -682,6 +793,39 @@ describe('app', () => {
     document.getElementById('give-up-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     expect(document.getElementById('feedback').textContent).toMatch(/上/);
+  });
+
+  it('stops elapsed time when giving up on last question', async () => {
+    vi.useFakeTimers();
+    const nowSpy = vi.spyOn(performance, 'now');
+    let now = 0;
+    nowSpy.mockImplementation(() => now);
+
+    await import('../src/js/app.js');
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    await flushPromises();
+
+    document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    for (let i = 0; i < 3; i++) {
+      const optionButtons = Array.from(document.querySelectorAll('.option-button'));
+      const correctButton = optionButtons.find(btn => btn.dataset.correct === 'true');
+      now = (i + 1) * 1000;
+      correctButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      vi.advanceTimersByTime(750);
+      await flushPromises();
+    }
+
+    now = 5000;
+    document.getElementById('give-up-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    const elapsed = document.getElementById('elapsed-time');
+    expect(elapsed.textContent).toBe('0:05');
+
+    now = 8000;
+    vi.advanceTimersByTime(1000);
+    expect(elapsed.textContent).toBe('0:05');
+
+    nowSpy.mockRestore();
   });
 
   it('handles startQuiz error when color data is missing', async () => {

@@ -14,11 +14,14 @@ export const colorTextMap = {
 export const STORAGE_KEYS = {
   HISTORY: 'goshiki_quiz_history',
   VERSION: 'goshiki_stats_version',
+  KARUTA_HISTORY: 'goshiki_karuta_history',
+  KARUTA_VERSION: 'goshiki_karuta_stats_version',
   DISPLAY_MODE: 'goshiki_display_mode',
   ORDER_MODE: 'goshiki_order_mode',
   QUESTION_COUNT: 'goshiki_question_count',
   MEASURE_TIME: 'goshiki_measure_time',
   HINT_TYPE: 'goshiki_hint_type',
+  KARUTA_FLIP: 'goshiki_karuta_flip',
 };
 export const STATS_VERSION = '1.0.0';
 export const MAX_HISTORY_ENTRIES = 1000;
