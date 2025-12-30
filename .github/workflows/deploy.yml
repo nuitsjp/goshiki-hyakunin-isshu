@@ -6,11 +6,18 @@ on:
       - "v*.*.*"
 
 jobs:
+  test:
+    uses: ./.github/workflows/test.yml
   deploy:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Inject version from tag
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          sed -i "s/0\\.0\\.0/${VERSION}/g" docs/index.html docs/js/config.js
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
