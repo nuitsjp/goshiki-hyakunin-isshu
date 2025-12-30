@@ -66,6 +66,7 @@ const createReadings = (count) => Array.from({ length: count }, (_, i) => ({
   kimariji: `き${i}`,
   kamiNoKu: `上${i}`,
   kamiReading: `かみ${i}`,
+  hint: `ひ${i}`,
 }));
 
 const setupDom = () => {
@@ -82,12 +83,14 @@ const setupDom = () => {
     <div id="selected-color-label"></div>
     <div id="kimariji-display"></div>
     <div id="reading-display"></div>
+    <button id="toggle-hint" type="button"><span class="hint-button-label"></span></button>
     <div id="karuta-grid"></div>
     <button id="next-reading"></button>
     <div id="elapsed-time"></div>
     <input id="measure-time-toggle" type="checkbox" checked>
     <div id="result-count"></div>
     <div id="result-rate"></div>
+    <div id="result-time" class="hidden"></div>
     <div id="result-comment"></div>
     <div id="result-list"></div>
     <button id="retry-same"></button>
@@ -231,8 +234,32 @@ describe('karuta-app', () => {
     const card = document.querySelector('.karuta-card');
     expect(card.classList.contains('showing-result')).toBe(true);
     expect(card.disabled).toBe(true);
-    expect(card.querySelector('.result-icon.correct')).toBeTruthy();
+    const icon = card.querySelector('.result-icon.correct');
+    expect(icon).toBeTruthy();
+    expect(icon.textContent).toBe('○');
     expect(document.getElementById('score-text').textContent).toBe('正解: 1枚');
+  });
+
+  it('ヒントボタンで読み札の上の句を表示する', async () => {
+    setupDom();
+    loadCsvMock.mockResolvedValue(createPoems(1));
+    buildKarutaDeckMock.mockReturnValue(createDeck(1));
+    buildKarutaReadingsMock.mockReturnValue(createReadings(1));
+    await importApp();
+
+    document.querySelector('.color-button[data-color="黄"]').click();
+    expect(document.querySelector('#toggle-hint .hint-button-label').textContent).toBe('ヒント');
+    document.getElementById('toggle-hint').click();
+
+    expect(document.getElementById('kimariji-display').textContent).toBe('ひ0');
+    expect(document.getElementById('toggle-hint').getAttribute('aria-pressed')).toBe('true');
+    expect(document.querySelector('#toggle-hint .hint-button-label').textContent).toBe('決まり字');
+
+    document.getElementById('toggle-hint').click();
+
+    expect(document.getElementById('kimariji-display').textContent).toBe('き0');
+    expect(document.getElementById('toggle-hint').getAttribute('aria-pressed')).toBe('false');
+    expect(document.querySelector('#toggle-hint .hint-button-label').textContent).toBe('ヒント');
   });
 
   it('不正解時に札を間違い状態にする', async () => {
@@ -290,9 +317,12 @@ describe('karuta-app', () => {
     expect(document.getElementById('result-screen').classList.contains('hidden')).toBe(false);
     expect(document.getElementById('result-count').textContent).toBe('1 / 1 枚獲得');
     expect(document.getElementById('result-rate').textContent).toBe('正答率 100%');
+    expect(document.getElementById('result-time').classList.contains('hidden')).toBe(false);
+    expect(document.getElementById('result-time').textContent).toMatch(/クリアタイム/);
     expect(document.getElementById('result-comment').textContent).toBe('完璧です！すべての札を取りました！');
-    expect(document.getElementById('result-list').innerHTML).toContain('result-item-correct');
-    expect(document.getElementById('result-list').innerHTML).toContain('◯');
+    expect(document.getElementById('result-list').innerHTML).toContain('result-item');
+    expect(document.getElementById('result-list').innerHTML).toContain('icon-correct');
+    expect(document.getElementById('result-list').innerHTML).toContain('○');
     expect(escapeHtmlMock).toHaveBeenCalledWith('き0');
   });
 
@@ -392,7 +422,7 @@ describe('karuta-app', () => {
     // 自動遷移を待つ
     await wait(600);
 
-    expect(document.getElementById('result-list').innerHTML).toContain('result-item-incorrect');
+    expect(document.getElementById('result-list').innerHTML).toContain('icon-wrong');
     expect(document.getElementById('result-list').innerHTML).toContain('×');
   });
 

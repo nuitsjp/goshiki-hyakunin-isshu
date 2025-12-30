@@ -98,6 +98,14 @@ function showScreen(screen) {
     screens[screen].classList.remove('hidden');
     currentScreen = screen;
   }
+  document.body.dataset.screen = screen;
+  if (elements.menuButton) {
+    const shouldHideMenu = screen === 'result';
+    elements.menuButton.classList.toggle('hidden', shouldHideMenu);
+    if (shouldHideMenu) {
+      closeMenu();
+    }
+  }
   if (screen === 'start') {
     loadStartSettings();
     updateColorButtonsForWeak5Mode();
@@ -212,6 +220,17 @@ function updateElapsedTime() {
   elements.elapsedTime.textContent = formatDurationMs(elapsedMs);
 }
 
+function updateResultTime(durationMs) {
+  if (!elements.resultTime) return;
+  if (quizState.measureTime && Number.isFinite(durationMs)) {
+    elements.resultTime.textContent = `クリアタイム ${formatDurationMs(durationMs)}`;
+    elements.resultTime.classList.remove('hidden');
+  } else {
+    elements.resultTime.textContent = '';
+    elements.resultTime.classList.add('hidden');
+  }
+}
+
 function setElapsedVisibility(isVisible) {
   if (!elements.elapsedTime) return;
   elements.elapsedTime.classList.toggle('hidden', !isVisible);
@@ -319,6 +338,9 @@ function renderKimariji(question) {
   if (!question) return;
   const isReverse = quizState.orderMode === 'reverse';
   const hintLabel = quizState.hintType === 'shoku' ? '初句' : '上の句';
+  const useKana = quizState.displayMode === 'kana';
+  const kamiText = useKana ? (question.kamiReading || '') : (question.kamiNoKu || '');
+  const shimoText = useKana ? (question.correctShimoReading || '') : (question.correctShimo || '');
 
   if (elements.mainDisplayLabel) {
     elements.mainDisplayLabel.textContent = isReverse ? '下の句 (問題)' : '決まり字';
@@ -326,15 +348,9 @@ function renderKimariji(question) {
 
   if (isReverse) {
     if (quizState.showKami) {
-      const text = quizState.displayMode === 'kana'
-        ? (question.kamiReading || '')
-        : (question.kamiNoKu || '');
-      elements.kimariji.innerHTML = toRubyHtml(text);
+      elements.kimariji.innerHTML = toRubyHtml(kamiText);
     } else {
-      const text = quizState.displayMode === 'kana'
-        ? (question.correctShimoReading || '')
-        : (question.correctShimo || '');
-      elements.kimariji.innerHTML = toRubyHtml(text);
+      elements.kimariji.innerHTML = toRubyHtml(shimoText);
     }
 
     if (elements.toggleKimariji) {
@@ -347,13 +363,12 @@ function renderKimariji(question) {
   }
 
   if (quizState.showKami) {
-    if (quizState.hintType === 'shoku') {
+    if (quizState.isAnswered) {
+      elements.kimariji.innerHTML = toRubyHtml(kamiText);
+    } else if (quizState.hintType === 'shoku') {
       elements.kimariji.textContent = question.hint || '';
     } else {
-      const text = quizState.displayMode === 'kana'
-        ? (question.kamiReading || '')
-        : (question.kamiNoKu || '');
-      elements.kimariji.innerHTML = toRubyHtml(text);
+      elements.kimariji.innerHTML = toRubyHtml(kamiText);
     }
   } else {
     elements.kimariji.textContent = question.kimariji;
@@ -551,6 +566,7 @@ async function showResults() {
   elements.resultCount.textContent = `${quizState.correctCount} / ${total} 問正解`;
   elements.resultRate.textContent = `正答率 ${rate}%`;
   elements.resultComment.textContent = getResultComment(rate);
+  updateResultTime(durationMs);
   renderResultList();
 
   const hasIncorrect = quizState.answers.some(a => !a.isCorrect);

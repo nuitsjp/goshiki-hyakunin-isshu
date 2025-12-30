@@ -461,25 +461,6 @@ h6,
   font-family: var(--font-serif);
 }
 
-.karuta-page .result-icon {
-  width: auto;
-  height: auto;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  font-size: 1.5rem;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.karuta-page .result-item-correct .result-icon {
-  color: var(--color-correct);
-}
-
-.karuta-page .result-item-incorrect .result-icon {
-  color: var(--color-incorrect);
-}
-
 .result-body {
   margin: 0;
   line-height: 1.6;
@@ -959,6 +940,17 @@ h6,
   margin: 0.5rem 0;
 }
 
+.hint-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.hint-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
 .reading-display {
   font-family: var(--font-serif);
   font-size: 1.25rem;
@@ -1016,7 +1008,7 @@ h6,
   visibility: hidden;
 }
 
-.result-icon {
+.karuta-card .result-icon {
   position: absolute;
   top: 0.5rem;
   right: 0.5rem;
@@ -1025,13 +1017,14 @@ h6,
   writing-mode: horizontal-tb;
   line-height: 1;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border: none;
 }
 
-.result-icon.correct {
+.karuta-card .result-icon.correct {
   color: #22c55e;
 }
 
-.result-icon.incorrect {
+.karuta-card .result-icon.incorrect {
   color: #ef4444;
 }
 

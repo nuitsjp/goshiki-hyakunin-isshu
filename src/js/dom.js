@@ -41,6 +41,7 @@ export const getElements = (doc = document) => ({
   nextQuestion: doc.getElementById('next-question'),
   resultCount: doc.getElementById('result-count'),
   resultRate: doc.getElementById('result-rate'),
+  resultTime: doc.getElementById('result-time'),
   resultComment: doc.getElementById('result-comment'),
   resultList: doc.getElementById('result-list'),
   retrySame: doc.getElementById('retry-same'),

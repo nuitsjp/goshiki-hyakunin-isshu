@@ -61,6 +61,7 @@ export function buildKarutaReadings({ poems, color, random = Math.random }) {
     kimariji: poem.kimarijiLong || poem.kimarijiShort || '決まり字なし',
     kamiNoKu: poem.kamiNoKu,
     kamiReading: poem.kamiReading,
+    hint: poem.hint,
   }));
 }
 

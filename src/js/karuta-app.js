@@ -17,6 +17,7 @@ const karutaState = {
   measureTime: true,
   sessionStartTime: null,
   sessionEndTime: null,
+  showHint: false,
 };
 
 // DOM elements
@@ -37,10 +38,12 @@ const elements = {
   selectedColorLabel: document.getElementById('selected-color-label'),
   kimarijiDisplay: document.getElementById('kimariji-display'),
   readingDisplay: document.getElementById('reading-display'),
+  toggleHint: document.getElementById('toggle-hint'),
   karutaGrid: document.getElementById('karuta-grid'),
   nextReading: document.getElementById('next-reading'),
   resultCount: document.getElementById('result-count'),
   resultRate: document.getElementById('result-rate'),
+  resultTime: document.getElementById('result-time'),
   resultComment: document.getElementById('result-comment'),
   resultList: document.getElementById('result-list'),
   retrySame: document.getElementById('retry-same'),
@@ -155,16 +158,71 @@ function finalizeSessionTiming() {
   clearElapsedTimer();
 }
 
+function updateResultTime(durationMs) {
+  if (!elements.resultTime) return;
+  if (karutaState.measureTime && Number.isFinite(durationMs)) {
+    elements.resultTime.textContent = `クリアタイム ${formatDurationMs(durationMs)}`;
+    elements.resultTime.classList.remove('hidden');
+  } else {
+    elements.resultTime.textContent = '';
+    elements.resultTime.classList.add('hidden');
+  }
+}
+
+function buildResultItem(result, idx) {
+  const status = result.isCorrect ? 'correct' : 'wrong';
+  const icon = status === 'correct' ? '○' : '×';
+  const iconClass = status === 'correct' ? 'icon-correct' : 'icon-wrong';
+  const kimarijiText = escapeHtml(result.kimariji || '');
+  const kamiText = result.kamiReading || result.kamiNoKu || '';
+  const shimoText = result.shimoReading || result.shimoNoKu || '';
+  const poemLine = `${toRubyHtml(kamiText)} ${toRubyHtml(shimoText)}`;
+  const item = document.createElement('div');
+  item.className = 'result-item';
+  item.innerHTML = `
+    <div class="result-header">
+      <span class="result-icon ${iconClass}" aria-hidden="true">${icon}</span>
+      <div>
+        <div class="fw-semibold mb-0">第${idx + 1}問 ${kimarijiText}</div>
+        <div class="result-meta">${poemLine}</div>
+      </div>
+    </div>
+  `;
+  return item;
+}
+
 function displayReading() {
   const reading = karutaState.readings[karutaState.currentIndex];
 
-  if (elements.kimarijiDisplay) {
-    elements.kimarijiDisplay.textContent = reading.kimariji;
-  }
+  if (!reading) return;
 
-  // 初期は決まり字のみ表示（上の句は表示しない）
+  karutaState.showHint = false;
+  updateReadingDisplay();
+  updateHintButton();
+}
+
+function updateReadingDisplay() {
+  const reading = karutaState.readings[karutaState.currentIndex];
+  if (!reading) return;
+  if (elements.kimarijiDisplay) {
+    elements.kimarijiDisplay.textContent = karutaState.showHint
+      ? (reading.hint || '')
+      : reading.kimariji;
+  }
   if (elements.readingDisplay) {
     elements.readingDisplay.innerHTML = '';
+  }
+}
+
+function updateHintButton() {
+  if (!elements.toggleHint) return;
+  elements.toggleHint.setAttribute('aria-pressed', karutaState.showHint ? 'true' : 'false');
+  const label = elements.toggleHint.querySelector('.hint-button-label');
+  const labelText = karutaState.showHint ? '決まり字' : 'ヒント';
+  if (label) {
+    label.textContent = labelText;
+  } else {
+    elements.toggleHint.textContent = labelText;
   }
 }
 
@@ -189,16 +247,29 @@ function renderCards() {
       cardElement.disabled = true;
       cardElement.textContent = card.shimoReading.replace(/\s/g, '');
 
-      const iconElement = document.createElement('span');
-      iconElement.className = 'result-icon';
-      if (card.isCorrect) {
+      // 正解時は○アイコンを表示
+      if (card.isCorrect && !card.showAsCorrect) {
+        const iconElement = document.createElement('span');
+        iconElement.className = 'result-icon';
         iconElement.classList.add('correct');
-        iconElement.textContent = '●';
-      } else {
+        iconElement.textContent = '○';
+        cardElement.appendChild(iconElement);
+      }
+
+      // 不正解時のみ×アイコンを表示
+      if (!card.isCorrect) {
+        const iconElement = document.createElement('span');
+        iconElement.className = 'result-icon';
         iconElement.classList.add('incorrect');
         iconElement.textContent = '✕';
+        cardElement.appendChild(iconElement);
       }
-      cardElement.appendChild(iconElement);
+
+      // 正解の札を薄い赤でハイライト表示
+      if (card.showAsCorrect) {
+        cardElement.style.backgroundColor = '#ffe6e6';
+        cardElement.style.color = '#333';
+      }
     } else {
       cardElement.classList.add('active');
       cardElement.textContent = card.shimoReading.replace(/\s/g, '');
@@ -221,22 +292,41 @@ function handleCardClick(cardIndex) {
   card.isCorrect = isCorrect;
   card.state = 'showing-result';
 
+  let correctCard = null;
+
   if (isCorrect) {
     // Correct answer
     karutaState.score++;
     karutaState.results.push({
       kimariji: reading.kimariji,
       kamiNoKu: reading.kamiNoKu,
+      kamiReading: reading.kamiReading,
+      shimoNoKu: card.shimoNoKu,
       shimoReading: card.shimoReading,
       isCorrect: true,
       cardState: 'hidden',
     });
   } else {
-    // Wrong answer
+    // Wrong answer - find the correct card
+    correctCard = karutaState.deck.find(c =>
+      c.state === 'active' && checkKarutaMatch(reading, c)
+    );
+
+    if (correctCard) {
+      // 正解の札を赤くハイライト表示
+      correctCard.state = 'showing-result';
+      correctCard.isCorrect = true;
+      correctCard.showAsCorrect = true;
+    }
+
+    const shimoReading = correctCard?.shimoReading || card.shimoReading;
+    const shimoNoKu = correctCard?.shimoNoKu || card.shimoNoKu;
     karutaState.results.push({
       kimariji: reading.kimariji,
       kamiNoKu: reading.kamiNoKu,
-      shimoReading: card.shimoReading,
+      kamiReading: reading.kamiReading,
+      shimoNoKu,
+      shimoReading,
       isCorrect: false,
       cardState: 'hidden',
     });
@@ -245,9 +335,22 @@ function handleCardClick(cardIndex) {
   renderCards();
   updateProgress();
 
-  // 0.5秒後にカードを非表示にして次の読み札に進む
+  // 0.5秒後に処理
   setTimeout(() => {
-    card.state = 'hidden';
+    if (isCorrect) {
+      // 正解の場合：取った札を非表示にする
+      card.state = 'hidden';
+    } else {
+      // 不正解の場合：正解の札を非表示にし、間違った札の×アイコンを消す
+      if (correctCard) {
+        correctCard.state = 'hidden';
+        delete correctCard.showAsCorrect;
+      }
+      // 間違った札を通常状態に戻す（×アイコンを消す）
+      card.state = 'active';
+      delete card.isCorrect;
+    }
+
     renderCards();
 
     // 次の読み札に自動的に進む
@@ -324,6 +427,8 @@ function showResult() {
     elements.resultRate.textContent = `正答率 ${rate}%`;
   }
 
+  updateResultTime(durationMs);
+
   if (elements.resultComment) {
     let comment = '';
     if (rate === 100) {
@@ -342,25 +447,10 @@ function showResult() {
 
   // Display result list
   if (elements.resultList) {
-    const html = karutaState.results.map((result, i) => {
-      const icon = result.isCorrect ? '◯' : '×';
-      const className = result.isCorrect ? 'result-item-correct' : 'result-item-incorrect';
-      const kimarijiHtml = escapeHtml(result.kimariji);
-      const kamiHtml = toRubyHtml(result.kamiNoKu);
-      const shimoHtml = escapeHtml(result.shimoReading.replace(/\s/g, ''));
-
-      return `
-        <div class="result-item ${className}">
-          <span class="result-icon">${icon}</span>
-          <div class="result-content">
-            <div class="result-kimariji">${kimarijiHtml}</div>
-            <div class="result-kami">${kamiHtml}</div>
-            <div class="result-shimo">${shimoHtml}</div>
-          </div>
-        </div>
-      `;
-    }).join('');
-    elements.resultList.innerHTML = html;
+    elements.resultList.innerHTML = '';
+    karutaState.results.forEach((result, idx) => {
+      elements.resultList.appendChild(buildResultItem(result, idx));
+    });
   }
 
   showScreen('result');
@@ -379,6 +469,7 @@ async function startGame(color) {
   karutaState.measureTime = elements.measureTimeToggle ? elements.measureTimeToggle.checked : true;
   karutaState.sessionStartTime = karutaState.measureTime ? performance.now() : 0;
   karutaState.sessionEndTime = null;
+  karutaState.showHint = false;
 
   try {
     // Build deck and readings
@@ -437,6 +528,16 @@ function initEventListeners() {
         elements.elapsedTime.textContent = formatDurationMs(0);
       }
       showScreen('start');
+    });
+  }
+
+  if (elements.toggleHint) {
+    elements.toggleHint.addEventListener('click', () => {
+      const reading = karutaState.readings[karutaState.currentIndex];
+      if (!reading) return;
+      karutaState.showHint = !karutaState.showHint;
+      updateReadingDisplay();
+      updateHintButton();
     });
   }
 

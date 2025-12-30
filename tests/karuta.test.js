@@ -161,6 +161,7 @@ describe('karuta', () => {
       expect(reading).toHaveProperty('kimariji');
       expect(reading).toHaveProperty('kamiNoKu');
       expect(reading).toHaveProperty('kamiReading');
+      expect(reading).toHaveProperty('hint');
     });
   });
 
