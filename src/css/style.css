@@ -941,7 +941,7 @@ body {
 }
 
 /* Ensure footer links are clickable above fixed bottom ads */
-footer {
+footer a {
   position: relative;
   z-index: 10001;
 }
