@@ -186,16 +186,20 @@ describe('app', () => {
 
     document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-    const optionButtons = Array.from(document.querySelectorAll('.option-button'));
-    const correctButton = optionButtons.find(btn => btn.dataset.correct === 'true');
-    expect(correctButton).toBeTruthy();
-    correctButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    // 4問すべてに正解して自動進行
+    for (let i = 0; i < 4; i++) {
+      const optionButtons = Array.from(document.querySelectorAll('.option-button'));
+      const correctButton = optionButtons.find(btn => btn.dataset.correct === 'true');
+      expect(correctButton).toBeTruthy();
+      correctButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-    vi.runAllTimers();
-    await flushPromises();
+      vi.advanceTimersByTime(750);
+      await flushPromises();
+    }
+
     const resultScreen = document.getElementById('result-screen');
     expect(resultScreen.classList.contains('hidden')).toBe(false);
-    expect(document.getElementById('result-count').textContent).toMatch(/1/);
+    expect(document.getElementById('result-count').textContent).toMatch(/4/);
   });
 
   it('updates elapsed time during quiz', async () => {
@@ -230,19 +234,30 @@ describe('app', () => {
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
-
     document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     now = 2000;
     vi.advanceTimersByTime(250);
     expect(document.getElementById('elapsed-time').textContent).toBe('0:02');
 
+    // 最初の3問は自動進行させる
+    for (let i = 0; i < 3; i++) {
+      now += 1000;
+      const optionButtons = Array.from(document.querySelectorAll('.option-button'));
+      const correctButton = optionButtons.find(btn => btn.dataset.correct === 'true');
+      correctButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      vi.advanceTimersByTime(750);
+      await flushPromises();
+    }
+
+    // 最後の問題（4問目）に答える
     now = 5000;
     const optionButtons = Array.from(document.querySelectorAll('.option-button'));
     const correctButton = optionButtons.find(btn => btn.dataset.correct === 'true');
     correctButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(document.getElementById('elapsed-time').textContent).toBe('0:05');
 
+    // 経過時間が停止していることを確認
     now = 8000;
     vi.advanceTimersByTime(1000);
     expect(document.getElementById('elapsed-time').textContent).toBe('0:05');
@@ -284,19 +299,22 @@ describe('app', () => {
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
-
     document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-    const optionButtons = Array.from(document.querySelectorAll('.option-button'));
-    const wrongButton = optionButtons.find(btn => btn.dataset.correct === 'false');
-    wrongButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    // 4問すべてに答える（loadCsvモックが4つの歌を返すため）
+    for (let i = 0; i < 4; i++) {
+      const optionButtons = Array.from(document.querySelectorAll('.option-button'));
+      const wrongButton = optionButtons.find(btn => btn.dataset.correct === 'false');
+      wrongButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-    expect(document.getElementById('feedback').textContent).toMatch(/不正解/);
-    const nextButton = document.getElementById('next-question');
-    expect(nextButton.disabled).toBe(false);
-    nextButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(document.getElementById('feedback').textContent).toMatch(/不正解/);
+      const nextButton = document.getElementById('next-question');
+      expect(nextButton.disabled).toBe(false);
 
-    await flushPromises();
+      nextButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await flushPromises();
+    }
+
     const resultScreen = document.getElementById('result-screen');
     expect(resultScreen.classList.contains('hidden')).toBe(false);
   });
@@ -553,7 +571,7 @@ describe('app', () => {
   });
 
   it('loads persisted top and settings values', async () => {
-    localStorage.setItem('goshiki_question_count', '5');
+    localStorage.setItem('goshiki_question_count', 'weak5');
     localStorage.setItem('goshiki_measure_time', 'false');
     localStorage.setItem('goshiki_hint_type', 'kami');
     localStorage.setItem('goshiki_display_mode', 'kanji');
@@ -562,7 +580,7 @@ describe('app', () => {
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
-    expect(document.getElementById('question-count').value).toBe('5');
+    expect(document.getElementById('question-mode-weak5').classList.contains('active')).toBe(true);
     expect(document.getElementById('measure-time-toggle').checked).toBe(false);
 
     document.getElementById('open-settings').dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -575,7 +593,10 @@ describe('app', () => {
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
-    expect(localStorage.getItem('goshiki_question_count')).toBe('10');
+    // 苦手5種ボタンをクリックして保存されることを確認
+    const modeWeak5 = document.getElementById('question-mode-weak5');
+    modeWeak5.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(localStorage.getItem('goshiki_question_count')).toBe('weak5');
 
     const measureToggle = document.getElementById('measure-time-toggle');
     measureToggle.checked = false;
@@ -691,21 +712,23 @@ describe('app', () => {
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
-
     document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-    const optionButtons = Array.from(document.querySelectorAll('.option-button'));
-    const wrongButton = optionButtons.find(btn => btn.dataset.correct === 'false');
-    wrongButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-
-    const nextButton = document.getElementById('next-question');
-    nextButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-
-    const correctButton = optionButtons.find(btn => btn.dataset.correct === 'true');
-    correctButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-
-    vi.runAllTimers();
-    await flushPromises();
+    // 1問目は不正解、残りは正解
+    for (let i = 0; i < 4; i++) {
+      const optionButtons = Array.from(document.querySelectorAll('.option-button'));
+      if (i === 0) {
+        const wrongButton = optionButtons.find(btn => btn.dataset.correct === 'false');
+        wrongButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        const nextButton = document.getElementById('next-question');
+        nextButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      } else {
+        const correctButton = optionButtons.find(btn => btn.dataset.correct === 'true');
+        correctButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        vi.advanceTimersByTime(750);
+      }
+      await flushPromises();
+    }
 
     const retryIncorrectButton = document.getElementById('retry-incorrect');
     expect(retryIncorrectButton.classList.contains('hidden')).toBe(false);
@@ -717,15 +740,16 @@ describe('app', () => {
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
-
     document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-    const optionButtons = Array.from(document.querySelectorAll('.option-button'));
-    const correctButton = optionButtons.find(btn => btn.dataset.correct === 'true');
-    correctButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-
-    vi.runAllTimers();
-    await flushPromises();
+    // すべて正解
+    for (let i = 0; i < 4; i++) {
+      const optionButtons = Array.from(document.querySelectorAll('.option-button'));
+      const correctButton = optionButtons.find(btn => btn.dataset.correct === 'true');
+      correctButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      vi.advanceTimersByTime(750);
+      await flushPromises();
+    }
 
     const retryIncorrectButton = document.getElementById('retry-incorrect');
     expect(retryIncorrectButton.classList.contains('hidden')).toBe(true);
@@ -737,21 +761,23 @@ describe('app', () => {
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
-
     document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-    const optionButtons = Array.from(document.querySelectorAll('.option-button'));
-    const wrongButton = optionButtons.find(btn => btn.dataset.correct === 'false');
-    wrongButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-
-    const nextButton = document.getElementById('next-question');
-    nextButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-
-    const correctButton = optionButtons.find(btn => btn.dataset.correct === 'true');
-    correctButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-
-    vi.runAllTimers();
-    await flushPromises();
+    // 1問目は不正解、残りは正解
+    for (let i = 0; i < 4; i++) {
+      const optionButtons = Array.from(document.querySelectorAll('.option-button'));
+      if (i === 0) {
+        const wrongButton = optionButtons.find(btn => btn.dataset.correct === 'false');
+        wrongButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        const nextButton = document.getElementById('next-question');
+        nextButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      } else {
+        const correctButton = optionButtons.find(btn => btn.dataset.correct === 'true');
+        correctButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        vi.advanceTimersByTime(750);
+      }
+      await flushPromises();
+    }
 
     const retryIncorrectButton = document.getElementById('retry-incorrect');
     retryIncorrectButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
