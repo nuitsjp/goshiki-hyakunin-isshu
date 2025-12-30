@@ -164,6 +164,28 @@ describe('app', () => {
     vi.useRealTimers();
   });
 
+  it('limits question options to 20 and weak5 on non-localhost hosts', async () => {
+    const originalLocation = window.location;
+    Object.defineProperty(window, 'location', {
+      value: new URL('https://example.com/'),
+      writable: true,
+    });
+
+    await import('../docs/js/app.js');
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    await flushPromises();
+
+    const questionCount = document.getElementById('question-count');
+    const optionValues = Array.from(questionCount.options).map(opt => opt.value);
+    expect(optionValues).toEqual(['20', 'weak5']);
+    expect(questionCount.value).toBe('20');
+
+    Object.defineProperty(window, 'location', {
+      value: originalLocation,
+      writable: true,
+    });
+  });
+
   it('starts quiz and auto-advances on correct answer', async () => {
     vi.useFakeTimers();
     await import('../docs/js/app.js');
