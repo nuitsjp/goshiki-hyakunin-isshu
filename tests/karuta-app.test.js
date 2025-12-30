@@ -76,6 +76,7 @@ const setupDom = () => {
     <div id="result-screen" class="hidden"></div>
     <button class="color-button" data-color="黄"></button>
     <button class="color-button" data-color="青"></button>
+    <button class="color-button" data-color="緑"></button>
     <button id="cancel-game"></button>
     <div id="progress-text"></div>
     <div id="progress-bar"></div>
@@ -609,4 +610,70 @@ describe('karuta-app', () => {
 
     expect(document.getElementById('result-comment').textContent).toBe('練習あるのみ！');
   }, 10000);
+
+  it('未定義の色はデフォルトのアクセントを使う', async () => {
+    setupDom();
+    loadCsvMock.mockResolvedValue(createPoems(1, '緑'));
+    buildKarutaDeckMock.mockReturnValue(createDeck(1));
+    buildKarutaReadingsMock.mockReturnValue(createReadings(1));
+    await importApp();
+
+    document.querySelector('.color-button[data-color="緑"]').click();
+
+    expect(document.documentElement.style.getPropertyValue('--current-accent')).toBe('var(--color-blue)');
+    expect(document.getElementById('progress-bar').style.color).toBe('rgb(255, 255, 255)');
+  });
+
+  it('計測なしの結果は時間表示を隠す', async () => {
+    setupDom();
+    localStorage.setItem('goshiki_measure_time', 'false');
+    loadCsvMock.mockResolvedValue(createPoems(1));
+    buildKarutaDeckMock.mockReturnValue(createDeck(1));
+    buildKarutaReadingsMock.mockReturnValue(createReadings(1));
+    checkKarutaMatchMock.mockReturnValue(true);
+    await importApp();
+
+    document.querySelector('.color-button[data-color="黄"]').click();
+    document.querySelector('.karuta-card').click();
+
+    await wait(600);
+
+    expect(document.getElementById('result-time').classList.contains('hidden')).toBe(true);
+    expect(document.getElementById('result-time').textContent).toBe('');
+  });
+
+  it('不正解時に正解札をハイライトする', async () => {
+    setupDom();
+    loadCsvMock.mockResolvedValue(createPoems(2));
+    buildKarutaDeckMock.mockReturnValue(createDeck(2));
+    buildKarutaReadingsMock.mockReturnValue(createReadings(1));
+    checkKarutaMatchMock.mockImplementation((reading, card) => reading.kimariji === card.kimariji);
+    await importApp();
+
+    document.querySelector('.color-button[data-color="黄"]').click();
+    document.querySelectorAll('.karuta-card')[1].click();
+
+    const cards = document.querySelectorAll('.karuta-card');
+    expect(cards[0].classList.contains('showing-result')).toBe(true);
+    expect(cards[0].style.backgroundColor).toBe('rgb(255, 230, 230)');
+    expect(cards[1].querySelector('.result-icon.incorrect')).toBeTruthy();
+  });
+
+  it('計測設定の保存エラーを握りつぶす', async () => {
+    setupDom();
+    loadCsvMock.mockResolvedValue(createPoems(1));
+    await importApp();
+
+    const originalSetItem = localStorage.setItem;
+    localStorage.setItem = vi.fn(() => {
+      throw new Error('fail');
+    });
+
+    expect(() => {
+      document.getElementById('measure-time-toggle')
+        .dispatchEvent(new Event('change'));
+    }).not.toThrow();
+
+    localStorage.setItem = originalSetItem;
+  });
 });

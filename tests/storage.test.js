@@ -433,4 +433,26 @@ describe('storage', () => {
     const storage = new MemoryStorage();
     expect(checkLocalStorageAvailable(storage)).toBe(true);
   });
+
+  it('loadQuizHistory resets promise when fetch rejects', async () => {
+    const storage = new MemoryStorage();
+    setAuthModule({
+      getCurrentUserId: () => {
+        throw new Error('boom');
+      },
+    });
+
+    await expect(loadQuizHistory(storage)).rejects.toThrow('boom');
+  });
+
+  it('saveKarutaSession returns false on unexpected error', async () => {
+    const storage = new MemoryStorage();
+    storage.setItem = vi.fn(() => {
+      throw new Error('boom');
+    });
+
+    const ok = await saveKarutaSession({ timestamp: Date.now(), questionCount: 1 }, storage);
+
+    expect(ok).toBe(false);
+  });
 });

@@ -920,7 +920,21 @@ h6,
 }
 
 .karuta-board .card-body {
-  padding: 1.5rem;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.karuta-board .display-panel,
+.karuta-board .karuta-grid {
+  max-width: 960px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.karuta-board .display-panel {
+  gap: 0.25rem;
 }
 
 .hint-button {
@@ -942,19 +956,30 @@ h6,
   font-weight: 500;
 }
 
+.karuta-board .kimariji-display {
+  font-size: clamp(1.6rem, 4vw + 0.2rem, 2.2rem);
+}
+
+.karuta-board .reading-display {
+  font-size: clamp(1rem, 3vw + 0.1rem, 1.3rem);
+}
+
 .karuta-grid {
+  --karuta-card-size: 150px;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 0.5rem;
-  margin: 0;
-  max-width: none;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 960px;
 }
 
 .karuta-card {
+  width: 100%;
   aspect-ratio: 3 / 4;
   padding: 0.5rem;
   font-family: var(--font-serif);
-  font-size: 1.6rem;
+  font-size: clamp(0.75rem, calc(var(--karuta-card-size) / 140 * 1rem), 1.6rem);
   line-height: 1.8;
   border: 2px solid var(--color-border);
   border-radius: 4px;

@@ -330,9 +330,23 @@ describe('auth', () => {
     const { initAuthUI } = await loadAuthModule();
     const elements = buildElements();
     const mocks = createFirebaseMocks();
-    const removeSpy = vi.spyOn(window.localStorage, 'removeItem');
+    const storage = {
+      store: {},
+      getItem(key) {
+        return Object.prototype.hasOwnProperty.call(this.store, key) ? this.store[key] : null;
+      },
+      setItem(key, value) {
+        this.store[key] = String(value);
+      },
+      removeItem(key) {
+        delete this.store[key];
+      },
+    };
+    vi.stubGlobal('localStorage', storage);
+    window.localStorage = storage;
+    const removeSpy = vi.spyOn(storage, 'removeItem');
     const localHistory = [{ id: 1 }, { id: 2 }];
-    window.localStorage.setItem('goshiki_quiz_history', JSON.stringify(localHistory));
+    storage.setItem('goshiki_quiz_history', JSON.stringify(localHistory));
     uploadLocalHistoryToFirestore.mockResolvedValue(2);
 
     await initAuthUI({
@@ -346,15 +360,30 @@ describe('auth', () => {
 
     expect(uploadLocalHistoryToFirestore).toHaveBeenCalledWith('123', localHistory);
     expect(removeSpy).toHaveBeenCalledWith('goshiki_quiz_history');
+    vi.unstubAllGlobals();
   });
 
   it('clears local history when uploaded count is zero', async () => {
     const { initAuthUI } = await loadAuthModule();
     const elements = buildElements();
     const mocks = createFirebaseMocks();
-    const removeSpy = vi.spyOn(window.localStorage, 'removeItem');
+    const storage = {
+      store: {},
+      getItem(key) {
+        return Object.prototype.hasOwnProperty.call(this.store, key) ? this.store[key] : null;
+      },
+      setItem(key, value) {
+        this.store[key] = String(value);
+      },
+      removeItem(key) {
+        delete this.store[key];
+      },
+    };
+    vi.stubGlobal('localStorage', storage);
+    window.localStorage = storage;
+    const removeSpy = vi.spyOn(storage, 'removeItem');
     const localHistory = [{ id: 1 }];
-    window.localStorage.setItem('goshiki_quiz_history', JSON.stringify(localHistory));
+    storage.setItem('goshiki_quiz_history', JSON.stringify(localHistory));
     uploadLocalHistoryToFirestore.mockResolvedValue(0);
 
     await initAuthUI({
@@ -368,6 +397,7 @@ describe('auth', () => {
 
     expect(uploadLocalHistoryToFirestore).toHaveBeenCalledWith('123', localHistory);
     expect(removeSpy).toHaveBeenCalledWith('goshiki_quiz_history');
+    vi.unstubAllGlobals();
   });
 
   it('swallows errors from auth state handler', async () => {
