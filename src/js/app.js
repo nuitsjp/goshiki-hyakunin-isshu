@@ -31,11 +31,6 @@ function isLocalHostname(hostname) {
   return LOCAL_HOSTNAMES.includes(host);
 }
 
-function getAvailableQuestionCountValues() {
-  if (!elements.questionCount) return [];
-  return Array.from(elements.questionCount.options).map(opt => opt.value);
-}
-
 function readLocalSetting(key, fallback) {
   try {
     const value = localStorage.getItem(key);
@@ -54,37 +49,25 @@ function writeLocalSetting(key, value) {
   }
 }
 
-function applyQuestionCount(value) {
-  if (!elements.questionCount) return;
+function updateQuestionModeButtons(mode) {
+  if (!elements.questionMode20 || !elements.questionModeWeak5) return;
 
-  const availableValues = getAvailableQuestionCountValues();
-  const numericOptions = availableValues.filter(v => v !== 'weak5');
-  const defaultValue = numericOptions[numericOptions.length - 1] || '20';
-
-  if (value === 'weak5' && availableValues.includes('weak5')) {
-    elements.questionCount.value = 'weak5';
+  if (mode === 'weak5') {
+    elements.questionMode20.classList.remove('active');
+    elements.questionModeWeak5.classList.add('active');
     quizState.questionLimit = 5;
-    return;
+  } else {
+    elements.questionMode20.classList.add('active');
+    elements.questionModeWeak5.classList.remove('active');
+    quizState.questionLimit = 20;
   }
-
-  const val = parseInt(value, 10);
-  const valueStr = Number.isFinite(val) ? String(val) : '';
-  if (valueStr && availableValues.includes(valueStr) && val >= 1 && val <= 20) {
-    elements.questionCount.value = valueStr;
-    quizState.questionLimit = val;
-    return;
-  }
-
-  elements.questionCount.value = defaultValue;
-  const fallback = parseInt(defaultValue, 10);
-  quizState.questionLimit = Number.isFinite(fallback) ? fallback : 20;
 }
 
 function loadStartSettings() {
-  if (elements.questionCount) {
-    const savedCount = readLocalSetting(STORAGE_KEYS.QUESTION_COUNT, null);
-    applyQuestionCount(savedCount ?? String(quizState.questionLimit));
-  }
+  const savedMode = readLocalSetting(STORAGE_KEYS.QUESTION_COUNT, null);
+  const mode = savedMode === 'weak5' ? 'weak5' : '20';
+  updateQuestionModeButtons(mode);
+
   if (elements.measureTimeToggle) {
     const savedMeasure = readLocalSetting(STORAGE_KEYS.MEASURE_TIME, null);
     elements.measureTimeToggle.checked = savedMeasure === null ? true : savedMeasure !== 'false';
@@ -117,7 +100,7 @@ function showScreen(screen) {
   }
   if (screen === 'start') {
     loadStartSettings();
-    updateWeak5Option(null);
+    updateColorButtonsForWeak5Mode();
   }
   if (screen === 'settings') {
     loadSettingsValues();
@@ -140,6 +123,7 @@ async function refreshHistoryCache() {
 async function refreshHistoryForStart() {
   await refreshHistoryCache();
   await statsUI.renderColorSummaries();
+  updateColorButtonsForWeak5Mode();
 }
 
 function closeMenu() {
@@ -163,46 +147,37 @@ function setAccentColor(color) {
   elements.selectedColorLabel.style.color = textColor;
 }
 
-function updateWeak5Option(color) {
-  if (!elements.questionCount) return;
+function updateColorButtonsForWeak5Mode() {
+  const isWeak5Mode = elements.questionModeWeak5 && elements.questionModeWeak5.classList.contains('active');
 
-  const weak5Option = elements.questionCount.querySelector('option[value="weak5"]');
-  if (!weak5Option) return;
+  if (!isWeak5Mode) {
+    // 苦手5種モードでない場合は、すべての色ボタンを有効化
+    elements.colorButtons.forEach(btn => {
+      btn.disabled = false;
+      btn.title = '';
+    });
+    return;
+  }
 
+  // 苦手5種モードの場合、各色の実績をチェック
   const history = getCachedQuizHistory();
-  if (color && quizState.allPoems.length && Array.isArray(history)) {
-    const kimarijiPerf = calculateKimarijiPerformance(color, quizState.allPoems, history);
-    weak5Option.disabled = !canUseWeak5(kimarijiPerf);
-  } else {
-    weak5Option.disabled = true;
+  if (!quizState.allPoems.length || !Array.isArray(history)) {
+    elements.colorButtons.forEach(btn => {
+      btn.disabled = true;
+      btn.title = 'まだクイズを実施していません';
+    });
+    return;
   }
 
-  if (weak5Option.disabled && elements.questionCount.value === 'weak5') {
-    elements.questionCount.value = '20';
-    quizState.questionLimit = 20;
-  }
-}
-
-function setupQuestionCountOptions() {
-  if (!elements.questionCount) return;
-
-  const hostname = window.location?.hostname || '';
-  const numericValues = isLocalHostname(hostname)
-    ? Array.from({ length: 20 }, (_, idx) => String(idx + 1))
-    : ['20'];
-
-  const optionsHtml = numericValues.map(val => {
-    const isSelected = String(quizState.questionLimit) === val;
-    return `<option value="${val}" ${isSelected ? 'selected' : ''}>${val} 問</option>`;
-  }).join('');
-  const weak5Option = '<option value="weak5" disabled>苦手5種</option>';
-  elements.questionCount.innerHTML = optionsHtml + weak5Option;
-
-  const defaultValue = numericValues.includes(String(quizState.questionLimit))
-    ? String(quizState.questionLimit)
-    : (numericValues[0] || '20');
-  elements.questionCount.value = defaultValue;
-  quizState.questionLimit = parseInt(defaultValue, 10) || 20;
+  elements.colorButtons.forEach(btn => {
+    const color = btn.dataset.color;
+    if (color) {
+      const kimarijiPerf = calculateKimarijiPerformance(color, quizState.allPoems, history);
+      const canUse = canUseWeak5(kimarijiPerf);
+      btn.disabled = !canUse;
+      btn.title = canUse ? '' : 'まだクイズを実施していません';
+    }
+  });
 }
 
 function resetOptionButtons() {
@@ -659,15 +634,11 @@ async function startQuiz(color) {
     quizState.selectedColor = color;
 
     let isWeak5Mode = false;
-    if (elements.questionCount) {
-      const selectedValue = elements.questionCount.value;
-      if (selectedValue === 'weak5') {
-        isWeak5Mode = true;
-        quizState.questionLimit = 5;
-      } else {
-        const val = parseInt(selectedValue, 10);
-        quizState.questionLimit = Number.isFinite(val) ? val : 20;
-      }
+    if (elements.questionModeWeak5 && elements.questionModeWeak5.classList.contains('active')) {
+      isWeak5Mode = true;
+      quizState.questionLimit = 5;
+    } else {
+      quizState.questionLimit = 20;
     }
 
     if (elements.hintType) {
@@ -771,15 +742,17 @@ function handleGiveUp() {
 function initEventHandlers() {
   elements.colorButtons.forEach(btn => {
     btn.addEventListener('click', () => handleChooseColor(btn.dataset.color));
-    btn.addEventListener('mouseenter', () => updateWeak5Option(btn.dataset.color));
-    btn.addEventListener('focus', () => updateWeak5Option(btn.dataset.color));
   });
 
-  if (elements.questionCount) {
-    elements.questionCount.addEventListener('change', () => {
-      applyQuestionCount(elements.questionCount.value);
-      writeLocalSetting(STORAGE_KEYS.QUESTION_COUNT, elements.questionCount.value);
-    });
+  if (elements.questionMode20 && elements.questionModeWeak5) {
+    const setQuestionMode = (mode) => {
+      updateQuestionModeButtons(mode);
+      writeLocalSetting(STORAGE_KEYS.QUESTION_COUNT, mode);
+      updateColorButtonsForWeak5Mode();
+    };
+
+    elements.questionMode20.addEventListener('click', () => setQuestionMode('20'));
+    elements.questionModeWeak5.addEventListener('click', () => setQuestionMode('weak5'));
   }
 
   if (elements.measureTimeToggle) {
@@ -978,7 +951,6 @@ function init() {
   if (elements.version) {
     elements.version.textContent = APP_VERSION;
   }
-  setupQuestionCountOptions();
   loadStartSettings();
   loadSettingsValues();
 

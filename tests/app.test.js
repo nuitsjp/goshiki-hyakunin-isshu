@@ -106,7 +106,8 @@ const setupAppDom = () => {
     <button id="open-settings"></button>
     <div data-color-stats="青"></div>
     <div id="app-version"></div>
-    <select id="question-count"></select>
+    <button id="question-mode-20" class="btn btn-toggle active"></button>
+    <button id="question-mode-weak5" class="btn btn-toggle"></button>
     <select id="hint-type">
       <option value="shoku">初句</option>
       <option value="kami">上の句</option>
@@ -164,26 +165,17 @@ describe('app', () => {
     vi.useRealTimers();
   });
 
-  it('limits question options to 20 and weak5 on non-localhost hosts', async () => {
-    const originalLocation = window.location;
-    Object.defineProperty(window, 'location', {
-      value: new URL('https://example.com/'),
-      writable: true,
-    });
-
+  it('shows 20 and weak5 buttons', async () => {
     await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
-    const questionCount = document.getElementById('question-count');
-    const optionValues = Array.from(questionCount.options).map(opt => opt.value);
-    expect(optionValues).toEqual(['20', 'weak5']);
-    expect(questionCount.value).toBe('20');
-
-    Object.defineProperty(window, 'location', {
-      value: originalLocation,
-      writable: true,
-    });
+    const mode20 = document.getElementById('question-mode-20');
+    const modeWeak5 = document.getElementById('question-mode-weak5');
+    expect(mode20).toBeTruthy();
+    expect(modeWeak5).toBeTruthy();
+    expect(mode20.classList.contains('active')).toBe(true);
+    expect(modeWeak5.classList.contains('active')).toBe(false);
   });
 
   it('starts quiz and auto-advances on correct answer', async () => {
@@ -191,10 +183,6 @@ describe('app', () => {
     await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
-
-    const questionCount = document.getElementById('question-count');
-    questionCount.value = '1';
-    questionCount.dispatchEvent(new Event('change'));
 
     document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
 

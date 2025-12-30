@@ -56,13 +56,14 @@
                 <button type="button" class="btn btn-toggle" id="order-reverse" data-value="reverse">下の句</button>
               </div>
             </div>
-            <div class="d-flex gap-2 align-items-center ms-auto">
-              <label for="question-count" class="form-label mb-0">出題</label>
-              <select id="question-count" class="form-select w-auto">
-                <!-- options filled by JS -->
-              </select>
-            </div>
             <div class="d-flex gap-2 align-items-center">
+              <label class="form-label mb-0">出題</label>
+              <div class="btn-group" role="group" aria-label="出題">
+                <button type="button" class="btn btn-toggle active" id="question-mode-20" data-value="20">20問</button>
+                <button type="button" class="btn btn-toggle" id="question-mode-weak5" data-value="weak5">苦手5種</button>
+              </div>
+            </div>
+            <div class="d-flex gap-2 align-items-center ms-auto">
               <label for="measure-time-toggle" class="form-label mb-0">計測</label>
               <div class="form-check form-switch mb-0">
                 <input class="form-check-input" type="checkbox" id="measure-time-toggle" checked>
