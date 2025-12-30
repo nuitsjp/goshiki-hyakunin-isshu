@@ -309,8 +309,12 @@ function resetQuizView() {
     btn.removeAttribute('data-option-index');
   });
   if (elements.toggleKimariji) {
-    const hintLabel = quizState.hintType === 'kami' ? '上の句' : '初句';
-    elements.toggleKimariji.textContent = `? ${hintLabel}表示`;
+    const label = elements.toggleKimariji.querySelector('.hint-button-label');
+    if (label) {
+      label.textContent = 'ヒント';
+    } else {
+      elements.toggleKimariji.textContent = 'ヒント';
+    }
     elements.toggleKimariji.setAttribute('aria-pressed', 'false');
     elements.toggleKimariji.disabled = true;
   }
@@ -337,7 +341,6 @@ function updateNextButton(ready = false) {
 function renderKimariji(question) {
   if (!question) return;
   const isReverse = quizState.orderMode === 'reverse';
-  const hintLabel = quizState.hintType === 'shoku' ? '初句' : '上の句';
   const useKana = quizState.displayMode === 'kana';
   const kamiText = useKana ? (question.kamiReading || '') : (question.kamiNoKu || '');
   const shimoText = useKana ? (question.correctShimoReading || '') : (question.correctShimo || '');
@@ -355,8 +358,7 @@ function renderKimariji(question) {
 
     if (elements.toggleKimariji) {
       const showingKami = quizState.showKami;
-      elements.toggleKimariji.textContent = showingKami ? '? 下の句表示' : '? 上の句表示';
-      elements.toggleKimariji.setAttribute('aria-pressed', showingKami ? 'true' : 'false');
+      updateHintToggleButton(showingKami);
       elements.toggleKimariji.disabled = false;
     }
     return;
@@ -375,9 +377,20 @@ function renderKimariji(question) {
   }
   if (elements.toggleKimariji) {
     const showingKami = quizState.showKami;
-    elements.toggleKimariji.textContent = showingKami ? '? 決まり字表示' : `? ${hintLabel}表示`;
-    elements.toggleKimariji.setAttribute('aria-pressed', showingKami ? 'true' : 'false');
+    updateHintToggleButton(showingKami);
     elements.toggleKimariji.disabled = false;
+  }
+}
+
+function updateHintToggleButton(showHint) {
+  if (!elements.toggleKimariji) return;
+  elements.toggleKimariji.setAttribute('aria-pressed', showHint ? 'true' : 'false');
+  const label = elements.toggleKimariji.querySelector('.hint-button-label');
+  const labelText = showHint ? '決まり字' : 'ヒント';
+  if (label) {
+    label.textContent = labelText;
+  } else {
+    elements.toggleKimariji.textContent = labelText;
   }
 }
 

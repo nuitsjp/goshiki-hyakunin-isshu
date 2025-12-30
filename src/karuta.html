@@ -86,32 +86,29 @@
             <div id="progress-bar" class="progress-bar" style="width: 0%;"></div>
           </div>
 
-          <!-- Reading card (upper poem) -->
-          <div class="card karuta-reading-card mb-4">
+          <div class="card quiz-card karuta-board mb-4">
             <div class="card-body">
-              <div class="d-flex align-items-center gap-2 mb-2">
-                <div class="text-muted small mb-0">読み札</div>
+              <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+                <div class="text-muted small mb-0">決まり字</div>
                 <button id="toggle-hint" class="btn btn-sm btn-outline-secondary ms-auto hint-button" type="button"
                   aria-pressed="false">
                   <i class="bi bi-arrow-left-right hint-icon" aria-hidden="true"></i>
                   <span class="hint-button-label">ヒント</span>
                 </button>
               </div>
-              <div class="text-center">
+              <div class="text-center display-panel">
                 <div id="kimariji-display" class="kimariji-display mb-2">---</div>
-                <div id="reading-display" class="reading-display">---</div>
+                <div class="text-muted small mb-1">読み札</div>
+                <div id="reading-display" class="reading-display mb-3">---</div>
+              </div>
+              <div class="text-muted small mb-2">取り札を選んでください</div>
+              <div id="karuta-grid" class="karuta-grid">
+                <!-- Cards will be dynamically generated here -->
+              </div>
+              <div class="d-flex justify-content-center mt-3 karuta-action-container" style="display: none;">
+                <button id="next-reading" class="btn btn-primary next-button" type="button" disabled>次の札へ</button>
               </div>
             </div>
-          </div>
-
-          <!-- Grid of taking cards (lower poems) 5x4 -->
-          <div id="karuta-grid" class="karuta-grid">
-            <!-- Cards will be dynamically generated here -->
-          </div>
-
-          <!-- 次の札へボタンは自動遷移により不要 -->
-          <div class="d-flex justify-content-center mt-3 karuta-action-container" style="display: none;">
-            <button id="next-reading" class="btn btn-primary next-button" type="button" disabled>次の札へ</button>
           </div>
         </div>
       </section>

@@ -114,6 +114,29 @@ describe('karuta', () => {
     });
   });
 
+  it('buildKarutaDeck falls back to kimarijiShort when long is missing', () => {
+    const poems = Array(20).fill(null).map((_, i) => ({
+      color: '青',
+      kimarijiShort: `short${i}`,
+      kimarijiLong: '',
+      shimoNoKu: `下${i}`,
+      shimoReading: `しも${i}`,
+      kamiNoKu: `上${i}`,
+      kamiReading: `かみ${i}`,
+      hint: `ひ${i}`,
+    }));
+
+    const deck = buildKarutaDeck({
+      poems,
+      color: '青',
+      random: fixedRandom,
+    });
+
+    deck.forEach(card => {
+      expect(card.kimariji).toMatch(/^short\d+$/);
+    });
+  });
+
   it('buildKarutaDeck throws when no poems for color', () => {
     expect(() => buildKarutaDeck({
       poems: samplePoems,
@@ -186,6 +209,29 @@ describe('karuta', () => {
     // kimarijiLongが優先されることを確認
     readings.forEach(reading => {
       expect(reading.kimariji).toMatch(/^long\d+$/);
+    });
+  });
+
+  it('buildKarutaReadings uses fallback text when both kimariji are missing', () => {
+    const poems = Array(20).fill(null).map((_, i) => ({
+      color: '青',
+      kimarijiShort: '',
+      kimarijiLong: '',
+      shimoNoKu: `下${i}`,
+      shimoReading: `しも${i}`,
+      kamiNoKu: `上${i}`,
+      kamiReading: `かみ${i}`,
+      hint: `ひ${i}`,
+    }));
+
+    const readings = buildKarutaReadings({
+      poems,
+      color: '青',
+      random: fixedRandom,
+    });
+
+    readings.forEach(reading => {
+      expect(reading.kimariji).toBe('決まり字なし');
     });
   });
 

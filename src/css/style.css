@@ -295,7 +295,7 @@ h6,
   font-weight: 600;
   letter-spacing: 0.1em;
   color: var(--color-text);
-  margin: 1.5rem 0;
+  margin: 0.5rem 0;
   text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.03);
 }
 
@@ -915,29 +915,12 @@ h6,
 
 /* ===== Karuta Game Styles ===== */
 
-/* 取り札グリッドと同じ幅に揃える */
-.karuta-info-container,
-.karuta-progress-bar,
-.karuta-reading-card,
-.karuta-action-container {
-  max-width: 65%;
-  margin-left: auto;
-  margin-right: auto;
+.karuta-board {
+  border-color: var(--color-border);
 }
 
-.karuta-reading-card {
-  background: linear-gradient(135deg, var(--color-bg) 0%, rgba(252, 250, 242, 0.8) 100%);
-  border: 2px solid var(--current-accent);
-  margin-bottom: 1rem;
-}
-
-.karuta-reading-card .card-body {
-  padding: 0.75rem 1rem;
-}
-
-.karuta-reading-card .kimariji-display {
-  font-size: 2rem;
-  margin: 0.5rem 0;
+.karuta-board .card-body {
+  padding: 1.5rem;
 }
 
 .hint-button {
@@ -963,8 +946,8 @@ h6,
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 0.5rem;
-  margin: 0 auto 1rem;
-  max-width: 65%;
+  margin: 0;
+  max-width: none;
 }
 
 .karuta-card {

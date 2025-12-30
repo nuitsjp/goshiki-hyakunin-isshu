@@ -56,7 +56,7 @@ const setupAppDom = () => {
       <div id="main-display-label"></div>
       <div id="kimariji"></div>
       <div class="text-muted"></div>
-      <button id="toggle-kimariji"></button>
+      <button id="toggle-kimariji"><span class="hint-button-label"></span></button>
       <div id="options-container">
         <button class="option-button btn btn-outline-secondary"></button>
         <button class="option-button btn btn-outline-secondary"></button>
@@ -554,9 +554,10 @@ describe('app', () => {
 
     expect(document.getElementById('main-display-label').textContent).toBe('下の句 (問題)');
     const toggle = document.getElementById('toggle-kimariji');
-    expect(toggle.textContent).toMatch(/上の句表示/);
+    const toggleLabel = document.querySelector('#toggle-kimariji .hint-button-label');
+    expect(toggleLabel.textContent).toBe('ヒント');
     toggle.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    expect(toggle.textContent).toMatch(/下の句表示/);
+    expect(toggleLabel.textContent).toBe('決まり字');
   });
 
   it('shows kami text when hint type is kami', async () => {

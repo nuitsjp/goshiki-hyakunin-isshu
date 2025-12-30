@@ -399,4 +399,38 @@ describe('storage', () => {
     };
     expect(checkLocalStorageAvailable(storage)).toBe(false);
   });
+
+  it('clearAllHistory deletes Firestore history when signed in', async () => {
+    const storage = new MemoryStorage({
+      [STORAGE_KEYS.HISTORY]: '[]',
+      [STORAGE_KEYS.VERSION]: '1',
+    });
+    const dialog = {
+      confirm: () => true,
+      alert: vi.fn(),
+    };
+    setAuthModule({ getCurrentUserId: () => 'user1' });
+    const deleteSpy = vi.spyOn(firestore, 'deleteAllSessionsFromFirestore').mockResolvedValue(true);
+
+    const ok = await clearAllHistory(storage, dialog);
+
+    expect(ok).toBe(true);
+    expect(deleteSpy).toHaveBeenCalledWith('user1');
+  });
+
+  it('loadKarutaHistory resets promise when fetch rejects', async () => {
+    const storage = new MemoryStorage();
+    setAuthModule({
+      getCurrentUserId: () => {
+        throw new Error('boom');
+      },
+    });
+
+    await expect(loadKarutaHistory(storage)).rejects.toThrow('boom');
+  });
+
+  it('checkLocalStorageAvailable returns true on success', () => {
+    const storage = new MemoryStorage();
+    expect(checkLocalStorageAvailable(storage)).toBe(true);
+  });
 });

@@ -62,6 +62,9 @@ const loadAuthModule = async (configOverrides = {}) => {
     ENABLE_FIREBASE_AUTH: true,
     FIREBASE_CONFIG: { projectId: 'test' },
     AUTH_PROVIDER: 'google',
+    STORAGE_KEYS: {
+      HISTORY: 'goshiki_quiz_history',
+    },
     ...configOverrides,
   }));
   return await import('../src/js/auth.js');
@@ -305,5 +308,88 @@ describe('auth', () => {
     successElements.authLogout.click();
     await flushPromises();
     expect(successMocks.authModule.signOut).toHaveBeenCalled();
+  });
+
+  it('initializes analytics when measurementId is provided', async () => {
+    const { initAuthUI } = await loadAuthModule({
+      FIREBASE_CONFIG: { projectId: 'test', measurementId: 'm1' },
+    });
+    const elements = buildElements();
+    const mocks = createFirebaseMocks();
+    const analyticsModule = { getAnalytics: vi.fn() };
+
+    await initAuthUI({
+      elements,
+      loadModules: async () => ({ ...mocks, analyticsModule }),
+    });
+
+    expect(analyticsModule.getAnalytics).toHaveBeenCalled();
+  });
+
+  it('migrates local history when uploaded count is greater than zero', async () => {
+    const { initAuthUI } = await loadAuthModule();
+    const elements = buildElements();
+    const mocks = createFirebaseMocks();
+    const removeSpy = vi.spyOn(window.localStorage, 'removeItem');
+    const localHistory = [{ id: 1 }, { id: 2 }];
+    window.localStorage.setItem('goshiki_quiz_history', JSON.stringify(localHistory));
+    uploadLocalHistoryToFirestore.mockResolvedValue(2);
+
+    await initAuthUI({
+      elements,
+      loadModules: async () => mocks,
+    });
+
+    const callback = mocks.getAuthStateCallback();
+    await callback({ displayName: 'テスト', photoURL: '', uid: '123' });
+    await flushPromises();
+
+    expect(uploadLocalHistoryToFirestore).toHaveBeenCalledWith('123', localHistory);
+    expect(removeSpy).toHaveBeenCalledWith('goshiki_quiz_history');
+  });
+
+  it('clears local history when uploaded count is zero', async () => {
+    const { initAuthUI } = await loadAuthModule();
+    const elements = buildElements();
+    const mocks = createFirebaseMocks();
+    const removeSpy = vi.spyOn(window.localStorage, 'removeItem');
+    const localHistory = [{ id: 1 }];
+    window.localStorage.setItem('goshiki_quiz_history', JSON.stringify(localHistory));
+    uploadLocalHistoryToFirestore.mockResolvedValue(0);
+
+    await initAuthUI({
+      elements,
+      loadModules: async () => mocks,
+    });
+
+    const callback = mocks.getAuthStateCallback();
+    await callback({ displayName: 'テスト', photoURL: '', uid: '123' });
+    await flushPromises();
+
+    expect(uploadLocalHistoryToFirestore).toHaveBeenCalledWith('123', localHistory);
+    expect(removeSpy).toHaveBeenCalledWith('goshiki_quiz_history');
+  });
+
+  it('swallows errors from auth state handler', async () => {
+    const { initAuthUI } = await loadAuthModule();
+    const elements = buildElements();
+    const mocks = createFirebaseMocks();
+    const onAuthStateChanged = vi.fn(() => {
+      throw new Error('handler-fail');
+    });
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await initAuthUI({
+      elements,
+      loadModules: async () => mocks,
+      onAuthStateChanged,
+    });
+
+    const callback = mocks.getAuthStateCallback();
+    await callback({ displayName: 'テスト', photoURL: '', uid: '123' });
+    await flushPromises();
+
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
   });
 });
