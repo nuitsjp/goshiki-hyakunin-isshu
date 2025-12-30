@@ -939,3 +939,9 @@ body {
     align-self: flex-end;
   }
 }
+
+/* Ensure footer links are clickable above fixed bottom ads */
+footer {
+  position: relative;
+  z-index: 10001;
+}
