@@ -104,9 +104,9 @@ describe('stats', () => {
       {
         color: '青',
         answers: [
-          { kimariji: 'あ', isCorrect: true },
-          { kimariji: 'あ', isCorrect: false },
-          { kimariji: 'い', isCorrect: false },
+          { kimariji: 'あ', isCorrect: true, answerTimeMs: 2000 },
+          { kimariji: 'あ', isCorrect: false, answerTimeMs: 3000 },
+          { kimariji: 'い', isCorrect: false, answerTimeMs: 4000 },
         ],
       },
     ];
@@ -115,8 +115,10 @@ describe('stats', () => {
     expect(result).toHaveLength(2);
     expect(result[0].kimariji).toBe('い');
     expect(result[0].rate).toBe(0);
+    expect(result[0].avgTimeMs).toBe(4000);
     expect(result[1].kimariji).toBe('あ');
     expect(result[1].rate).toBe(50);
+    expect(result[1].avgTimeMs).toBe(2500);
   });
 
   it('calculateKimarijiPerformance sorts totals with zero last', () => {
@@ -125,11 +127,13 @@ describe('stats', () => {
       { color: '青', kimarijiShort: 'あ', kimarijiLong: '', shimoNoKu: '', shimoReading: '', kamiNoKu: '', kamiReading: '' },
     ];
     const history = [
-      { color: '青', answers: [{ kimariji: 'あ', isCorrect: true }] },
+      { color: '青', answers: [{ kimariji: 'あ', isCorrect: true, answerTimeMs: 1000 }] },
     ];
     const result = calculateKimarijiPerformance('青', poems, history);
     expect(result[0].kimariji).toBe('あ');
+    expect(result[0].avgTimeMs).toBe(1000);
     expect(result[1].kimariji).toBe('い');
+    expect(result[1].avgTimeMs).toBe(null);
   });
 
   it('calculateKimarijiPerformance keeps order when totals are zero', () => {
@@ -142,6 +146,42 @@ describe('stats', () => {
     expect(result[1].kimariji).toBe('い');
     expect(result[0].total).toBe(0);
     expect(result[1].total).toBe(0);
+    expect(result[0].avgTimeMs).toBe(null);
+    expect(result[1].avgTimeMs).toBe(null);
+  });
+
+  it('calculateKimarijiPerformance sorts by avgTimeMs when rate is same', () => {
+    const poems = [
+      { color: '青', kimarijiShort: 'あ', kimarijiLong: '', shimoNoKu: '', shimoReading: '', kamiNoKu: '', kamiReading: '' },
+      { color: '青', kimarijiShort: 'い', kimarijiLong: '', shimoNoKu: '', shimoReading: '', kamiNoKu: '', kamiReading: '' },
+      { color: '青', kimarijiShort: 'う', kimarijiLong: '', shimoNoKu: '', shimoReading: '', kamiNoKu: '', kamiReading: '' },
+    ];
+    const history = [
+      {
+        color: '青',
+        answers: [
+          { kimariji: 'あ', isCorrect: true, answerTimeMs: 5000 },
+          { kimariji: 'あ', isCorrect: false, answerTimeMs: 6000 },
+          { kimariji: 'い', isCorrect: true, answerTimeMs: 2000 },
+          { kimariji: 'い', isCorrect: false, answerTimeMs: 3000 },
+          { kimariji: 'う', isCorrect: true, answerTimeMs: 8000 },
+          { kimariji: 'う', isCorrect: false, answerTimeMs: 9000 },
+        ],
+      },
+    ];
+
+    const result = calculateKimarijiPerformance('青', poems, history);
+    expect(result).toHaveLength(3);
+    // すべて正答率50%なので、平均回答時間の長い順（降順）にソート
+    expect(result[0].kimariji).toBe('う');
+    expect(result[0].rate).toBe(50);
+    expect(result[0].avgTimeMs).toBe(8500);
+    expect(result[1].kimariji).toBe('あ');
+    expect(result[1].rate).toBe(50);
+    expect(result[1].avgTimeMs).toBe(5500);
+    expect(result[2].kimariji).toBe('い');
+    expect(result[2].rate).toBe(50);
+    expect(result[2].avgTimeMs).toBe(2500);
   });
 
   it('calculateRecentTrend detects improving trend', () => {

@@ -83,7 +83,7 @@ export function calculateKimarijiPerformance(color, poems, history) {
   colorPoems.forEach(poem => {
     const kimariji = poem.kimarijiShort || poem.kimarijiLong || '決まり字なし';
     if (kimariji && !kimarijiMap.has(kimariji)) {
-      kimarijiMap.set(kimariji, { correct: 0, total: 0 });
+      kimarijiMap.set(kimariji, { correct: 0, total: 0, totalTimeMs: 0, timeCount: 0 });
     }
   });
 
@@ -96,6 +96,10 @@ export function calculateKimarijiPerformance(color, poems, history) {
           if (answer.isCorrect) {
             stats.correct++;
           }
+          if (answer.answerTimeMs != null && Number.isFinite(answer.answerTimeMs)) {
+            stats.totalTimeMs += answer.answerTimeMs;
+            stats.timeCount++;
+          }
         }
       });
     }
@@ -105,14 +109,20 @@ export function calculateKimarijiPerformance(color, poems, history) {
     kimariji,
     correct: stats.correct,
     total: stats.total,
-    rate: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0
+    rate: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
+    avgTimeMs: stats.timeCount > 0 ? Math.round(stats.totalTimeMs / stats.timeCount) : null
   }));
 
   kimarijiStats.sort((a, b) => {
     if (a.total === 0 && b.total === 0) return 0;
     if (a.total === 0) return 1;
     if (b.total === 0) return -1;
-    return a.rate - b.rate;
+    if (a.rate !== b.rate) return a.rate - b.rate;
+    // 正答率が同じ場合、平均回答時間が長い方を苦手と判断（降順）
+    if (a.avgTimeMs === null && b.avgTimeMs === null) return 0;
+    if (a.avgTimeMs === null) return 1;
+    if (b.avgTimeMs === null) return -1;
+    return b.avgTimeMs - a.avgTimeMs;
   });
 
   return kimarijiStats;
