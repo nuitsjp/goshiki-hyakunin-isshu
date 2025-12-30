@@ -14,6 +14,8 @@ export const colorTextMap = {
 export const STORAGE_KEYS = {
   HISTORY: 'goshiki_quiz_history',
   VERSION: 'goshiki_stats_version',
+  KARUTA_HISTORY: 'goshiki_karuta_history',
+  KARUTA_VERSION: 'goshiki_karuta_stats_version',
   DISPLAY_MODE: 'goshiki_display_mode',
   ORDER_MODE: 'goshiki_order_mode',
   QUESTION_COUNT: 'goshiki_question_count',

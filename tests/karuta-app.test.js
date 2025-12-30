@@ -17,6 +17,7 @@ let buildKarutaReadingsMock;
 let checkKarutaMatchMock;
 let escapeHtmlMock;
 let toRubyHtmlMock;
+let saveKarutaSessionMock;
 
 vi.mock('../src/js/config.js', () => mockConfig);
 vi.mock('../src/js/data.js', () => ({
@@ -31,8 +32,12 @@ vi.mock('../src/js/text.js', () => ({
   escapeHtml: (...args) => escapeHtmlMock(...args),
   toRubyHtml: (...args) => toRubyHtmlMock(...args),
 }));
+vi.mock('../src/js/storage.js', () => ({
+  saveKarutaSession: (...args) => saveKarutaSessionMock(...args),
+}));
 
 const flushPromises = () => new Promise(resolve => setTimeout(resolve, 0));
+const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const createPoems = (count, color = '黄') => Array.from({ length: count }, (_, i) => ({
   color,
@@ -115,6 +120,7 @@ beforeEach(() => {
   checkKarutaMatchMock = vi.fn();
   escapeHtmlMock = vi.fn(text => text);
   toRubyHtmlMock = vi.fn(text => `<span>${text}</span>`);
+  saveKarutaSessionMock = vi.fn().mockResolvedValue(true);
 });
 
 afterEach(() => {
@@ -173,8 +179,9 @@ describe('karuta-app', () => {
     document.querySelector('.karuta-card').click();
 
     const card = document.querySelector('.karuta-card');
-    expect(card.classList.contains('taken')).toBe(true);
+    expect(card.classList.contains('showing-result')).toBe(true);
     expect(card.disabled).toBe(true);
+    expect(card.querySelector('.result-icon.correct')).toBeTruthy();
     expect(document.getElementById('score-text').textContent).toBe('正解: 1枚');
     expect(document.getElementById('next-reading').disabled).toBe(false);
   });
@@ -191,8 +198,9 @@ describe('karuta-app', () => {
     document.querySelector('.karuta-card').click();
 
     const card = document.querySelector('.karuta-card');
-    expect(card.classList.contains('wrong')).toBe(true);
+    expect(card.classList.contains('showing-result')).toBe(true);
     expect(card.disabled).toBe(true);
+    expect(card.querySelector('.result-icon.incorrect')).toBeTruthy();
     expect(document.getElementById('score-text').textContent).toBe('正解: 0枚');
   });
 
@@ -215,6 +223,31 @@ describe('karuta-app', () => {
     expect(document.getElementById('result-list').innerHTML).toContain('result-item-correct');
     expect(document.getElementById('result-list').innerHTML).toContain('○');
     expect(escapeHtmlMock).toHaveBeenCalledWith('き0');
+  });
+
+  it('結果表示時にかるた統計を保存する', async () => {
+    setupDom();
+    loadCsvMock.mockResolvedValue(createPoems(1));
+    buildKarutaDeckMock.mockReturnValue(createDeck(1));
+    buildKarutaReadingsMock.mockReturnValue(createReadings(1));
+    checkKarutaMatchMock.mockReturnValue(true);
+    await importApp();
+
+    document.querySelector('.color-button[data-color="黄"]').click();
+    document.querySelector('.karuta-card').click();
+    document.getElementById('next-reading').click();
+
+    expect(saveKarutaSessionMock).toHaveBeenCalledTimes(1);
+    const sessionData = saveKarutaSessionMock.mock.calls[0][0];
+    expect(sessionData).toMatchObject({
+      color: '黄',
+      questionCount: 1,
+      correctCount: 1,
+      wrongCount: 0,
+      passCount: 0,
+      accuracyRate: 100,
+    });
+    expect(sessionData.answers).toHaveLength(1);
   });
 
   it('途中の読み札では次の読み札へ進む', async () => {

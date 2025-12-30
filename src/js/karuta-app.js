@@ -2,6 +2,7 @@ import { APP_VERSION, colorAccentMap, colorTextMap } from './config.js';
 import { loadCsv } from './data.js';
 import { buildKarutaDeck, buildKarutaReadings, checkKarutaMatch } from './karuta.js';
 import { escapeHtml, toRubyHtml } from './text.js';
+import { saveKarutaSession } from './storage.js';
 
 // Game state
 const karutaState = {
@@ -12,6 +13,8 @@ const karutaState = {
   currentIndex: 0,
   score: 0,           // Number of correct cards taken
   results: [],        // Array of {kimariji, isCorrect, cardState}
+  sessionStartTime: null,
+  sessionEndTime: null,
 };
 
 // DOM elements
@@ -104,14 +107,27 @@ function renderCards() {
     cardElement.className = 'karuta-card';
     cardElement.dataset.index = index;
 
-    if (card.state === 'taken') {
-      cardElement.classList.add('taken');
-      cardElement.disabled = true;
-      cardElement.innerHTML = '<span class="card-taken-mark">✓</span>';
-    } else if (card.state === 'wrong') {
-      cardElement.classList.add('wrong');
+    if (card.state === 'hidden') {
+      // 非表示の札（配置は維持）
+      cardElement.classList.add('hidden');
       cardElement.disabled = true;
       cardElement.textContent = card.shimoReading.replace(/\s/g, '');
+    } else if (card.state === 'showing-result') {
+      // 結果表示中（アイコン付き）
+      cardElement.classList.add('showing-result');
+      cardElement.disabled = true;
+      cardElement.textContent = card.shimoReading.replace(/\s/g, '');
+
+      const iconElement = document.createElement('span');
+      iconElement.className = 'result-icon';
+      if (card.isCorrect) {
+        iconElement.classList.add('correct');
+        iconElement.textContent = '●';
+      } else {
+        iconElement.classList.add('incorrect');
+        iconElement.textContent = '✕';
+      }
+      cardElement.appendChild(iconElement);
     } else {
       cardElement.classList.add('active');
       cardElement.textContent = card.shimoReading.replace(/\s/g, '');
@@ -130,36 +146,51 @@ function handleCardClick(cardIndex) {
 
   const isCorrect = checkKarutaMatch(reading, card);
 
+  // 結果をカードに記録
+  card.isCorrect = isCorrect;
+  card.state = 'showing-result';
+
   if (isCorrect) {
     // Correct answer
-    card.state = 'taken';
     karutaState.score++;
     karutaState.results.push({
       kimariji: reading.kimariji,
       kamiNoKu: reading.kamiNoKu,
       shimoReading: card.shimoReading,
       isCorrect: true,
-      cardState: 'taken',
+      cardState: 'hidden',
     });
   } else {
     // Wrong answer
-    card.state = 'wrong';
     karutaState.results.push({
       kimariji: reading.kimariji,
       kamiNoKu: reading.kamiNoKu,
       shimoReading: card.shimoReading,
       isCorrect: false,
-      cardState: 'wrong',
+      cardState: 'hidden',
     });
   }
 
   renderCards();
   updateProgress();
 
-  // Enable next button
-  if (elements.nextReading) {
-    elements.nextReading.disabled = false;
-  }
+  // 0.5秒後にカードを非表示にして次の読み札に進む
+  setTimeout(() => {
+    card.state = 'hidden';
+    renderCards();
+
+    // 次の読み札に自動的に進む
+    karutaState.currentIndex++;
+
+    if (karutaState.currentIndex >= karutaState.readings.length) {
+      // ゲーム終了
+      showResult();
+    } else {
+      // 次の読み札を表示
+      displayReading();
+      updateProgress();
+    }
+  }, 500);
 }
 
 function nextReading() {
@@ -184,6 +215,35 @@ function showResult() {
   const total = karutaState.readings.length;
   const correct = karutaState.score;
   const rate = Math.round((correct / total) * 100);
+  const endTime = typeof performance !== 'undefined' ? performance.now() : null;
+  karutaState.sessionEndTime = endTime;
+  const durationMs = Number.isFinite(karutaState.sessionStartTime) && Number.isFinite(endTime)
+    ? Math.round(endTime - karutaState.sessionStartTime)
+    : null;
+
+  const sessionData = {
+    sessionId: `karuta_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    timestamp: Date.now(),
+    date: new Date().toISOString().split('T')[0],
+    color: karutaState.selectedColor,
+    questionCount: total,
+    correctCount: correct,
+    wrongCount: total - correct,
+    passCount: 0,
+    accuracyRate: rate,
+    hintType: null,
+    displayMode: null,
+    orderMode: 'karuta',
+    durationMs,
+    answers: karutaState.results.map(result => ({
+      kimariji: result.kimariji,
+      isCorrect: result.isCorrect,
+      usedKami: false,
+      answerTimeMs: null,
+    })),
+  };
+
+  saveKarutaSession(sessionData);
 
   if (elements.resultCount) {
     elements.resultCount.textContent = `${correct} / ${total} 枚獲得`;
@@ -245,6 +305,8 @@ async function startGame(color) {
   karutaState.currentIndex = 0;
   karutaState.score = 0;
   karutaState.results = [];
+  karutaState.sessionStartTime = typeof performance !== 'undefined' ? performance.now() : null;
+  karutaState.sessionEndTime = null;
 
   try {
     // Build deck and readings

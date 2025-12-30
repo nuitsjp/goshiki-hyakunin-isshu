@@ -7,13 +7,17 @@ import {
 import {
   saveSessionToFirestore,
   loadSessionsFromFirestore,
-  deleteAllSessionsFromFirestore
+  deleteAllSessionsFromFirestore,
+  saveKarutaSessionToFirestore,
+  loadKarutaSessionsFromFirestore
 } from './firestore.js';
 import { log } from './debug.js';
 
 let getCurrentUserId = null;
 let historyCache = null;
 let historyPromise = null;
+let karutaHistoryCache = null;
+let karutaHistoryPromise = null;
 
 export function setAuthModule(authModule) {
   getCurrentUserId = authModule.getCurrentUserId;
@@ -28,13 +32,36 @@ export function setCachedQuizHistory(history) {
   historyPromise = null;
 }
 
+export function getCachedKarutaHistory() {
+  return karutaHistoryCache;
+}
+
+export function setCachedKarutaHistory(history) {
+  if (history === null) {
+    karutaHistoryCache = null;
+  } else {
+    karutaHistoryCache = Array.isArray(history) ? history : [];
+  }
+  karutaHistoryPromise = null;
+}
+
 export function clearCachedQuizHistory() {
   historyCache = null;
   historyPromise = null;
 }
 
+export function clearCachedKarutaHistory() {
+  karutaHistoryCache = null;
+  karutaHistoryPromise = null;
+}
+
 const readLocalHistory = (storage) => {
   const data = storage.getItem(STORAGE_KEYS.HISTORY);
+  return data ? JSON.parse(data) : [];
+};
+
+const readLocalKarutaHistory = (storage) => {
+  const data = storage.getItem(STORAGE_KEYS.KARUTA_HISTORY);
   return data ? JSON.parse(data) : [];
 };
 
@@ -68,6 +95,40 @@ const fetchQuizHistory = async (storage) => {
   } catch (e) {
     log('error', 'localStorage読み込み失敗', { error: e.message });
     console.error('Failed to load quiz history:', e);
+    return [];
+  }
+};
+
+const fetchKarutaHistory = async (storage) => {
+  const userId = getCurrentUserId?.();
+  log('load', 'かるた履歴読み込み開始', { userId: userId || 'not-logged-in' });
+
+  if (userId) {
+    try {
+      const sessions = await loadKarutaSessionsFromFirestore(userId);
+      log('load', 'Firestoreからかるた履歴読み込み完了', {
+        userId,
+        sessionCount: sessions.length,
+      });
+      return sessions;
+    } catch (e) {
+      log('error', 'Firestore読み込み失敗、localStorageにフォールバック', {
+        userId,
+        error: e.message,
+      });
+      console.error('Firestore load failed, fallback to localStorage:', e);
+    }
+  }
+
+  try {
+    const sessions = readLocalKarutaHistory(storage);
+    log('load', 'localStorageからかるた履歴読み込み完了', {
+      sessionCount: sessions.length,
+    });
+    return sessions;
+  } catch (e) {
+    log('error', 'localStorage読み込み失敗', { error: e.message });
+    console.error('Failed to load karuta history:', e);
     return [];
   }
 };
@@ -142,6 +203,76 @@ export async function saveQuizSession(sessionData, storage = window.localStorage
   }
 }
 
+export async function saveKarutaSession(sessionData, storage = window.localStorage) {
+  try {
+    const userId = getCurrentUserId?.();
+    log('save', 'かるたセッション保存開始', {
+      sessionId: sessionData.sessionId,
+      userId: userId || 'not-logged-in',
+      color: sessionData.color,
+      questionCount: sessionData.questionCount,
+    });
+
+    const cachedHistory = getCachedKarutaHistory();
+    let history = Array.isArray(cachedHistory) ? [...cachedHistory] : [];
+    if (!Array.isArray(cachedHistory)) {
+      try {
+        history = readLocalKarutaHistory(storage);
+      } catch (readError) {
+        console.error('Failed to load karuta history from localStorage:', readError);
+        history = [];
+      }
+    }
+    history.push(sessionData);
+    history = cleanOldHistory(history);
+    history = enforceHistoryLimit(history);
+    storage.setItem(STORAGE_KEYS.KARUTA_HISTORY, JSON.stringify(history));
+    storage.setItem(STORAGE_KEYS.KARUTA_VERSION, STATS_VERSION);
+    setCachedKarutaHistory(history);
+    log('save', 'localStorage保存完了', { historyCount: history.length });
+
+    if (userId) {
+      try {
+        await saveKarutaSessionToFirestore(userId, sessionData);
+        log('save', 'Firestore保存完了', { userId, sessionId: sessionData.sessionId });
+      } catch (e) {
+        log('error', 'Firestore保存失敗', { userId, error: e.message });
+        console.error('Firestore save failed:', e);
+      }
+    } else {
+      log('save', 'Firestore保存スキップ（未ログイン）', {});
+    }
+
+    return true;
+  } catch (e) {
+    console.error('Failed to save karuta session:', e);
+    if (e.name === 'QuotaExceededError') {
+      try {
+        const cachedHistory = getCachedKarutaHistory();
+        let history = Array.isArray(cachedHistory) ? [...cachedHistory] : [];
+        if (!Array.isArray(cachedHistory)) {
+          try {
+            history = readLocalKarutaHistory(storage);
+          } catch (readError) {
+            console.error('Failed to load karuta history from localStorage:', readError);
+            history = [];
+          }
+        }
+        history = history.slice(Math.floor(history.length * 0.2));
+        storage.setItem(STORAGE_KEYS.KARUTA_HISTORY, JSON.stringify(history));
+        history.push(sessionData);
+        storage.setItem(STORAGE_KEYS.KARUTA_HISTORY, JSON.stringify(history));
+        setCachedKarutaHistory(history);
+        return true;
+      } catch (retryError) {
+        console.error('Failed even after cleanup:', retryError);
+        return false;
+      }
+    }
+    return false;
+  }
+}
+
 export async function loadQuizHistory(storage = window.localStorage) {
   if (historyCache !== null) return historyCache;
   if (historyPromise) return historyPromise;
@@ -160,10 +291,35 @@ export async function loadQuizHistory(storage = window.localStorage) {
   return historyPromise;
 }
 
+export async function loadKarutaHistory(storage = window.localStorage) {
+  if (karutaHistoryCache !== null) return karutaHistoryCache;
+  if (karutaHistoryPromise) return karutaHistoryPromise;
+
+  karutaHistoryPromise = fetchKarutaHistory(storage)
+    .then(history => {
+      karutaHistoryCache = history;
+      karutaHistoryPromise = null;
+      return karutaHistoryCache;
+    })
+    .catch(error => {
+      karutaHistoryPromise = null;
+      throw error;
+    });
+
+  return karutaHistoryPromise;
+}
+
 export async function refreshQuizHistory(storage = window.localStorage) {
   const history = await fetchQuizHistory(storage);
   historyCache = history;
   historyPromise = null;
+  return history;
+}
+
+export async function refreshKarutaHistory(storage = window.localStorage) {
+  const history = await fetchKarutaHistory(storage);
+  karutaHistoryCache = history;
+  karutaHistoryPromise = null;
   return history;
 }
 

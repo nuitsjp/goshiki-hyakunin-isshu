@@ -970,8 +970,8 @@ h6,
   transition: all 0.2s ease;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-  align-items: center;
+  justify-content: center;
+  align-items: flex-start;
   text-align: center;
   overflow: hidden;
   writing-mode: vertical-rl;
@@ -988,26 +988,32 @@ h6,
   transform: translateY(0);
 }
 
-.karuta-card.taken {
-  background: linear-gradient(135deg, var(--color-correct) 0%, #8fad4d 100%);
-  border-color: var(--color-correct);
-  color: white;
+.karuta-card.showing-result {
+  position: relative;
   cursor: not-allowed;
-  opacity: 0.3;
 }
 
-.karuta-card.wrong {
-  background: rgba(183, 40, 46, 0.1);
-  border-color: var(--color-incorrect);
-  color: var(--color-text);
-  cursor: not-allowed;
-  opacity: 0.5;
+.karuta-card.hidden {
+  visibility: hidden;
 }
 
-.card-taken-mark {
-  font-size: 3rem;
-  font-weight: bold;
-  color: white;
+.result-icon {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  font-size: 2.5rem;
+  font-weight: 900;
+  writing-mode: horizontal-tb;
+  line-height: 1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.result-icon.correct {
+  color: #22c55e;
+}
+
+.result-icon.incorrect {
+  color: #ef4444;
 }
 
 /* Responsive adjustments for karuta grid */

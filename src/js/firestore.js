@@ -46,6 +46,22 @@ export async function saveSessionToFirestore(userId, sessionData) {
   }
 }
 
+export async function saveKarutaSessionToFirestore(userId, sessionData) {
+  if (!db || !userId || !firestoreModule) return false;
+
+  try {
+    const docRef = firestoreModule.doc(db, 'users', userId, 'karutaSessions', sessionData.sessionId);
+    await firestoreModule.setDoc(docRef, {
+      ...sessionData,
+      timestamp: firestoreModule.Timestamp.fromMillis(sessionData.timestamp)
+    });
+    return true;
+  } catch (error) {
+    console.error('Failed to save karuta session to Firestore:', error);
+    return false;
+  }
+}
+
 export async function loadSessionsFromFirestore(userId) {
   if (!db || !userId || !firestoreModule) return [];
 
@@ -63,6 +79,27 @@ export async function loadSessionsFromFirestore(userId) {
     });
   } catch (error) {
     console.error('Failed to load sessions from Firestore:', error);
+    return [];
+  }
+}
+
+export async function loadKarutaSessionsFromFirestore(userId) {
+  if (!db || !userId || !firestoreModule) return [];
+
+  try {
+    const colRef = firestoreModule.collection(db, 'users', userId, 'karutaSessions');
+    const q = firestoreModule.query(colRef, firestoreModule.orderBy('timestamp', 'desc'));
+    const snapshot = await firestoreModule.getDocs(q);
+
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        ...data,
+        timestamp: data.timestamp.toMillis()
+      };
+    });
+  } catch (error) {
+    console.error('Failed to load karuta sessions from Firestore:', error);
     return [];
   }
 }
