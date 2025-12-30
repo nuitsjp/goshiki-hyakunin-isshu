@@ -10,8 +10,8 @@ import {
 const samplePoems = [
   {
     color: '青',
-    kimarijiShort: 'あ',
-    kimarijiLong: '',
+    kimarijiShort: '',
+    kimarijiLong: 'あ',
     shimoNoKu: '下1',
     shimoReading: 'しも1',
     kamiNoKu: '上1',
@@ -20,8 +20,8 @@ const samplePoems = [
   },
   {
     color: '青',
-    kimarijiShort: 'い',
-    kimarijiLong: '',
+    kimarijiShort: '',
+    kimarijiLong: 'い',
     shimoNoKu: '下2',
     shimoReading: 'しも2',
     kamiNoKu: '上2',
@@ -30,8 +30,8 @@ const samplePoems = [
   },
   {
     color: '青',
-    kimarijiShort: 'う',
-    kimarijiLong: '',
+    kimarijiShort: '',
+    kimarijiLong: 'う',
     shimoNoKu: '下3',
     shimoReading: 'しも3',
     kamiNoKu: '上3',
@@ -40,8 +40,8 @@ const samplePoems = [
   },
   {
     color: '青',
-    kimarijiShort: 'え',
-    kimarijiLong: '',
+    kimarijiShort: '',
+    kimarijiLong: 'え',
     shimoNoKu: '下4',
     shimoReading: 'しも4',
     kamiNoKu: '上4',
@@ -50,8 +50,8 @@ const samplePoems = [
   },
   {
     color: 'ピンク',
-    kimarijiShort: 'お',
-    kimarijiLong: '',
+    kimarijiShort: '',
+    kimarijiLong: 'お',
     shimoNoKu: '下5',
     shimoReading: 'しも5',
     kamiNoKu: '上5',
@@ -115,7 +115,7 @@ describe('questions', () => {
     expect(correctOption.text).toBe(question.kamiNoKu);
   });
 
-  it('buildQuestions falls back to long kimariji or default', () => {
+  it('buildQuestions uses long kimariji or default', () => {
     const poems = [
       {
         color: '青',
@@ -139,8 +139,8 @@ describe('questions', () => {
       },
       {
         color: '青',
-        kimarijiShort: 'あ',
-        kimarijiLong: '',
+        kimarijiShort: '',
+        kimarijiLong: 'あ',
         shimoNoKu: '下3',
         shimoReading: 'しも3',
         kamiNoKu: '上3',
@@ -149,8 +149,8 @@ describe('questions', () => {
       },
       {
         color: '青',
-        kimarijiShort: 'い',
-        kimarijiLong: '',
+        kimarijiShort: '',
+        kimarijiLong: 'い',
         shimoNoKu: '下4',
         shimoReading: 'しも4',
         kamiNoKu: '上4',
@@ -278,8 +278,8 @@ describe('questions', () => {
     const incorrectPoems = getIncorrectPoems(answers, samplePoems);
 
     expect(incorrectPoems).toHaveLength(2);
-    expect(incorrectPoems[0].kimarijiShort).toBe('い');
-    expect(incorrectPoems[1].kimarijiShort).toBe('う');
+    expect(incorrectPoems[0].kimarijiLong).toBe('い');
+    expect(incorrectPoems[1].kimarijiLong).toBe('う');
   });
 
   it('getIncorrectPoems returns empty array when all correct', () => {

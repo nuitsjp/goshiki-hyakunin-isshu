@@ -40,7 +40,7 @@ export function buildQuestions({
   const maxCount = Math.max(1, Math.min(questionLimit, poemsByColor.length));
   const selected = shuffle(poemsByColor, random).slice(0, maxCount);
   return selected.map(poem => ({
-    kimariji: poem.kimarijiShort || poem.kimarijiLong || '決まり字なし',
+    kimariji: poem.kimarijiLong || '決まり字なし',
     correctShimo: poem.shimoNoKu,
     correctShimoReading: poem.shimoReading,
     kamiNoKu: poem.kamiNoKu,
@@ -70,7 +70,7 @@ export function buildWeakQuestions({
 
   weakKimarijis.forEach(kimarijiStat => {
     const poem = poemsByColor.find(p => {
-      const poemKimariji = p.kimarijiShort || p.kimarijiLong || '決まり字なし';
+      const poemKimariji = p.kimarijiLong || '決まり字なし';
       return poemKimariji === kimarijiStat.kimariji;
     });
     if (poem) {
@@ -83,7 +83,7 @@ export function buildWeakQuestions({
   }
 
   return selectedPoems.map(poem => ({
-    kimariji: poem.kimarijiShort || poem.kimarijiLong || '決まり字なし',
+    kimariji: poem.kimarijiLong || '決まり字なし',
     correctShimo: poem.shimoNoKu,
     correctShimoReading: poem.shimoReading,
     kamiNoKu: poem.kamiNoKu,
@@ -109,7 +109,7 @@ export function getIncorrectPoems(answers, poems) {
   const incorrectPoems = incorrectAnswers
     .map(answer => {
       return allPoems.find(poem => {
-        const poemKimariji = poem.kimarijiShort || poem.kimarijiLong || '決まり字なし';
+        const poemKimariji = poem.kimarijiLong || '決まり字なし';
         return poemKimariji === answer.kimariji &&
                poem.kamiNoKu === answer.kamiNoKu &&
                poem.shimoNoKu === answer.shimoNoKu;
@@ -136,7 +136,7 @@ export function buildQuestionsFromPoems({
   const poemsByColor = allPoemsArray.filter(poem => poem.color === color);
 
   return selectedPoems.map(poem => ({
-    kimariji: poem.kimarijiShort || poem.kimarijiLong || '決まり字なし',
+    kimariji: poem.kimarijiLong || '決まり字なし',
     correctShimo: poem.shimoNoKu,
     correctShimoReading: poem.shimoReading,
     kamiNoKu: poem.kamiNoKu,
