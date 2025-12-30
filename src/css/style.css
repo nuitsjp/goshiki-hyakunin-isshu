@@ -912,3 +912,115 @@ h6,
     align-self: flex-end;
   }
 }
+
+/* ===== Karuta Game Styles ===== */
+
+.karuta-reading-card {
+  background: linear-gradient(135deg, var(--color-bg) 0%, rgba(252, 250, 242, 0.8) 100%);
+  border: 2px solid var(--current-accent);
+}
+
+.reading-display {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  line-height: 1.8;
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.karuta-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.karuta-card {
+  aspect-ratio: 3 / 4;
+  padding: 0.5rem;
+  font-family: var(--font-serif);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  border: 2px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  overflow: hidden;
+  word-break: break-all;
+}
+
+.karuta-card.active:hover {
+  border-color: var(--current-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.karuta-card.active:active {
+  transform: translateY(0);
+}
+
+.karuta-card.taken {
+  background: linear-gradient(135deg, var(--color-correct) 0%, #8fad4d 100%);
+  border-color: var(--color-correct);
+  color: white;
+  cursor: not-allowed;
+  opacity: 0.3;
+}
+
+.karuta-card.wrong {
+  background: rgba(183, 40, 46, 0.1);
+  border-color: var(--color-incorrect);
+  color: var(--color-text);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.card-taken-mark {
+  font-size: 3rem;
+  font-weight: bold;
+  color: white;
+}
+
+/* Responsive adjustments for karuta grid */
+@media (max-width: 768px) {
+  .karuta-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.4rem;
+  }
+
+  .karuta-card {
+    font-size: 0.65rem;
+    padding: 0.4rem;
+  }
+
+  .reading-display {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .karuta-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.3rem;
+  }
+
+  .karuta-card {
+    font-size: 0.6rem;
+    padding: 0.3rem;
+  }
+
+  .reading-display {
+    font-size: 1rem;
+  }
+
+  .card-taken-mark {
+    font-size: 2rem;
+  }
+}
