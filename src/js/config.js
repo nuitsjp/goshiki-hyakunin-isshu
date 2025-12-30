@@ -21,6 +21,7 @@ export const STORAGE_KEYS = {
   QUESTION_COUNT: 'goshiki_question_count',
   MEASURE_TIME: 'goshiki_measure_time',
   HINT_TYPE: 'goshiki_hint_type',
+  KARUTA_FLIP: 'goshiki_karuta_flip',
 };
 export const STATS_VERSION = '1.0.0';
 export const MAX_HISTORY_ENTRIES = 1000;

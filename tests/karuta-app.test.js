@@ -12,6 +12,7 @@ const mockConfig = vi.hoisted(() => ({
   COLORS: ['黄', '青'],
   STORAGE_KEYS: {
     MEASURE_TIME: 'goshiki_measure_time',
+    KARUTA_FLIP: 'goshiki_karuta_flip',
   },
 }));
 
@@ -94,6 +95,7 @@ const setupDom = () => {
     <button id="next-reading"></button>
     <div id="elapsed-time"></div>
     <input id="measure-time-toggle" type="checkbox" checked>
+    <input id="flip-cards-toggle" type="checkbox">
     <div id="result-count"></div>
     <div id="result-rate"></div>
     <div id="result-time" class="hidden"></div>
@@ -241,6 +243,40 @@ describe('karuta-app', () => {
 
     expect(card.innerHTML).toContain('<br');
     expect(lines).toEqual(['よしの の', 'さと']);
+  });
+
+  it('上半分10枚の取り札に上下反転クラスを付与する', async () => {
+    setupDom();
+    localStorage.setItem('goshiki_karuta_flip', 'true');
+    loadCsvMock.mockResolvedValue(createPoems(20));
+    buildKarutaDeckMock.mockReturnValue(createDeck(20));
+    buildKarutaReadingsMock.mockReturnValue(createReadings(20));
+    await importApp();
+
+    document.querySelector('.color-button[data-color="黄"]').click();
+
+    const cards = Array.from(document.querySelectorAll('.karuta-card'));
+    expect(cards).toHaveLength(20);
+    cards.forEach((card, index) => {
+      const shouldFlip = index % 4 < 2;
+      expect(card.classList.contains('is-upside-down')).toBe(shouldFlip);
+    });
+  });
+
+  it('反転トグルがオフなら上下反転しない', async () => {
+    setupDom();
+    loadCsvMock.mockResolvedValue(createPoems(20));
+    buildKarutaDeckMock.mockReturnValue(createDeck(20));
+    buildKarutaReadingsMock.mockReturnValue(createReadings(20));
+    await importApp();
+
+    document.querySelector('.color-button[data-color="黄"]').click();
+
+    const cards = Array.from(document.querySelectorAll('.karuta-card'));
+    expect(cards).toHaveLength(20);
+    cards.forEach(card => {
+      expect(card.classList.contains('is-upside-down')).toBe(false);
+    });
   });
 
   it('計測オフならタイマーを非表示にする', async () => {

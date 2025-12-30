@@ -15,6 +15,7 @@ const karutaState = {
   score: 0,           // Number of correct cards taken
   results: [],        // Array of {kimariji, isCorrect, cardState}
   measureTime: true,
+  flipCards: false,
   sessionStartTime: null,
   sessionEndTime: null,
   showHint: false,
@@ -39,6 +40,7 @@ const elements = {
   scoreText: document.getElementById('score-text'),
   elapsedTime: document.getElementById('elapsed-time'),
   measureTimeToggle: document.getElementById('measure-time-toggle'),
+  flipCardsToggle: document.getElementById('flip-cards-toggle'),
   selectedColorLabel: document.getElementById('selected-color-label'),
   kimarijiDisplay: document.getElementById('kimariji-display'),
   readingDisplay: document.getElementById('reading-display'),
@@ -126,6 +128,10 @@ function loadStartSettings() {
   if (elements.measureTimeToggle) {
     const savedMeasure = readLocalSetting(STORAGE_KEYS.MEASURE_TIME, null);
     elements.measureTimeToggle.checked = savedMeasure === null ? true : savedMeasure !== 'false';
+  }
+  if (elements.flipCardsToggle) {
+    const savedFlip = readLocalSetting(STORAGE_KEYS.KARUTA_FLIP, null);
+    elements.flipCardsToggle.checked = savedFlip === null ? false : savedFlip === 'true';
   }
 }
 
@@ -324,6 +330,11 @@ function setCardTextLines(cardElement, text) {
 }
 
 const WHITE_SILVER_RATIO = 1.4142135623;
+const KARUTA_GRID_ROWS = 4;
+
+function isUpperHalfCard(index) {
+  return index % KARUTA_GRID_ROWS < KARUTA_GRID_ROWS / 2;
+}
 
 function updateCardSizing() {
   const gridArea = elements.karutaGrid?.parentElement;
@@ -334,7 +345,7 @@ function updateCardSizing() {
   if (width <= 0 || height <= 0) return;
 
   const columns = 5;
-  const rows = 4;
+  const rows = KARUTA_GRID_ROWS;
   const maxWidthPerCard = width / columns;
   const maxHeightPerCard = height / rows;
   const naturalWidth = 116;
@@ -366,17 +377,25 @@ function renderCards() {
     const cardElement = document.createElement('button');
     cardElement.className = 'karuta-card';
     cardElement.dataset.index = index;
+    const contentElement = document.createElement('div');
+    contentElement.className = 'karuta-card-content';
 
-  if (card.state === 'hidden') {
+    if (karutaState.flipCards && isUpperHalfCard(index)) {
+      cardElement.classList.add('is-upside-down');
+    }
+
+    if (card.state === 'hidden') {
       // 非表示の札（配置は維持）
       cardElement.classList.add('is-taken');
       cardElement.disabled = true;
-      setCardTextLines(cardElement, card.shimoReading);
+      setCardTextLines(contentElement, card.shimoReading);
+      cardElement.appendChild(contentElement);
     } else if (card.state === 'showing-result') {
       // 結果表示中（アイコン付き）
       cardElement.classList.add('showing-result');
       cardElement.disabled = true;
-      setCardTextLines(cardElement, card.shimoReading);
+      setCardTextLines(contentElement, card.shimoReading);
+      cardElement.appendChild(contentElement);
 
       // 正解時は○アイコンを表示
       if (card.isCorrect && !card.showAsCorrect) {
@@ -403,7 +422,8 @@ function renderCards() {
       }
     } else {
       cardElement.classList.add('active');
-      setCardTextLines(cardElement, card.shimoReading);
+      setCardTextLines(contentElement, card.shimoReading);
+      cardElement.appendChild(contentElement);
       if (karutaState.locked) {
         cardElement.disabled = true;
       } else {
@@ -680,6 +700,7 @@ async function startGame(color) {
   karutaState.score = 0;
   karutaState.results = [];
   karutaState.measureTime = elements.measureTimeToggle ? elements.measureTimeToggle.checked : true;
+  karutaState.flipCards = elements.flipCardsToggle ? elements.flipCardsToggle.checked : false;
   karutaState.sessionStartTime = karutaState.measureTime ? performance.now() : 0;
   karutaState.sessionEndTime = null;
   karutaState.showHint = false;
@@ -733,6 +754,11 @@ function initEventListeners() {
   if (elements.measureTimeToggle) {
     elements.measureTimeToggle.addEventListener('change', () => {
       writeLocalSetting(STORAGE_KEYS.MEASURE_TIME, String(elements.measureTimeToggle.checked));
+    });
+  }
+  if (elements.flipCardsToggle) {
+    elements.flipCardsToggle.addEventListener('change', () => {
+      writeLocalSetting(STORAGE_KEYS.KARUTA_FLIP, String(elements.flipCardsToggle.checked));
     });
   }
 

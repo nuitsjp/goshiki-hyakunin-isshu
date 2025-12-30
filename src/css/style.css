@@ -1149,6 +1149,15 @@ h6,
   text-orientation: upright;
 }
 
+.karuta-card-content {
+  display: inline-block;
+  transform-origin: center;
+}
+
+.karuta-card.is-upside-down .karuta-card-content {
+  transform: rotate(180deg);
+}
+
 .karuta-card-line {
   display: inline-block;
   line-height: 1.2;
