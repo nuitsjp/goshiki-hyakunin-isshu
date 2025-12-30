@@ -97,8 +97,8 @@ describe('stats', () => {
 
   it('calculateKimarijiPerformance sorts by lowest rate first', () => {
     const poems = [
-      { color: '青', kimarijiShort: 'あ', kimarijiLong: '', shimoNoKu: '', shimoReading: '', kamiNoKu: '', kamiReading: '' },
-      { color: '青', kimarijiShort: 'い', kimarijiLong: '', shimoNoKu: '', shimoReading: '', kamiNoKu: '', kamiReading: '' },
+      { color: '青', kimarijiShort: '', kimarijiLong: 'あ', shimoNoKu: '', shimoReading: '', kamiNoKu: '', kamiReading: '' },
+      { color: '青', kimarijiShort: '', kimarijiLong: 'い', shimoNoKu: '', shimoReading: '', kamiNoKu: '', kamiReading: '' },
     ];
     const history = [
       {
@@ -123,8 +123,8 @@ describe('stats', () => {
 
   it('calculateKimarijiPerformance sorts totals with zero last', () => {
     const poems = [
-      { color: '青', kimarijiShort: 'い', kimarijiLong: '', shimoNoKu: '', shimoReading: '', kamiNoKu: '', kamiReading: '' },
-      { color: '青', kimarijiShort: 'あ', kimarijiLong: '', shimoNoKu: '', shimoReading: '', kamiNoKu: '', kamiReading: '' },
+      { color: '青', kimarijiShort: '', kimarijiLong: 'い', shimoNoKu: '', shimoReading: '', kamiNoKu: '', kamiReading: '' },
+      { color: '青', kimarijiShort: '', kimarijiLong: 'あ', shimoNoKu: '', shimoReading: '', kamiNoKu: '', kamiReading: '' },
     ];
     const history = [
       { color: '青', answers: [{ kimariji: 'あ', isCorrect: true, answerTimeMs: 1000 }] },
@@ -138,8 +138,8 @@ describe('stats', () => {
 
   it('calculateKimarijiPerformance keeps order when totals are zero', () => {
     const poems = [
-      { color: '青', kimarijiShort: 'あ', kimarijiLong: '', shimoNoKu: '', shimoReading: '', kamiNoKu: '', kamiReading: '' },
-      { color: '青', kimarijiShort: 'い', kimarijiLong: '', shimoNoKu: '', shimoReading: '', kamiNoKu: '', kamiReading: '' },
+      { color: '青', kimarijiShort: '', kimarijiLong: 'あ', shimoNoKu: '', shimoReading: '', kamiNoKu: '', kamiReading: '' },
+      { color: '青', kimarijiShort: '', kimarijiLong: 'い', shimoNoKu: '', shimoReading: '', kamiNoKu: '', kamiReading: '' },
     ];
     const result = calculateKimarijiPerformance('青', poems, []);
     expect(result[0].kimariji).toBe('あ');
@@ -152,9 +152,9 @@ describe('stats', () => {
 
   it('calculateKimarijiPerformance sorts by avgTimeMs when rate is same', () => {
     const poems = [
-      { color: '青', kimarijiShort: 'あ', kimarijiLong: '', shimoNoKu: '', shimoReading: '', kamiNoKu: '', kamiReading: '' },
-      { color: '青', kimarijiShort: 'い', kimarijiLong: '', shimoNoKu: '', shimoReading: '', kamiNoKu: '', kamiReading: '' },
-      { color: '青', kimarijiShort: 'う', kimarijiLong: '', shimoNoKu: '', shimoReading: '', kamiNoKu: '', kamiReading: '' },
+      { color: '青', kimarijiShort: '', kimarijiLong: 'あ', shimoNoKu: '', shimoReading: '', kamiNoKu: '', kamiReading: '' },
+      { color: '青', kimarijiShort: '', kimarijiLong: 'い', shimoNoKu: '', shimoReading: '', kamiNoKu: '', kamiReading: '' },
+      { color: '青', kimarijiShort: '', kimarijiLong: 'う', shimoNoKu: '', shimoReading: '', kamiNoKu: '', kamiReading: '' },
     ];
     const history = [
       {
