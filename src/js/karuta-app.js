@@ -88,9 +88,9 @@ function displayReading() {
     elements.kimarijiDisplay.textContent = reading.kimariji;
   }
 
+  // 初期は決まり字のみ表示（上の句は表示しない）
   if (elements.readingDisplay) {
-    const rubyHtml = toRubyHtml(reading.kamiNoKu);
-    elements.readingDisplay.innerHTML = rubyHtml;
+    elements.readingDisplay.innerHTML = '';
   }
 }
 
