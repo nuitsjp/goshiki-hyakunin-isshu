@@ -167,20 +167,20 @@ export function createStatsUI({
 
     html += `
       <div class="detail-section">
-        <h5>苦手な決まり字トップ5</h5>
+        <h5>苦手な決まり字</h5>
         <div class="kimariji-stats">
     `;
 
-    const top5 = detailedStats.kimarijiStats.slice(0, 5);
-    if (top5.length === 0 || top5.every(k => k.total === 0)) {
+    const kimarijiList = detailedStats.kimarijiStats.filter(k => k.total > 0);
+    if (kimarijiList.length === 0) {
       html += `<p class="text-muted">まだデータがありません</p>`;
     } else {
-      top5.forEach(k => {
-        if (k.total === 0) return;
+      kimarijiList.forEach(k => {
+        const avgTimeText = k.avgTimeMs !== null ? ` / 平均${formatDurationMs(k.avgTimeMs)}` : '';
         html += `
           <div class="kimariji-item">
             <div class="kimariji-text">${k.kimariji}</div>
-            <div class="kimariji-rate">${k.rate}% (${k.correct}/${k.total})</div>
+            <div class="kimariji-rate">${k.rate}% (${k.correct}/${k.total})${avgTimeText}</div>
           </div>
         `;
       });
