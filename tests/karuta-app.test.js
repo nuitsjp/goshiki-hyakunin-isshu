@@ -195,7 +195,7 @@ describe('karuta-app', () => {
     expect(document.getElementById('kimariji-display').textContent).toBe('き0');
   });
 
-  it('取り札はスペース区切りで改行表示される', async () => {
+  it('取り札はスペース区切りを2列に分けて改行表示される', async () => {
     setupDom();
     loadCsvMock.mockResolvedValue(createPoems(1));
     buildKarutaDeckMock.mockReturnValue([{
@@ -215,7 +215,7 @@ describe('karuta-app', () => {
     const lines = Array.from(card.querySelectorAll('.karuta-card-line')).map(node => node.textContent);
 
     expect(card.innerHTML).toContain('<br');
-    expect(lines).toEqual(['よしの', 'の', 'さと']);
+    expect(lines).toEqual(['よしの の', 'さと']);
   });
 
   it('計測オフならタイマーを非表示にする', async () => {

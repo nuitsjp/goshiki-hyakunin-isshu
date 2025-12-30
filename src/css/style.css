@@ -20,6 +20,14 @@
   --color-assist: #dcb879;
   /* Same as Yamabuki for consistency */
 
+  --karuta-card-base-width: clamp(88px, 11vw, 116px);
+  --karuta-card-width-current: var(--karuta-card-base-width);
+  --karuta-card-height-current: calc(var(--karuta-card-width-current) * var(--karuta-card-aspect));
+  --karuta-grid-gap: 0.5rem;
+  --karuta-card-aspect: 1.4142135623;
+  --karuta-card-size: var(--karuta-card-base-width);
+  --karuta-board-max-width: calc(var(--karuta-card-base-width) * 5 + var(--karuta-grid-gap) * 4 + 2rem);
+
   --color-bg: #fcfaf2;
   /* Washi (Japanese paper) off-white */
   --color-text: #333333;
@@ -63,6 +71,14 @@ h6,
 
 .app-container {
   flex: 1;
+  min-height: 100vh;
+}
+
+.karuta-page main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 /* App Menu */
@@ -181,12 +197,17 @@ h6,
 }
 
 .screen {
-  margin-bottom: 2rem;
+  margin-bottom: 1.25rem;
   animation: fadeIn 0.4s ease-out;
 }
 
 .hidden {
   display: none !important;
+}
+
+.karuta-page #game-screen.screen {
+  flex: 1;
+  display: flex;
 }
 
 /* Color Choice Buttons */
@@ -933,28 +954,63 @@ h6,
 
 .karuta-board {
   border-color: var(--color-border);
+  width: 100%;
+  max-width: calc(var(--karuta-card-width-current) * 5 + var(--karuta-grid-gap) * 4 + 2rem);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .karuta-board .card-body {
-  padding: 1.25rem;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  min-height: 420px;
-  max-height: calc(100vh - 200px);
+  gap: 0.5rem;
+  min-height: 0;
+  flex: 1;
 }
 
 .karuta-layout {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  flex: 1 1 auto;
+  gap: 0.5rem;
+  flex: 1;
   min-height: 0;
 }
 
-.karuta-board-top,
-.karuta-board-bottom {
+.karuta-label-row {
+  gap: 0.35rem;
+  row-gap: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.karuta-progress-row {
+  flex: 0 0 84px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.karuta-progress-row .progress {
+  height: 8px;
+  margin-bottom: 0;
+}
+
+.karuta-reading-row {
   flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.karuta-action-row {
+  flex: 0 0 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
 }
 
 .karuta-grid-area {
@@ -962,28 +1018,23 @@ h6,
   min-height: 0;
   display: flex;
   align-items: stretch;
-}
-
-.karuta-board-top {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.karuta-board-bottom {
-  display: flex;
   justify-content: center;
 }
 
 .karuta-board .display-panel,
 .karuta-board .karuta-grid {
-  max-width: 960px;
+  max-width: calc(var(--karuta-card-width-current) * 5 + var(--karuta-grid-gap) * 4);
   margin-left: auto;
   margin-right: auto;
 }
 
 .karuta-board .display-panel {
-  gap: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: flex-start;
+  text-align: left;
+  width: 100%;
 }
 
 .hint-button {
@@ -1014,16 +1065,16 @@ h6,
 }
 
 .karuta-grid {
-  --karuta-card-size: 150px;
   display: grid;
   grid-auto-flow: column;
   grid-template-rows: repeat(4, minmax(0, 1fr));
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  grid-auto-columns: minmax(0, 1fr);
-  gap: 0.5rem;
+  grid-template-columns: repeat(5, minmax(var(--karuta-card-width-current), 1fr));
+  grid-auto-columns: minmax(var(--karuta-card-width-current), 1fr);
+  grid-auto-rows: var(--karuta-card-height-current);
+  gap: var(--karuta-grid-gap);
   margin: 0 auto;
   width: 100%;
-  max-width: 960px;
+  max-width: calc(var(--karuta-card-width-current) * 5 + var(--karuta-grid-gap) * 4);
   height: 100%;
   flex: 1 1 auto;
   min-height: 0;
@@ -1035,10 +1086,11 @@ h6,
 .karuta-card {
   width: 100%;
   height: 100%;
-  padding: 0.5rem;
+  padding: 0.45rem 0.5rem;
   font-family: var(--font-serif);
-  font-size: clamp(0.75rem, calc(var(--karuta-card-size) / 140 * 1rem), 1.6rem);
-  line-height: 1.8;
+  font-size: clamp(0.9rem, calc(var(--karuta-card-size) / 105 * 1rem), 1.35rem);
+  line-height: 1.2;
+  letter-spacing: 0.05em;
   border: 2px solid var(--color-border);
   border-radius: 4px;
   background: var(--color-bg);
@@ -1047,8 +1099,8 @@ h6,
   transition: all 0.2s ease;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
+  justify-content: flex-start;
+  align-items: center;
   text-align: center;
   overflow: hidden;
   writing-mode: vertical-rl;
@@ -1057,6 +1109,8 @@ h6,
 
 .karuta-card-line {
   display: inline-block;
+  line-height: 1.2;
+  padding-inline: 0.1em;
 }
 
 .karuta-card.active:hover {
@@ -1101,6 +1155,8 @@ h6,
 /* Responsive adjustments for karuta grid */
 @media (max-width: 768px) {
   .karuta-grid {
+    grid-template-columns: repeat(4, minmax(var(--karuta-card-width-final), 1fr));
+    grid-auto-columns: minmax(var(--karuta-card-width-final), 1fr);
     gap: 0.4rem;
   }
 
@@ -1116,6 +1172,8 @@ h6,
 
 @media (max-width: 576px) {
   .karuta-grid {
+    grid-template-columns: repeat(3, minmax(var(--karuta-card-width-final), 1fr));
+    grid-auto-columns: minmax(var(--karuta-card-width-final), 1fr);
     gap: 0.3rem;
   }
 

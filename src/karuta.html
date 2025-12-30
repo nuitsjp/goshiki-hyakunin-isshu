@@ -71,26 +71,28 @@
       </section>
 
       <section id="game-screen" class="screen card shadow-sm hidden">
-        <div class="card-body">
-          <div class="d-flex align-items-center gap-2 flex-wrap mb-2 karuta-info-container">
-            <div id="progress-text" class="fw-semibold">1 / 20</div>
-            <div class="ms-auto d-flex align-items-center gap-2 flex-wrap">
-              <div id="elapsed-time" class="elapsed-time-badge">0:00</div>
-              <div id="score-text" class="badge bg-success">正解: 0枚</div>
-              <div id="selected-color-label" class="badge selected-color-badge"></div>
-              <button id="cancel-game" class="btn btn-outline-secondary btn-sm quiz-cancel-btn" type="button"
-                aria-label="ゲームを中止してトップへ" title="トップに戻る">×</button>
-            </div>
-          </div>
-          <div class="progress mb-3 karuta-progress-bar" role="progressbar" aria-label="進捗">
-            <div id="progress-bar" class="progress-bar" style="width: 0%;"></div>
-          </div>
-
-          <div class="card quiz-card karuta-board mb-4">
+        <div class="card-body d-flex flex-column">
+          <div class="card quiz-card karuta-board flex-grow-1">
             <div class="card-body">
               <div class="karuta-layout">
-                <div class="karuta-board-top">
-                  <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+                <div class="karuta-progress-row">
+                  <div class="d-flex align-items-center gap-2 flex-wrap karuta-info-container">
+                    <div id="progress-text" class="fw-semibold">1 / 20</div>
+                    <div class="ms-auto d-flex align-items-center gap-2 flex-wrap">
+                      <div id="elapsed-time" class="elapsed-time-badge">0:00</div>
+                      <div id="score-text" class="badge bg-success">正解: 0枚</div>
+                      <div id="selected-color-label" class="badge selected-color-badge"></div>
+                      <button id="cancel-game" class="btn btn-outline-secondary btn-sm quiz-cancel-btn" type="button"
+                        aria-label="ゲームを中止してトップへ" title="トップに戻る">×</button>
+                    </div>
+                  </div>
+                  <div class="progress karuta-progress-bar" role="progressbar" aria-label="進捗">
+                    <div id="progress-bar" class="progress-bar" style="width: 0%;"></div>
+                  </div>
+                </div>
+
+                <div class="karuta-board-top karuta-reading-row">
+                  <div class="d-flex align-items-center flex-wrap karuta-label-row">
                     <div class="text-muted small mb-0">決まり字</div>
                     <button id="toggle-hint" class="btn btn-sm btn-outline-secondary ms-auto hint-button" type="button"
                       aria-pressed="false">
@@ -98,11 +100,10 @@
                       <span class="hint-button-label">ヒント</span>
                     </button>
                   </div>
-                  <div class="text-center display-panel">
+                  <div class="display-panel">
                     <div id="kimariji-display" class="kimariji-display mb-2">---</div>
                     <div id="reading-display" class="reading-display mb-2">---</div>
                   </div>
-                  <p class="text-muted small mb-0 text-center text-sm-start">取り札を選んでください</p>
                 </div>
 
                 <div class="karuta-grid-area">
@@ -111,7 +112,7 @@
                   </div>
                 </div>
 
-                <div class="karuta-board-bottom">
+                <div class="karuta-board-bottom karuta-action-row">
                   <div class="d-flex justify-content-center mt-3 karuta-action-container" style="display: none;">
                     <button id="next-reading" class="btn btn-primary next-button" type="button" disabled>次の札へ</button>
                   </div>

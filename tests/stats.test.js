@@ -24,11 +24,11 @@ describe('stats', () => {
     const history = [
       {
         color: '青',
-        questionCount: 10,
-        correctCount: 7,
-        wrongCount: 2,
+        questionCount: 20,
+        correctCount: 15,
+        wrongCount: 4,
         passCount: 1,
-        durationMs: 120000,
+        durationMs: 180000,
         timestamp: 1000,
         date: '2024-01-01',
         orderMode: 'normal',
@@ -65,13 +65,13 @@ describe('stats', () => {
     ];
 
     const stats = calculateColorStats('青', history, 'normal');
-    expect(stats.totalQuizzes).toBe(2);
-    expect(stats.totalQuestions).toBe(15);
-    expect(stats.totalCorrect).toBe(10);
-    expect(stats.totalWrong).toBe(3);
+    expect(stats.totalQuizzes).toBe(1);
+    expect(stats.totalQuestions).toBe(25);
+    expect(stats.totalCorrect).toBe(18);
+    expect(stats.totalWrong).toBe(5);
     expect(stats.totalPass).toBe(2);
-    expect(stats.accuracyRate).toBe(67);
-    expect(stats.hintUsageRate).toBe(20);
+    expect(stats.accuracyRate).toBe(72);
+    expect(stats.hintUsageRate).toBe(11);
     expect(stats.lastPlayed).toBe('2024-01-02');
     expect(stats.fastestDurationMs).toBe(null);
   });
@@ -259,11 +259,11 @@ describe('stats', () => {
     const history = [
       {
         color: '青',
-        questionCount: 10,
-        correctCount: 10,
+        questionCount: 20,
+        correctCount: 20,
         wrongCount: 0,
         passCount: 0,
-        durationMs: 120000,
+        durationMs: 180000,
         timestamp: 1000,
         date: '2024-01-01',
         orderMode: 'normal',
@@ -271,11 +271,11 @@ describe('stats', () => {
       },
       {
         color: '青',
-        questionCount: 10,
-        correctCount: 9,
+        questionCount: 20,
+        correctCount: 19,
         wrongCount: 1,
         passCount: 0,
-        durationMs: 90000,
+        durationMs: 160000,
         timestamp: 2000,
         date: '2024-01-02',
         orderMode: 'normal',
@@ -284,6 +284,19 @@ describe('stats', () => {
     ];
 
     const stats = calculateColorStats('青', history, 'normal');
-    expect(stats.fastestDurationMs).toBe(120000);
+    expect(stats.fastestDurationMs).toBe(180000);
+  });
+
+  it('calculateOverallStats counts totalQuizzes for 20-question sessions only', () => {
+    const history = [
+      { color: '青', questionCount: 20, correctCount: 18, wrongCount: 2, orderMode: 'normal', answers: [] },
+      { color: '青', questionCount: 5, correctCount: 3, wrongCount: 2, orderMode: 'normal', answers: [] },
+      { color: 'ピンク', questionCount: 20, correctCount: 20, wrongCount: 0, orderMode: 'normal', answers: [] },
+    ];
+
+    const stats = calculateOverallStats(history, 'normal');
+    expect(stats.totalQuizzes).toBe(2);
+    expect(stats.totalQuestions).toBe(45);
+    expect(stats.totalCorrect).toBe(41);
   });
 });

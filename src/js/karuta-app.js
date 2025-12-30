@@ -83,6 +83,9 @@ function showScreen(screenName) {
   if (screenName === 'start') {
     loadStartSettings();
   }
+  if (screenName === 'game') {
+    setTimeout(updateCardSizing, 0);
+  }
 }
 
 function setAccentColor(color) {
@@ -235,8 +238,14 @@ function updateHintButton() {
 function setCardTextLines(cardElement, text) {
   if (!cardElement) return;
   cardElement.innerHTML = '';
-  const lines = (text || '').split(/\s+/).filter(Boolean);
-  if (lines.length === 0) return;
+  const parts = (text || '').split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return;
+  const lines = parts.length <= 2
+    ? parts
+    : [
+        parts.slice(0, Math.ceil(parts.length / 2)).join(' '),
+        parts.slice(Math.ceil(parts.length / 2)).join(' '),
+      ];
 
   lines.forEach((line, idx) => {
     const lineNode = document.createElement('span');
@@ -247,6 +256,39 @@ function setCardTextLines(cardElement, text) {
       cardElement.appendChild(document.createElement('br'));
     }
   });
+}
+
+const WHITE_SILVER_RATIO = 1.4142135623;
+
+function updateCardSizing() {
+  const gridArea = elements.karutaGrid?.parentElement;
+  const grid = elements.karutaGrid;
+  if (!gridArea || !grid) return;
+
+  const { width, height } = gridArea.getBoundingClientRect();
+  if (width <= 0 || height <= 0) return;
+
+  const columns = 5;
+  const rows = 4;
+  const maxWidthPerCard = width / columns;
+  const maxHeightPerCard = height / rows;
+  const naturalWidth = 116;
+
+  let cardWidth = Math.min(naturalWidth, maxWidthPerCard);
+  let cardHeight = cardWidth * WHITE_SILVER_RATIO;
+
+  if (cardHeight > maxHeightPerCard) {
+    const scale = maxHeightPerCard / cardHeight;
+    cardWidth *= scale;
+    cardHeight = maxHeightPerCard;
+  }
+
+  cardWidth = Math.max(64, cardWidth);
+  cardHeight = Math.max(64, cardHeight);
+
+  grid.style.setProperty('--karuta-card-width-current', `${cardWidth}px`);
+  grid.style.setProperty('--karuta-card-height-current', `${cardHeight}px`);
+  grid.style.setProperty('--karuta-card-size', `${cardWidth}px`);
 }
 
 function renderCards() {
@@ -301,6 +343,8 @@ function renderCards() {
 
     elements.karutaGrid.appendChild(cardElement);
   });
+
+  updateCardSizing();
 }
 
 function handleCardClick(cardIndex) {
@@ -582,6 +626,12 @@ function initEventListeners() {
       showScreen('start');
     });
   }
+
+  window.addEventListener('resize', () => {
+    if (!screens.game?.classList.contains('hidden')) {
+      updateCardSizing();
+    }
+  });
 }
 
 async function init() {
