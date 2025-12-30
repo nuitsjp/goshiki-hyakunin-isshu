@@ -19,9 +19,6 @@
     <header class="mb-4">
       <div class="d-flex align-items-center justify-content-between gap-2">
         <h1 class="fw-bold mb-0">五色百人一首 競技かるた</h1>
-        <div class="app-menu d-flex align-items-center gap-2">
-          <a href="index.html" class="btn btn-outline-secondary btn-sm">クイズに戻る</a>
-        </div>
       </div>
       <p class="text-muted mb-0 text-center">読み札を聞いて、対応する取り札を選ぼう</p>
     </header>
@@ -29,7 +26,10 @@
     <main class="flex-grow-1">
       <section id="start-screen" class="screen card shadow-sm">
         <div class="card-body">
-          <h2 class="h4 mb-3">色を選んでください</h2>
+          <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+            <h2 class="h4 mb-0">色を選んでください</h2>
+            <a href="index.html" class="btn btn-outline-secondary btn-sm">クイズへ</a>
+          </div>
           <p class="text-muted mb-3">選んだ色の20枚すべての札で遊びます</p>
           <div class="row g-2">
             <div class="col-12 col-md-6">
@@ -78,10 +78,12 @@
 
           <!-- Reading card (upper poem) -->
           <div class="card karuta-reading-card mb-4">
-            <div class="card-body text-center">
+            <div class="card-body">
               <div class="text-muted small mb-2">読み札</div>
-              <div id="kimariji-display" class="kimariji-display mb-2">---</div>
-              <div id="reading-display" class="reading-display">---</div>
+              <div class="text-center">
+                <div id="kimariji-display" class="kimariji-display mb-2">---</div>
+                <div id="reading-display" class="reading-display">---</div>
+              </div>
             </div>
           </div>
 

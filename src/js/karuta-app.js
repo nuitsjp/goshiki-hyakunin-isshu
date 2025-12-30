@@ -111,12 +111,10 @@ function renderCards() {
     } else if (card.state === 'wrong') {
       cardElement.classList.add('wrong');
       cardElement.disabled = true;
-      const rubyHtml = toRubyHtml(card.shimoNoKu);
-      cardElement.innerHTML = rubyHtml;
+      cardElement.textContent = card.shimoReading;
     } else {
       cardElement.classList.add('active');
-      const rubyHtml = toRubyHtml(card.shimoNoKu);
-      cardElement.innerHTML = rubyHtml;
+      cardElement.textContent = card.shimoReading;
       cardElement.addEventListener('click', () => handleCardClick(index));
     }
 
@@ -139,7 +137,7 @@ function handleCardClick(cardIndex) {
     karutaState.results.push({
       kimariji: reading.kimariji,
       kamiNoKu: reading.kamiNoKu,
-      shimoNoKu: card.shimoNoKu,
+      shimoReading: card.shimoReading,
       isCorrect: true,
       cardState: 'taken',
     });
@@ -149,7 +147,7 @@ function handleCardClick(cardIndex) {
     karutaState.results.push({
       kimariji: reading.kimariji,
       kamiNoKu: reading.kamiNoKu,
-      shimoNoKu: card.shimoNoKu,
+      shimoReading: card.shimoReading,
       isCorrect: false,
       cardState: 'wrong',
     });
@@ -218,7 +216,7 @@ function showResult() {
       const className = result.isCorrect ? 'result-item-correct' : 'result-item-incorrect';
       const kimarijiHtml = escapeHtml(result.kimariji);
       const kamiHtml = toRubyHtml(result.kamiNoKu);
-      const shimoHtml = toRubyHtml(result.shimoNoKu);
+      const shimoHtml = escapeHtml(result.shimoReading);
 
       return `
         <div class="result-item ${className}">
@@ -289,9 +287,7 @@ function initEventListeners() {
   // Cancel game
   if (elements.cancelGame) {
     elements.cancelGame.addEventListener('click', () => {
-      if (confirm('ゲームを中止してトップに戻りますか？')) {
-        showScreen('start');
-      }
+      showScreen('start');
     });
   }
 
