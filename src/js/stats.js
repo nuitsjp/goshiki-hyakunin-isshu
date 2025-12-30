@@ -81,7 +81,7 @@ export function calculateKimarijiPerformance(color, poems, history) {
   const kimarijiMap = new Map();
 
   colorPoems.forEach(poem => {
-    const kimariji = poem.kimarijiShort || poem.kimarijiLong || '決まり字なし';
+    const kimariji = poem.kimarijiLong || '決まり字なし';
     if (kimariji && !kimarijiMap.has(kimariji)) {
       kimarijiMap.set(kimariji, { correct: 0, total: 0, totalTimeMs: 0, timeCount: 0 });
     }

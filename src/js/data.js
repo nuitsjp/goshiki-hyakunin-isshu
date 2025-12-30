@@ -25,7 +25,7 @@ export function parseCsvText(text, parser = window.Papa) {
     kimarijiLong: pickField(row, ['決まり字（競技かるた）']),
     kimarijiShort: pickField(row, ['決まり字（五色百人一首）']),
     hint: pickField(row, ['ヒント']),
-  })).filter(p => p.color && p.shimoNoKu && (p.kimarijiLong || p.kimarijiShort));
+  })).filter(p => p.color && p.shimoNoKu && p.kimarijiLong);
   if (!poems.length) {
     throw new Error('CSVから有効なデータを読み込めませんでした。');
   }
