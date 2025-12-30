@@ -24,6 +24,17 @@ let advanceTimerId = null;
 let elapsedTimerId = null;
 let currentScreen = 'start';
 let settingsReturnScreen = 'start';
+const LOCAL_HOSTNAMES = ['localhost', '127.0.0.1', '::1'];
+
+function isLocalHostname(hostname) {
+  const host = (hostname || '').toLowerCase();
+  return LOCAL_HOSTNAMES.includes(host);
+}
+
+function getAvailableQuestionCountValues() {
+  if (!elements.questionCount) return [];
+  return Array.from(elements.questionCount.options).map(opt => opt.value);
+}
 
 function readLocalSetting(key, fallback) {
   try {
@@ -46,21 +57,27 @@ function writeLocalSetting(key, value) {
 function applyQuestionCount(value) {
   if (!elements.questionCount) return;
 
-  if (value === 'weak5') {
+  const availableValues = getAvailableQuestionCountValues();
+  const numericOptions = availableValues.filter(v => v !== 'weak5');
+  const defaultValue = numericOptions[numericOptions.length - 1] || '20';
+
+  if (value === 'weak5' && availableValues.includes('weak5')) {
     elements.questionCount.value = 'weak5';
     quizState.questionLimit = 5;
     return;
   }
 
   const val = parseInt(value, 10);
-  if (Number.isFinite(val) && val >= 1 && val <= 20) {
-    elements.questionCount.value = String(val);
+  const valueStr = Number.isFinite(val) ? String(val) : '';
+  if (valueStr && availableValues.includes(valueStr) && val >= 1 && val <= 20) {
+    elements.questionCount.value = valueStr;
     quizState.questionLimit = val;
     return;
   }
 
-  elements.questionCount.value = '20';
-  quizState.questionLimit = 20;
+  elements.questionCount.value = defaultValue;
+  const fallback = parseInt(defaultValue, 10);
+  quizState.questionLimit = Number.isFinite(fallback) ? fallback : 20;
 }
 
 function loadStartSettings() {
@@ -164,6 +181,28 @@ function updateWeak5Option(color) {
     elements.questionCount.value = '20';
     quizState.questionLimit = 20;
   }
+}
+
+function setupQuestionCountOptions() {
+  if (!elements.questionCount) return;
+
+  const hostname = window.location?.hostname || '';
+  const numericValues = isLocalHostname(hostname)
+    ? Array.from({ length: 20 }, (_, idx) => String(idx + 1))
+    : ['20'];
+
+  const optionsHtml = numericValues.map(val => {
+    const isSelected = String(quizState.questionLimit) === val;
+    return `<option value="${val}" ${isSelected ? 'selected' : ''}>${val} 問</option>`;
+  }).join('');
+  const weak5Option = '<option value="weak5" disabled>苦手5種</option>';
+  elements.questionCount.innerHTML = optionsHtml + weak5Option;
+
+  const defaultValue = numericValues.includes(String(quizState.questionLimit))
+    ? String(quizState.questionLimit)
+    : (numericValues[0] || '20');
+  elements.questionCount.value = defaultValue;
+  quizState.questionLimit = parseInt(defaultValue, 10) || 20;
 }
 
 function resetOptionButtons() {
@@ -738,18 +777,7 @@ function initEventHandlers() {
 
   if (elements.questionCount) {
     elements.questionCount.addEventListener('change', () => {
-      const selectedValue = elements.questionCount.value;
-      if (selectedValue === 'weak5') {
-        quizState.questionLimit = 5;
-      } else {
-        const val = parseInt(selectedValue, 10);
-        if (Number.isFinite(val) && val >= 1 && val <= 20) {
-          quizState.questionLimit = val;
-        } else {
-          quizState.questionLimit = 20;
-          elements.questionCount.value = 20;
-        }
-      }
+      applyQuestionCount(elements.questionCount.value);
       writeLocalSetting(STORAGE_KEYS.QUESTION_COUNT, elements.questionCount.value);
     });
   }
@@ -950,15 +978,7 @@ function init() {
   if (elements.version) {
     elements.version.textContent = APP_VERSION;
   }
-  if (elements.questionCount) {
-    const normalOptions = Array.from({ length: 20 }, (_, idx) => {
-      const val = idx + 1;
-      return `<option value="${val}" ${val === quizState.questionLimit ? 'selected' : ''}>${val} 問</option>`;
-    }).join('');
-    const weak5Option = '<option value="weak5" disabled>苦手5種</option>';
-    elements.questionCount.innerHTML = normalOptions + weak5Option;
-    elements.questionCount.value = quizState.questionLimit;
-  }
+  setupQuestionCountOptions();
   loadStartSettings();
   loadSettingsValues();
 
