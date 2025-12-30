@@ -18,6 +18,9 @@ const karutaState = {
   sessionStartTime: null,
   sessionEndTime: null,
   showHint: false,
+  locked: false,
+  pendingHideCards: [],
+  pendingResetCards: [],
 };
 
 // DOM elements
@@ -40,6 +43,7 @@ const elements = {
   readingDisplay: document.getElementById('reading-display'),
   toggleHint: document.getElementById('toggle-hint'),
   karutaGrid: document.getElementById('karuta-grid'),
+  passReading: document.getElementById('pass-reading'),
   nextReading: document.getElementById('next-reading'),
   resultCount: document.getElementById('result-count'),
   resultRate: document.getElementById('result-rate'),
@@ -118,7 +122,7 @@ function updateProgress() {
   const percentage = (current / total) * 100;
 
   if (elements.progressText) {
-    elements.progressText.textContent = `${current} / ${total}`;
+    elements.progressText.textContent = `問題 ${current} / ${total}`;
   }
 
   if (elements.progressBar) {
@@ -208,6 +212,12 @@ function displayReading() {
   karutaState.showHint = false;
   updateReadingDisplay();
   updateHintButton();
+  if (elements.nextReading) {
+    elements.nextReading.disabled = true;
+  }
+  if (elements.passReading) {
+    elements.passReading.disabled = false;
+  }
 }
 
 function updateReadingDisplay() {
@@ -286,9 +296,10 @@ function updateCardSizing() {
   cardWidth = Math.max(64, cardWidth);
   cardHeight = Math.max(64, cardHeight);
 
-  grid.style.setProperty('--karuta-card-width-current', `${cardWidth}px`);
-  grid.style.setProperty('--karuta-card-height-current', `${cardHeight}px`);
-  grid.style.setProperty('--karuta-card-size', `${cardWidth}px`);
+  const root = document.documentElement;
+  root.style.setProperty('--karuta-card-width-current', `${cardWidth}px`);
+  root.style.setProperty('--karuta-card-height-current', `${cardHeight}px`);
+  root.style.setProperty('--karuta-card-size', `${cardWidth}px`);
 }
 
 function renderCards() {
@@ -301,7 +312,7 @@ function renderCards() {
     cardElement.className = 'karuta-card';
     cardElement.dataset.index = index;
 
-    if (card.state === 'hidden') {
+  if (card.state === 'hidden') {
       // 非表示の札（配置は維持）
       cardElement.classList.add('is-taken');
       cardElement.disabled = true;
@@ -338,7 +349,11 @@ function renderCards() {
     } else {
       cardElement.classList.add('active');
       setCardTextLines(cardElement, card.shimoReading);
-      cardElement.addEventListener('click', () => handleCardClick(index));
+      if (karutaState.locked) {
+        cardElement.disabled = true;
+      } else {
+        cardElement.addEventListener('click', () => handleCardClick(index));
+      }
     }
 
     elements.karutaGrid.appendChild(cardElement);
@@ -351,7 +366,10 @@ function handleCardClick(cardIndex) {
   const card = karutaState.deck[cardIndex];
   const reading = karutaState.readings[karutaState.currentIndex];
 
-  if (card.state !== 'active') return;
+  if (card.state !== 'active' || karutaState.locked) return;
+  if (elements.passReading) {
+    elements.passReading.disabled = true;
+  }
 
   const isCorrect = checkKarutaMatch(reading, card);
 
@@ -363,6 +381,9 @@ function handleCardClick(cardIndex) {
 
   if (isCorrect) {
     // Correct answer
+    if (elements.kimarijiDisplay) {
+      elements.kimarijiDisplay.textContent = reading.kamiReading || reading.kamiNoKu || '';
+    }
     karutaState.score++;
     karutaState.results.push({
       kimariji: reading.kimariji,
@@ -407,34 +428,100 @@ function handleCardClick(cardIndex) {
     if (isCorrect) {
       // 正解の場合：取った札を非表示にする
       card.state = 'hidden';
-    } else {
-      // 不正解の場合：正解の札を非表示にし、間違った札の×アイコンを消す
-      if (correctCard) {
-        correctCard.state = 'hidden';
-        delete correctCard.showAsCorrect;
-      }
-      // 間違った札を通常状態に戻す（×アイコンを消す）
-      card.state = 'active';
-      delete card.isCorrect;
     }
 
-    renderCards();
+    if (isCorrect) {
+      renderCards();
+      // 次の読み札に自動的に進む
+      karutaState.currentIndex++;
 
-    // 次の読み札に自動的に進む
-    karutaState.currentIndex++;
-
-    if (karutaState.currentIndex >= karutaState.readings.length) {
-      // ゲーム終了
-      showResult();
-    } else {
-      // 次の読み札を表示
+      if (karutaState.currentIndex >= karutaState.readings.length) {
+        // ゲーム終了
+        showResult();
+      } else {
+        // 次の読み札を表示
       displayReading();
       updateProgress();
     }
+    return;
+  }
+
+    karutaState.locked = true;
+    karutaState.pendingHideCards = [correctCard].filter(Boolean);
+    karutaState.pendingResetCards = [card].filter(Boolean);
+    renderCards();
+    if (elements.nextReading) {
+      elements.nextReading.disabled = false;
+    }
+    if (elements.passReading) {
+      elements.passReading.disabled = true;
+    }
+    updateReadingDisplay();
   }, getResultDelayMs());
 }
 
+function handlePass() {
+  if (karutaState.locked) return;
+  const reading = karutaState.readings[karutaState.currentIndex];
+  if (!reading) return;
+
+  if (elements.kimarijiDisplay) {
+    elements.kimarijiDisplay.textContent = reading.kamiReading || reading.kamiNoKu || '';
+  }
+
+  const correctCard = karutaState.deck.find(card =>
+    card.state === 'active' && checkKarutaMatch(reading, card)
+  );
+
+  if (correctCard) {
+    correctCard.state = 'showing-result';
+    correctCard.isCorrect = true;
+    correctCard.showAsCorrect = true;
+  }
+
+  karutaState.results.push({
+    kimariji: reading.kimariji,
+    kamiNoKu: reading.kamiNoKu,
+    kamiReading: reading.kamiReading,
+    shimoNoKu: correctCard?.shimoNoKu || '',
+    shimoReading: correctCard?.shimoReading || '',
+    isCorrect: false,
+    cardState: 'hidden',
+  });
+
+  karutaState.locked = true;
+  karutaState.pendingHideCards = [correctCard].filter(Boolean);
+  renderCards();
+  updateProgress();
+
+  if (elements.nextReading) {
+    elements.nextReading.disabled = false;
+  }
+  if (elements.passReading) {
+    elements.passReading.disabled = true;
+  }
+}
+
 function nextReading() {
+  if (karutaState.locked) {
+    karutaState.pendingHideCards.forEach(target => {
+      if (!target) return;
+      target.state = 'hidden';
+      delete target.showAsCorrect;
+      delete target.isCorrect;
+    });
+    karutaState.pendingResetCards.forEach(target => {
+      if (!target) return;
+      target.state = 'active';
+      delete target.showAsCorrect;
+      delete target.isCorrect;
+    });
+    karutaState.pendingHideCards = [];
+    karutaState.pendingResetCards = [];
+    karutaState.locked = false;
+    renderCards();
+  }
+
   karutaState.currentIndex++;
 
   if (karutaState.currentIndex >= karutaState.readings.length) {
@@ -446,6 +533,9 @@ function nextReading() {
   // Disable next button until user selects a card
   if (elements.nextReading) {
     elements.nextReading.disabled = true;
+  }
+  if (elements.passReading) {
+    elements.passReading.disabled = false;
   }
 
   displayReading();
@@ -564,6 +654,9 @@ async function startGame(color) {
     if (elements.nextReading) {
       elements.nextReading.disabled = true;
     }
+    if (elements.passReading) {
+      elements.passReading.disabled = false;
+    }
 
     showScreen('game');
   } catch (error) {
@@ -606,6 +699,10 @@ function initEventListeners() {
       updateReadingDisplay();
       updateHintButton();
     });
+  }
+
+  if (elements.passReading) {
+    elements.passReading.addEventListener('click', handlePass);
   }
 
   // Next reading button

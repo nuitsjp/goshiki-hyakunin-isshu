@@ -187,7 +187,7 @@ describe('karuta-app', () => {
     expect(buildKarutaReadingsMock).toHaveBeenCalled();
     expect(document.documentElement.style.getPropertyValue('--current-accent')).toBe('var(--color-yellow)');
     expect(document.getElementById('selected-color-label').textContent).toBe('黄');
-    expect(document.getElementById('progress-text').textContent).toBe('1 / 1');
+    expect(document.getElementById('progress-text').textContent).toBe('問題 1 / 1');
     expect(document.getElementById('score-text').textContent).toBe('正解: 0枚');
     expect(document.getElementById('next-reading').disabled).toBe(true);
     expect(document.getElementById('game-screen').classList.contains('hidden')).toBe(false);
@@ -290,6 +290,45 @@ describe('karuta-app', () => {
 
   it('不正解時に札を間違い状態にする', async () => {
     setupDom();
+    loadCsvMock.mockResolvedValue(createPoems(3));
+    buildKarutaDeckMock.mockReturnValue(createDeck(3));
+    buildKarutaReadingsMock.mockReturnValue(createReadings(1));
+    checkKarutaMatchMock.mockImplementation((reading, card) => reading.kimariji === card.kimariji);
+    await importApp();
+
+    document.querySelector('.color-button[data-color="黄"]').click();
+    document.querySelectorAll('.karuta-card')[1].click();
+
+    await wait(0);
+
+    const wrongIcon = document.querySelector('.result-icon.incorrect');
+    expect(wrongIcon).toBeTruthy();
+    const wrongCard = wrongIcon.closest('.karuta-card');
+    expect(wrongCard.classList.contains('showing-result')).toBe(true);
+    expect(wrongCard.disabled).toBe(true);
+    expect(document.getElementById('score-text').textContent).toBe('正解: 0枚');
+    expect(document.getElementById('next-reading').disabled).toBe(false);
+    document.querySelectorAll('.karuta-card').forEach(node => {
+      expect(node.disabled).toBe(true);
+    });
+  });
+
+  it('札を選択したら決まり字が上の句のよみがなに置き換わる（正解）', async () => {
+    setupDom();
+    loadCsvMock.mockResolvedValue(createPoems(1));
+    buildKarutaDeckMock.mockReturnValue(createDeck(1));
+    buildKarutaReadingsMock.mockReturnValue(createReadings(1));
+    checkKarutaMatchMock.mockReturnValue(true);
+    await importApp();
+
+    document.querySelector('.color-button[data-color="黄"]').click();
+    document.querySelector('.karuta-card').click();
+
+    expect(document.getElementById('kimariji-display').textContent).toBe('かみ0');
+  });
+
+  it('札を選択したら決まり字が上の句のよみがなに置き換わる（不正解）', async () => {
+    setupDom();
     loadCsvMock.mockResolvedValue(createPoems(1));
     buildKarutaDeckMock.mockReturnValue(createDeck(1));
     buildKarutaReadingsMock.mockReturnValue(createReadings(1));
@@ -299,11 +338,58 @@ describe('karuta-app', () => {
     document.querySelector('.color-button[data-color="黄"]').click();
     document.querySelector('.karuta-card').click();
 
-    const card = document.querySelector('.karuta-card');
-    expect(card.classList.contains('showing-result')).toBe(true);
-    expect(card.disabled).toBe(true);
-    expect(card.querySelector('.result-icon.incorrect')).toBeTruthy();
-    expect(document.getElementById('score-text').textContent).toBe('正解: 0枚');
+    expect(document.getElementById('kimariji-display').textContent).toBe('かみ0');
+  });
+
+  it('不正解時は次の札へボタンで進む', async () => {
+    setupDom();
+    loadCsvMock.mockResolvedValue(createPoems(2));
+    buildKarutaDeckMock.mockReturnValue(createDeck(2));
+    buildKarutaReadingsMock.mockReturnValue(createReadings(2));
+    checkKarutaMatchMock.mockImplementation((reading, card) => reading.kimariji === card.kimariji);
+    await importApp();
+
+    document.querySelector('.color-button[data-color="黄"]').click();
+    document.querySelectorAll('.karuta-card')[1].click();
+
+    await wait(0);
+
+    const nextButton = document.getElementById('next-reading');
+    expect(nextButton.disabled).toBe(false);
+    expect(document.getElementById('kimariji-display').textContent).toBe('き0');
+
+    nextButton.click();
+    await wait(0);
+
+    expect(nextButton.disabled).toBe(true);
+    expect(document.getElementById('kimariji-display').textContent).toBe('き1');
+    expect(document.getElementById('progress-text').textContent).toBe('問題 2 / 2');
+  });
+
+  it('不正解後に次の札へを押すと札を非表示にして次へ進む', async () => {
+    setupDom();
+    loadCsvMock.mockResolvedValue(createPoems(3));
+    buildKarutaDeckMock.mockReturnValue(createDeck(3));
+    buildKarutaReadingsMock.mockReturnValue(createReadings(2));
+    checkKarutaMatchMock.mockImplementation((reading, card) => reading.kimariji === card.kimariji);
+    await importApp();
+
+    document.querySelector('.color-button[data-color="黄"]').click();
+    document.querySelectorAll('.karuta-card')[1].click();
+
+    await wait(0);
+
+    const nextButton = document.getElementById('next-reading');
+    expect(nextButton.disabled).toBe(false);
+    nextButton.click();
+    await wait(0);
+
+    const takenCards = document.querySelectorAll('.karuta-card.is-taken');
+    expect(takenCards.length).toBe(2);
+    const activeCard = document.querySelector('.karuta-card.active');
+    expect(activeCard).toBeTruthy();
+    expect(activeCard.disabled).toBe(false);
+    expect(document.getElementById('kimariji-display').textContent).toBe('き1');
   });
 
   it('取得済みの札は非表示でも配置を維持する', async () => {
@@ -394,7 +480,7 @@ describe('karuta-app', () => {
     await wait(0);
 
     expect(document.getElementById('kimariji-display').textContent).toBe('き1');
-    expect(document.getElementById('progress-text').textContent).toBe('2 / 2');
+    expect(document.getElementById('progress-text').textContent).toBe('問題 2 / 2');
   });
 
   it('読み札の表示を次の読み札でリセットする', async () => {
@@ -445,7 +531,11 @@ describe('karuta-app', () => {
     document.querySelector('.color-button[data-color="黄"]').click();
     document.querySelector('.karuta-card').click();
 
-    // 自動遷移を待つ
+    // 次の札へで結果まで進める
+    await wait(0);
+    const nextButton = document.getElementById('next-reading');
+    expect(nextButton.disabled).toBe(false);
+    nextButton.click();
     await wait(0);
 
     expect(document.getElementById('result-list').innerHTML).toContain('icon-wrong');
@@ -545,8 +635,12 @@ describe('karuta-app', () => {
     document.querySelector('.color-button[data-color="黄"]').click();
     for (let i = 0; i < 10; i += 1) {
       document.querySelector('.karuta-card.active').click();
-      // 自動遷移を待つ
       await wait(0);
+      const nextButton = document.getElementById('next-reading');
+      if (!nextButton.disabled) {
+        nextButton.click();
+        await wait(0);
+      }
     }
 
     expect(document.getElementById('result-comment').textContent).toBe('素晴らしい！ほぼ完璧です！');
@@ -573,8 +667,12 @@ describe('karuta-app', () => {
     document.querySelector('.color-button[data-color="黄"]').click();
     for (let i = 0; i < 10; i += 1) {
       document.querySelector('.karuta-card.active').click();
-      // 自動遷移を待つ
       await wait(0);
+      const nextButton = document.getElementById('next-reading');
+      if (!nextButton.disabled) {
+        nextButton.click();
+        await wait(0);
+      }
     }
 
     expect(document.getElementById('result-comment').textContent).toBe('よくできました！');
@@ -601,8 +699,12 @@ describe('karuta-app', () => {
     document.querySelector('.color-button[data-color="黄"]').click();
     for (let i = 0; i < 10; i += 1) {
       document.querySelector('.karuta-card.active').click();
-      // 自動遷移を待つ
       await wait(0);
+      const nextButton = document.getElementById('next-reading');
+      if (!nextButton.disabled) {
+        nextButton.click();
+        await wait(0);
+      }
     }
 
     expect(document.getElementById('result-comment').textContent).toBe('もう少し頑張りましょう！');
@@ -629,8 +731,12 @@ describe('karuta-app', () => {
     document.querySelector('.color-button[data-color="黄"]').click();
     for (let i = 0; i < 10; i += 1) {
       document.querySelector('.karuta-card.active').click();
-      // 自動遷移を待つ
       await wait(0);
+      const nextButton = document.getElementById('next-reading');
+      if (!nextButton.disabled) {
+        nextButton.click();
+        await wait(0);
+      }
     }
 
     expect(document.getElementById('result-comment').textContent).toBe('練習あるのみ！');
