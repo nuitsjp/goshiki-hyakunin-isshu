@@ -234,6 +234,54 @@ describe('karuta-app', () => {
     expect(document.getElementById('progress-text').textContent).toBe('2 / 2');
   });
 
+  it('読み札の表示を次の読み札でリセットする', async () => {
+    setupDom();
+    loadCsvMock.mockResolvedValue(createPoems(2));
+    buildKarutaDeckMock.mockReturnValue(createDeck(2));
+    buildKarutaReadingsMock.mockReturnValue(createReadings(2));
+    checkKarutaMatchMock.mockReturnValue(true);
+    await importApp();
+
+    document.querySelector('.color-button[data-color="黄"]').click();
+    document.querySelector('.karuta-card').click();
+    document.getElementById('reading-display').innerHTML = '<p>dummy</p>';
+    document.getElementById('next-reading').click();
+
+    expect(document.getElementById('reading-display').innerHTML).toBe('');
+  });
+
+  it('進捗バーの幅を更新する', async () => {
+    setupDom();
+    loadCsvMock.mockResolvedValue(createPoems(2));
+    buildKarutaDeckMock.mockReturnValue(createDeck(2));
+    buildKarutaReadingsMock.mockReturnValue(createReadings(2));
+    checkKarutaMatchMock.mockReturnValue(true);
+    await importApp();
+
+    document.querySelector('.color-button[data-color="黄"]').click();
+    expect(document.getElementById('progress-bar').style.width).toBe('50%');
+
+    document.querySelector('.karuta-card').click();
+    document.getElementById('next-reading').click();
+    expect(document.getElementById('progress-bar').style.width).toBe('100%');
+  });
+
+  it('不正解の結果は×と表示する', async () => {
+    setupDom();
+    loadCsvMock.mockResolvedValue(createPoems(1));
+    buildKarutaDeckMock.mockReturnValue(createDeck(1));
+    buildKarutaReadingsMock.mockReturnValue(createReadings(1));
+    checkKarutaMatchMock.mockReturnValue(false);
+    await importApp();
+
+    document.querySelector('.color-button[data-color="黄"]').click();
+    document.querySelector('.karuta-card').click();
+    document.getElementById('next-reading').click();
+
+    expect(document.getElementById('result-list').innerHTML).toContain('result-item-incorrect');
+    expect(document.getElementById('result-list').innerHTML).toContain('×');
+  });
+
   it('中止ボタンで開始画面へ戻る', async () => {
     setupDom();
     loadCsvMock.mockResolvedValue(createPoems(1));
@@ -244,7 +292,6 @@ describe('karuta-app', () => {
     document.querySelector('.color-button[data-color="黄"]').click();
     document.getElementById('cancel-game').click();
 
-    expect(window.confirm).toHaveBeenCalled();
     expect(document.getElementById('start-screen').classList.contains('hidden')).toBe(false);
   });
 

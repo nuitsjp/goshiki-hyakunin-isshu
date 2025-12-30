@@ -111,10 +111,10 @@ function renderCards() {
     } else if (card.state === 'wrong') {
       cardElement.classList.add('wrong');
       cardElement.disabled = true;
-      cardElement.textContent = card.shimoReading;
+      cardElement.textContent = card.shimoReading.replace(/\s/g, '');
     } else {
       cardElement.classList.add('active');
-      cardElement.textContent = card.shimoReading;
+      cardElement.textContent = card.shimoReading.replace(/\s/g, '');
       cardElement.addEventListener('click', () => handleCardClick(index));
     }
 
@@ -216,7 +216,7 @@ function showResult() {
       const className = result.isCorrect ? 'result-item-correct' : 'result-item-incorrect';
       const kimarijiHtml = escapeHtml(result.kimariji);
       const kamiHtml = toRubyHtml(result.kamiNoKu);
-      const shimoHtml = escapeHtml(result.shimoReading);
+      const shimoHtml = escapeHtml(result.shimoReading.replace(/\s/g, ''));
 
       return `
         <div class="result-item ${className}">

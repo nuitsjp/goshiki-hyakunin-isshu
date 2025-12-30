@@ -30,7 +30,7 @@ export function buildKarutaDeck({ poems, color, random = Math.random }) {
   const selected = shuffle(poemsByColor, random).slice(0, 20);
 
   return selected.map(poem => ({
-    kimariji: poem.kimarijiShort || poem.kimarijiLong || '決まり字なし',
+    kimariji: poem.kimarijiLong || poem.kimarijiShort || '決まり字なし',
     shimoNoKu: poem.shimoNoKu,
     shimoReading: poem.shimoReading,
     kamiNoKu: poem.kamiNoKu,
@@ -58,7 +58,7 @@ export function buildKarutaReadings({ poems, color, random = Math.random }) {
   const selected = shuffle(poemsByColor, random).slice(0, 20);
 
   return selected.map(poem => ({
-    kimariji: poem.kimarijiShort || poem.kimarijiLong || '決まり字なし',
+    kimariji: poem.kimarijiLong || poem.kimarijiShort || '決まり字なし',
     kamiNoKu: poem.kamiNoKu,
     kamiReading: poem.kamiReading,
   }));

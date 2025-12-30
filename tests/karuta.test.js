@@ -9,7 +9,7 @@ const samplePoems = [
   {
     color: '青',
     kimarijiShort: 'あ',
-    kimarijiLong: '',
+    kimarijiLong: 'あき',
     shimoNoKu: '下1',
     shimoReading: 'しも1',
     kamiNoKu: '上1',
@@ -19,7 +19,7 @@ const samplePoems = [
   {
     color: '青',
     kimarijiShort: 'い',
-    kimarijiLong: '',
+    kimarijiLong: 'いの',
     shimoNoKu: '下2',
     shimoReading: 'しも2',
     kamiNoKu: '上2',
@@ -29,7 +29,7 @@ const samplePoems = [
   {
     color: '青',
     kimarijiShort: 'う',
-    kimarijiLong: '',
+    kimarijiLong: 'うか',
     shimoNoKu: '下3',
     shimoReading: 'しも3',
     kamiNoKu: '上3',
@@ -39,7 +39,7 @@ const samplePoems = [
   {
     color: '青',
     kimarijiShort: 'え',
-    kimarijiLong: '',
+    kimarijiLong: 'えん',
     shimoNoKu: '下4',
     shimoReading: 'しも4',
     kamiNoKu: '上4',
@@ -49,7 +49,7 @@ const samplePoems = [
   {
     color: 'ピンク',
     kimarijiShort: 'お',
-    kimarijiLong: '',
+    kimarijiLong: 'おと',
     shimoNoKu: '下5',
     shimoReading: 'しも5',
     kamiNoKu: '上5',
@@ -65,7 +65,7 @@ describe('karuta', () => {
     const poems = Array(20).fill(null).map((_, i) => ({
       color: '青',
       kimarijiShort: `k${i}`,
-      kimarijiLong: '',
+      kimarijiLong: `kl${i}`,
       shimoNoKu: `下${i}`,
       shimoReading: `しも${i}`,
       kamiNoKu: `上${i}`,
@@ -87,6 +87,30 @@ describe('karuta', () => {
       expect(card).toHaveProperty('kamiNoKu');
       expect(card).toHaveProperty('kamiReading');
       expect(card).toHaveProperty('state', 'active');
+    });
+  });
+
+  it('buildKarutaDeck prefers kimarijiLong over kimarijiShort', () => {
+    const poems = Array(20).fill(null).map((_, i) => ({
+      color: '青',
+      kimarijiShort: `short${i}`,
+      kimarijiLong: `long${i}`,
+      shimoNoKu: `下${i}`,
+      shimoReading: `しも${i}`,
+      kamiNoKu: `上${i}`,
+      kamiReading: `かみ${i}`,
+      hint: `ひ${i}`,
+    }));
+
+    const deck = buildKarutaDeck({
+      poems,
+      color: '青',
+      random: Math.random,
+    });
+
+    // kimarijiLongが優先されることを確認
+    deck.forEach(card => {
+      expect(card.kimariji).toMatch(/^long\d+$/);
     });
   });
 
@@ -118,7 +142,7 @@ describe('karuta', () => {
     const poems = Array(20).fill(null).map((_, i) => ({
       color: '青',
       kimarijiShort: `k${i}`,
-      kimarijiLong: '',
+      kimarijiLong: `kl${i}`,
       shimoNoKu: `下${i}`,
       shimoReading: `しも${i}`,
       kamiNoKu: `上${i}`,
@@ -140,6 +164,30 @@ describe('karuta', () => {
     });
   });
 
+  it('buildKarutaReadings prefers kimarijiLong over kimarijiShort', () => {
+    const poems = Array(20).fill(null).map((_, i) => ({
+      color: '青',
+      kimarijiShort: `short${i}`,
+      kimarijiLong: `long${i}`,
+      shimoNoKu: `下${i}`,
+      shimoReading: `しも${i}`,
+      kamiNoKu: `上${i}`,
+      kamiReading: `かみ${i}`,
+      hint: `ひ${i}`,
+    }));
+
+    const readings = buildKarutaReadings({
+      poems,
+      color: '青',
+      random: Math.random,
+    });
+
+    // kimarijiLongが優先されることを確認
+    readings.forEach(reading => {
+      expect(reading.kimariji).toMatch(/^long\d+$/);
+    });
+  });
+
   it('buildKarutaReadings throws when no poems for color', () => {
     expect(() => buildKarutaReadings({
       poems: samplePoems,
@@ -150,13 +198,13 @@ describe('karuta', () => {
 
   it('checkKarutaMatch returns true for correct match', () => {
     const reading = {
-      kimariji: 'あ',
+      kimariji: 'あき',
       kamiNoKu: '上1',
       kamiReading: 'かみ1',
     };
 
     const card = {
-      kimariji: 'あ',
+      kimariji: 'あき',
       shimoNoKu: '下1',
       shimoReading: 'しも1',
       kamiNoKu: '上1',
@@ -169,13 +217,13 @@ describe('karuta', () => {
 
   it('checkKarutaMatch returns false for incorrect match', () => {
     const reading = {
-      kimariji: 'あ',
+      kimariji: 'あき',
       kamiNoKu: '上1',
       kamiReading: 'かみ1',
     };
 
     const card = {
-      kimariji: 'い',
+      kimariji: 'いの',
       shimoNoKu: '下2',
       shimoReading: 'しも2',
       kamiNoKu: '上2',
@@ -188,13 +236,13 @@ describe('karuta', () => {
 
   it('checkKarutaMatch uses kimariji for matching', () => {
     const reading = {
-      kimariji: 'あ',
+      kimariji: 'あき',
       kamiNoKu: '上1',
       kamiReading: 'かみ1',
     };
 
     const card = {
-      kimariji: 'あ',
+      kimariji: 'あき',
       shimoNoKu: '下1',
       shimoReading: 'しも1',
       kamiNoKu: '上1',
