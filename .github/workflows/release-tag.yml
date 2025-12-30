@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   test:
@@ -38,3 +39,6 @@ jobs:
 
           git tag "${next_tag}"
           git push origin "${next_tag}"
+          gh workflow run deploy --ref "${next_tag}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
