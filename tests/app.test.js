@@ -208,9 +208,6 @@ describe('app', () => {
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
-    const questionCount = document.getElementById('question-count');
-    questionCount.value = '1';
-    questionCount.dispatchEvent(new Event('change'));
 
     document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
     const elapsed = document.getElementById('elapsed-time');
@@ -233,9 +230,6 @@ describe('app', () => {
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
-    const questionCount = document.getElementById('question-count');
-    questionCount.value = '1';
-    questionCount.dispatchEvent(new Event('change'));
 
     document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
@@ -267,9 +261,6 @@ describe('app', () => {
     await flushPromises();
 
     document.getElementById('measure-time-toggle').checked = false;
-    const questionCount = document.getElementById('question-count');
-    questionCount.value = '1';
-    questionCount.dispatchEvent(new Event('change'));
 
     document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(document.getElementById('elapsed-time').classList.contains('hidden')).toBe(true);
@@ -293,9 +284,6 @@ describe('app', () => {
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
-    const questionCount = document.getElementById('question-count');
-    questionCount.value = '1';
-    questionCount.dispatchEvent(new Event('change'));
 
     document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
@@ -318,10 +306,6 @@ describe('app', () => {
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
-    const questionCount = document.getElementById('question-count');
-    questionCount.value = '200';
-    questionCount.dispatchEvent(new Event('change'));
-    expect(questionCount.value).toBe('20');
 
     const displayMode = document.getElementById('display-mode');
     displayMode.value = 'kanji';
@@ -394,9 +378,6 @@ describe('app', () => {
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
-    const questionCount = document.getElementById('question-count');
-    questionCount.value = '1';
-    questionCount.dispatchEvent(new Event('change'));
 
     document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(document.getElementById('quiz-screen').classList.contains('hidden')).toBe(false);
@@ -456,9 +437,6 @@ describe('app', () => {
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
-    const questionCount = document.getElementById('question-count');
-    questionCount.value = '1';
-    questionCount.dispatchEvent(new Event('change'));
 
     document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
     const optionButtons = Array.from(document.querySelectorAll('.option-button'));
@@ -481,9 +459,6 @@ describe('app', () => {
     hintType.value = 'kami';
     hintType.dispatchEvent(new Event('change'));
 
-    const questionCount = document.getElementById('question-count');
-    questionCount.value = '1';
-    questionCount.dispatchEvent(new Event('change'));
 
     document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
@@ -502,9 +477,6 @@ describe('app', () => {
     const hintType = document.getElementById('hint-type');
     hintType.value = 'kami';
 
-    const questionCount = document.getElementById('question-count');
-    questionCount.value = '1';
-    questionCount.dispatchEvent(new Event('change'));
 
     document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
     document.getElementById('toggle-kimariji').dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -529,9 +501,6 @@ describe('app', () => {
     await flushPromises();
 
     document.getElementById('order-reverse').dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    const questionCount = document.getElementById('question-count');
-    questionCount.value = '1';
-    questionCount.dispatchEvent(new Event('change'));
 
     document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
     const optionButtons = Array.from(document.querySelectorAll('.option-button'));
@@ -606,9 +575,6 @@ describe('app', () => {
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
-    const questionCount = document.getElementById('question-count');
-    questionCount.value = '10';
-    questionCount.dispatchEvent(new Event('change'));
     expect(localStorage.getItem('goshiki_question_count')).toBe('10');
 
     const measureToggle = document.getElementById('measure-time-toggle');
@@ -643,9 +609,6 @@ describe('app', () => {
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
-    const questionCount = document.getElementById('question-count');
-    questionCount.value = '1';
-    questionCount.dispatchEvent(new Event('change'));
 
     document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
     document.getElementById('retry-same').dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -654,14 +617,20 @@ describe('app', () => {
   });
 
   it('updates question limit when weak5 is selected', async () => {
+    const { quizState } = await import('../src/js/state.js');
     await import('../src/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
-    const questionCount = document.getElementById('question-count');
-    questionCount.value = 'weak5';
-    questionCount.dispatchEvent(new Event('change'));
-    expect(questionCount.value).toBe('weak5');
+    // デフォルトは20問モード
+    expect(quizState.questionLimit).toBe(20);
+
+    // 苦手5種ボタンをクリック
+    const modeWeak5 = document.getElementById('question-mode-weak5');
+    modeWeak5.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(quizState.questionLimit).toBe(5);
+    expect(modeWeak5.classList.contains('active')).toBe(true);
   });
 
   it('cancels quiz and returns to start screen', async () => {
@@ -669,9 +638,6 @@ describe('app', () => {
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
-    const questionCount = document.getElementById('question-count');
-    questionCount.value = '1';
-    questionCount.dispatchEvent(new Event('change'));
     document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     document.getElementById('cancel-quiz').dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -690,9 +656,6 @@ describe('app', () => {
     const displayMode = document.getElementById('display-mode');
     displayMode.value = 'kanji';
 
-    const questionCount = document.getElementById('question-count');
-    questionCount.value = '1';
-    questionCount.dispatchEvent(new Event('change'));
 
     document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
     document.getElementById('give-up-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -728,9 +691,6 @@ describe('app', () => {
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
-    const questionCount = document.getElementById('question-count');
-    questionCount.value = '2';
-    questionCount.dispatchEvent(new Event('change'));
 
     document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
@@ -757,9 +717,6 @@ describe('app', () => {
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
-    const questionCount = document.getElementById('question-count');
-    questionCount.value = '1';
-    questionCount.dispatchEvent(new Event('change'));
 
     document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
@@ -780,9 +737,6 @@ describe('app', () => {
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await flushPromises();
 
-    const questionCount = document.getElementById('question-count');
-    questionCount.value = '2';
-    questionCount.dispatchEvent(new Event('change'));
 
     document.querySelector('.color-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
 

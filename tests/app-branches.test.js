@@ -190,10 +190,11 @@ describe('app branches', () => {
     expect(viewStatsFromResult.style.display).toBe('none');
   });
 
-  it('resets weak5 selection when unavailable', async () => {
+  it('disables color buttons when weak5 mode and no quiz history', async () => {
     setupBaseDom();
     document.body.insertAdjacentHTML('beforeend', `
-      <select id="question-count"></select>
+      <button id="question-mode-20" class="btn btn-toggle active"></button>
+      <button id="question-mode-weak5" class="btn btn-toggle"></button>
       <button class="color-button" data-color="青"></button>
     `);
     loadCsv.mockResolvedValueOnce([
@@ -208,19 +209,20 @@ describe('app branches', () => {
         hint: 'ひ1',
       },
     ]);
+    getCachedQuizHistory.mockReturnValue([]);
 
     await import('../src/js/app.js');
     domReadyHandlers.forEach(handler => handler(new Event('DOMContentLoaded')));
     await flushPromises();
 
-    const questionCount = document.getElementById('question-count');
-    questionCount.value = 'weak5';
-    document.querySelector('.color-button')
-      .dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+    // 苦手5種モードに切り替え
+    const modeWeak5 = document.getElementById('question-mode-weak5');
+    modeWeak5.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await flushPromises();
 
-    expect(questionCount.value).toBe('20');
-    expect(quizState.questionLimit).toBe(20);
+    // 色ボタンがdisabledになることを確認
+    const colorButton = document.querySelector('.color-button');
+    expect(colorButton.disabled).toBe(true);
     expect(canUseWeak5).toHaveBeenCalled();
   });
 
@@ -261,8 +263,14 @@ describe('app branches', () => {
   it('starts weak5 quiz when selected', async () => {
     setupBaseDom();
     document.body.insertAdjacentHTML('beforeend', `
-      <select id="question-count"></select>
+      <button id="question-mode-20" class="btn btn-toggle active"></button>
+      <button id="question-mode-weak5" class="btn btn-toggle"></button>
       <button class="color-button" data-color="青"></button>
+      <input type="checkbox" id="measure-time-toggle" checked>
+      <select id="hint-type"><option value="shoku">初句</option></select>
+      <select id="display-mode"><option value="kana">よみがな</option></select>
+      <button id="order-normal" class="active"></button>
+      <button id="order-reverse"></button>
     `);
     loadCsv.mockResolvedValueOnce([
       {
@@ -276,13 +284,17 @@ describe('app branches', () => {
         hint: 'ひ1',
       },
     ]);
+    canUseWeak5.mockReturnValue(true);
+    getCachedQuizHistory.mockReturnValue([{ color: '青', answers: [] }]);
 
     await import('../src/js/app.js');
     domReadyHandlers.forEach(handler => handler(new Event('DOMContentLoaded')));
     await flushPromises();
 
-    const questionCount = document.getElementById('question-count');
-    questionCount.value = 'weak5';
+    // 苦手5種モードに切り替え
+    const modeWeak5 = document.getElementById('question-mode-weak5');
+    modeWeak5.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flushPromises();
 
     document.querySelector('.color-button')
       .dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -293,7 +305,8 @@ describe('app branches', () => {
   it('shows results when no questions are generated', async () => {
     setupBaseDom();
     document.body.insertAdjacentHTML('beforeend', `
-      <select id="question-count"></select>
+      <button id="question-mode-20" class="btn btn-toggle active"></button>
+      <button id="question-mode-weak5" class="btn btn-toggle"></button>
       <button class="color-button" data-color="青"></button>
     `);
     buildQuestions.mockReturnValueOnce([]);
