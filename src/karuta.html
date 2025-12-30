@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 
-<body class="page-shell">
+<body class="page-shell karuta-page">
   <div class="container app-container py-4 d-flex flex-column">
     <header class="mb-4">
       <div class="d-flex align-items-center justify-content-between gap-2">
@@ -30,7 +30,15 @@
             <h2 class="h4 mb-0">色を選んでください</h2>
             <a href="index.html" class="btn btn-outline-secondary btn-sm">クイズへ</a>
           </div>
-          <p class="text-muted mb-3">選んだ色の20枚すべての札で遊びます</p>
+          <div class="d-flex align-items-center gap-2 flex-wrap mb-3">
+            <p class="text-muted mb-0">選んだ色の20枚すべての札で遊びます</p>
+            <div class="d-flex gap-2 align-items-center ms-auto">
+              <label for="measure-time-toggle" class="form-label mb-0">計測</label>
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="measure-time-toggle" checked>
+              </div>
+            </div>
+          </div>
           <div class="row g-2">
             <div class="col-12 col-md-6">
               <button class="btn w-100 color-button color-blue" data-color="青">
@@ -66,6 +74,7 @@
           <div class="d-flex align-items-center gap-2 flex-wrap mb-2 karuta-info-container">
             <div id="progress-text" class="fw-semibold">1 / 20</div>
             <div class="ms-auto d-flex align-items-center gap-2 flex-wrap">
+              <div id="elapsed-time" class="elapsed-time-badge">0:00</div>
               <div id="score-text" class="badge bg-success">正解: 0枚</div>
               <div id="selected-color-label" class="badge selected-color-badge"></div>
               <button id="cancel-game" class="btn btn-outline-secondary btn-sm quiz-cancel-btn" type="button"

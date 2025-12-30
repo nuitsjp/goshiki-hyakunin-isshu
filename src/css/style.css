@@ -461,6 +461,25 @@ h6,
   font-family: var(--font-serif);
 }
 
+.karuta-page .result-icon {
+  width: auto;
+  height: auto;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.karuta-page .result-item-correct .result-icon {
+  color: var(--color-correct);
+}
+
+.karuta-page .result-item-incorrect .result-icon {
+  color: var(--color-incorrect);
+}
+
 .result-body {
   margin: 0;
   line-height: 1.6;
@@ -993,7 +1012,7 @@ h6,
   cursor: not-allowed;
 }
 
-.karuta-card.hidden {
+.karuta-card.is-taken {
   visibility: hidden;
 }
 

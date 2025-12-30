@@ -1,6 +1,7 @@
-import { APP_VERSION, colorAccentMap, colorTextMap } from './config.js';
+import { APP_VERSION, colorAccentMap, colorTextMap, STORAGE_KEYS } from './config.js';
 import { loadCsv } from './data.js';
 import { buildKarutaDeck, buildKarutaReadings, checkKarutaMatch } from './karuta.js';
+import { formatDurationMs } from './stats.js';
 import { escapeHtml, toRubyHtml } from './text.js';
 import { saveKarutaSession } from './storage.js';
 
@@ -13,6 +14,7 @@ const karutaState = {
   currentIndex: 0,
   score: 0,           // Number of correct cards taken
   results: [],        // Array of {kimariji, isCorrect, cardState}
+  measureTime: true,
   sessionStartTime: null,
   sessionEndTime: null,
 };
@@ -30,6 +32,8 @@ const elements = {
   progressText: document.getElementById('progress-text'),
   progressBar: document.getElementById('progress-bar'),
   scoreText: document.getElementById('score-text'),
+  elapsedTime: document.getElementById('elapsed-time'),
+  measureTimeToggle: document.getElementById('measure-time-toggle'),
   selectedColorLabel: document.getElementById('selected-color-label'),
   kimarijiDisplay: document.getElementById('kimariji-display'),
   readingDisplay: document.getElementById('reading-display'),
@@ -44,9 +48,32 @@ const elements = {
   appVersion: document.getElementById('app-version'),
 };
 
+let elapsedTimerId = null;
+
+function readLocalSetting(key, fallback) {
+  try {
+    const value = localStorage.getItem(key);
+    return value === null ? fallback : value;
+  } catch (e) {
+    console.warn(e);
+    return fallback;
+  }
+}
+
+function writeLocalSetting(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch (e) {
+    console.warn(e);
+  }
+}
+
 function showScreen(screenName) {
   Object.values(screens).forEach(screen => screen?.classList.add('hidden'));
   screens[screenName]?.classList.remove('hidden');
+  if (screenName === 'start') {
+    loadStartSettings();
+  }
 }
 
 function setAccentColor(color) {
@@ -66,6 +93,13 @@ function setAccentColor(color) {
   }
 }
 
+function loadStartSettings() {
+  if (elements.measureTimeToggle) {
+    const savedMeasure = readLocalSetting(STORAGE_KEYS.MEASURE_TIME, null);
+    elements.measureTimeToggle.checked = savedMeasure === null ? true : savedMeasure !== 'false';
+  }
+}
+
 function updateProgress() {
   const total = karutaState.readings.length;
   const current = karutaState.currentIndex + 1;
@@ -82,6 +116,43 @@ function updateProgress() {
   if (elements.scoreText) {
     elements.scoreText.textContent = `正解: ${karutaState.score}枚`;
   }
+}
+
+function clearElapsedTimer() {
+  if (elapsedTimerId) {
+    clearInterval(elapsedTimerId);
+    elapsedTimerId = null;
+  }
+}
+
+function updateElapsedTime() {
+  if (!elements.elapsedTime || !karutaState.measureTime) return;
+  const elapsedMs = Math.max(0, Math.round(performance.now() - karutaState.sessionStartTime));
+  elements.elapsedTime.textContent = formatDurationMs(elapsedMs);
+}
+
+function setElapsedVisibility(isVisible) {
+  if (!elements.elapsedTime) return;
+  elements.elapsedTime.classList.toggle('hidden', !isVisible);
+}
+
+function startElapsedTimer() {
+  if (!elements.elapsedTime || !karutaState.measureTime) return;
+  clearElapsedTimer();
+  updateElapsedTime();
+  elapsedTimerId = setInterval(() => {
+    updateElapsedTime();
+  }, 250);
+}
+
+function finalizeSessionTiming() {
+  if (!karutaState.measureTime) {
+    clearElapsedTimer();
+    return;
+  }
+  karutaState.sessionEndTime = performance.now();
+  updateElapsedTime();
+  clearElapsedTimer();
 }
 
 function displayReading() {
@@ -109,7 +180,7 @@ function renderCards() {
 
     if (card.state === 'hidden') {
       // 非表示の札（配置は維持）
-      cardElement.classList.add('hidden');
+      cardElement.classList.add('is-taken');
       cardElement.disabled = true;
       cardElement.textContent = card.shimoReading.replace(/\s/g, '');
     } else if (card.state === 'showing-result') {
@@ -212,12 +283,12 @@ function nextReading() {
 }
 
 function showResult() {
+  finalizeSessionTiming();
   const total = karutaState.readings.length;
   const correct = karutaState.score;
   const rate = Math.round((correct / total) * 100);
-  const endTime = typeof performance !== 'undefined' ? performance.now() : null;
-  karutaState.sessionEndTime = endTime;
-  const durationMs = Number.isFinite(karutaState.sessionStartTime) && Number.isFinite(endTime)
+  const endTime = karutaState.measureTime ? karutaState.sessionEndTime : null;
+  const durationMs = karutaState.measureTime && Number.isFinite(endTime)
     ? Math.round(endTime - karutaState.sessionStartTime)
     : null;
 
@@ -272,7 +343,7 @@ function showResult() {
   // Display result list
   if (elements.resultList) {
     const html = karutaState.results.map((result, i) => {
-      const icon = result.isCorrect ? '○' : '×';
+      const icon = result.isCorrect ? '◯' : '×';
       const className = result.isCorrect ? 'result-item-correct' : 'result-item-incorrect';
       const kimarijiHtml = escapeHtml(result.kimariji);
       const kamiHtml = toRubyHtml(result.kamiNoKu);
@@ -305,7 +376,8 @@ async function startGame(color) {
   karutaState.currentIndex = 0;
   karutaState.score = 0;
   karutaState.results = [];
-  karutaState.sessionStartTime = typeof performance !== 'undefined' ? performance.now() : null;
+  karutaState.measureTime = elements.measureTimeToggle ? elements.measureTimeToggle.checked : true;
+  karutaState.sessionStartTime = karutaState.measureTime ? performance.now() : 0;
   karutaState.sessionEndTime = null;
 
   try {
@@ -324,6 +396,11 @@ async function startGame(color) {
     updateProgress();
     displayReading();
     renderCards();
+    if (elements.elapsedTime && !karutaState.measureTime) {
+      elements.elapsedTime.textContent = formatDurationMs(0);
+    }
+    setElapsedVisibility(karutaState.measureTime);
+    startElapsedTimer();
 
     // Disable next button initially
     if (elements.nextReading) {
@@ -346,9 +423,19 @@ function initEventListeners() {
     });
   });
 
+  if (elements.measureTimeToggle) {
+    elements.measureTimeToggle.addEventListener('change', () => {
+      writeLocalSetting(STORAGE_KEYS.MEASURE_TIME, String(elements.measureTimeToggle.checked));
+    });
+  }
+
   // Cancel game
   if (elements.cancelGame) {
     elements.cancelGame.addEventListener('click', () => {
+      clearElapsedTimer();
+      if (elements.elapsedTime) {
+        elements.elapsedTime.textContent = formatDurationMs(0);
+      }
       showScreen('start');
     });
   }
@@ -378,6 +465,7 @@ async function init() {
   if (elements.appVersion) {
     elements.appVersion.textContent = APP_VERSION;
   }
+  loadStartSettings();
 
   // Load CSV data
   try {
