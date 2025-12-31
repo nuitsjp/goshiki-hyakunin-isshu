@@ -1,4 +1,4 @@
-import { FIREBASE_CONFIG, ENABLE_FIRESTORE_SYNC } from './config.js';
+import { ENABLE_FIRESTORE_SYNC } from './config.js';
 
 let db = null;
 let firestoreModule = null;
@@ -177,3 +177,4 @@ export async function uploadLocalHistoryToFirestore(userId, localHistory) {
 export function getFirestoreDb() {
   return db;
 }
+

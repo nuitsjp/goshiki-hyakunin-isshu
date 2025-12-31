@@ -4,11 +4,19 @@
   "version": "0.0.0",
   "scripts": {
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "lint": "npm run lint:js && npm run lint:css && npm run lint:html",
+    "lint:js": "eslint \"src/js/**/*.js\" \"tests/**/*.js\"",
+    "lint:css": "stylelint \"src/css/**/*.css\"",
+    "lint:html": "htmlhint \"src/**/*.html\""
   },
   "devDependencies": {
     "@vitest/coverage-v8": "1.6.0",
+    "eslint": "8.57.0",
+    "htmlhint": "1.1.4",
     "jsdom": "24.0.0",
+    "stylelint": "16.7.0",
+    "stylelint-config-standard": "36.0.0",
     "vitest": "1.6.0"
   },
   "dependencies": {

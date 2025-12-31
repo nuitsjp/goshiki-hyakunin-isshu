@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { quizState } from '../src/js/state.js';
 
 const loadCsv = vi.fn();
 vi.mock('../src/js/data.js', () => ({
@@ -380,3 +379,4 @@ describe('app branches', () => {
     expect(menuPanel.classList.contains('hidden')).toBe(true);
   });
 });
+

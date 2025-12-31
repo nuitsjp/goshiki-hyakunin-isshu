@@ -19,6 +19,12 @@ npm install
 npm test
 ```
 
+静的解析（JS/HTML/CSS）は以下で実行できます。
+
+```bash
+npm run lint
+```
+
 カバレッジを取得する場合は以下を実行してください。
 
 ```bash

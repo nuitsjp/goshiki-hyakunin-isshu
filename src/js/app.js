@@ -24,13 +24,6 @@ let advanceTimerId = null;
 let elapsedTimerId = null;
 let currentScreen = 'start';
 let settingsReturnScreen = 'start';
-const LOCAL_HOSTNAMES = ['localhost', '127.0.0.1', '::1'];
-
-function isLocalHostname(hostname) {
-  const host = (hostname || '').toLowerCase();
-  return LOCAL_HOSTNAMES.includes(host);
-}
-
 function readLocalSetting(key, fallback) {
   try {
     const value = localStorage.getItem(key);
@@ -1018,3 +1011,5 @@ function init() {
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+
