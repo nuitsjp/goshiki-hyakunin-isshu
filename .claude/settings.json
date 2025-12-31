@@ -1,12 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dir:*)",
-      "Bash(cat:*)",
-      "Bash(git:*)",
-      "Bash(node:*)",
-      "Bash(grep:*)",
-      "Bash(npm:*)"
+      "Bash(*)",            // 全コマンドを許可
+      "Edit(*)",            // ファイル編集
+      "Write(*)"            // 書き込み関連
     ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "allowUnsandboxedCommands": false
   }
 }
