@@ -29,8 +29,7 @@
     <main class="flex-grow-1">
       <section id="start-screen" class="screen card shadow-sm">
         <div class="card-body">
-          <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
-            <h2 class="h4 mb-0">色を選んでください</h2>
+          <div class="d-flex align-items-center justify-content-end gap-2 mb-3">
             <div class="d-flex align-items-center gap-2">
               <div class="d-flex gap-2 align-items-center">
                 <label for="flip-cards-toggle" class="form-label mb-0">反転</label>
@@ -42,12 +41,8 @@
                   <input class="form-check-input" type="checkbox" id="measure-time-toggle" checked>
                 </div>
               </div>
-              <button id="view-stats" class="btn btn-outline-secondary btn-sm" type="button">統計を見る</button>
               <a href="index.html" class="btn btn-outline-secondary btn-sm">クイズへ</a>
             </div>
-          </div>
-          <div class="d-flex align-items-center gap-2 flex-wrap mb-3">
-            <p class="text-muted mb-0">選んだ色の20枚すべての札で遊びます</p>
           </div>
           <div class="row g-2">
             <div class="col-12 col-md-6">
@@ -74,6 +69,11 @@
               <button class="btn w-100 color-button color-orange" data-color="オレンジ">
                 <div class="color-btn-content">オレンジ</div>
               </button>
+            </div>
+          </div>
+          <div class="row g-2 mt-2">
+            <div class="col-12">
+              <button id="view-stats" class="btn btn-outline-secondary w-100" type="button">統計を見る</button>
             </div>
           </div>
         </div>
