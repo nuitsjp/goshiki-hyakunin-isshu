@@ -7,6 +7,8 @@ on:
       - main
     paths:
       - ".github/workflows/test.yml"
+      - "src/css/**"
+      - "src/**/*.html"
       - "src/js/**"
       - "tests/**"
       - "package.json"
@@ -14,6 +16,8 @@ on:
   pull_request:
     paths:
       - ".github/workflows/test.yml"
+      - "src/css/**"
+      - "src/**/*.html"
       - "src/js/**"
       - "tests/**"
       - "package.json"
@@ -32,5 +36,5 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Run tests
-        run: npm test
+      - name: Run tests and lint
+        run: npm run all
