@@ -5,6 +5,7 @@
   "scripts": {
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "all": "npm run lint && npm test",
     "lint": "npm run lint:js && npm run lint:css && npm run lint:html",
     "lint:js": "eslint \"src/js/**/*.js\" \"tests/**/*.js\"",
     "lint:css": "stylelint \"src/css/**/*.css\"",
