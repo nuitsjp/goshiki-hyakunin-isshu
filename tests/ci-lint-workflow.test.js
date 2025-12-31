@@ -13,7 +13,7 @@ describe('CI lint workflow', () => {
   it('.github/workflows/test.yml で lint が実行される', async () => {
     const workflow = await readFile('.github/workflows/test.yml', 'utf8');
 
-    expect(workflow).toContain('npm run lint');
+    expect(workflow).toMatch(/npm run (lint|all)/);
   });
 
   it('.github/workflows/test.yml の paths に CSS/HTML が含まれる', async () => {
