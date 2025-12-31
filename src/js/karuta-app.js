@@ -181,8 +181,9 @@ function setElapsedVisibility(isVisible) {
 }
 
 function updateCountdownDisplay() {
-  if (!elements.elapsedTime) return;
-  elements.elapsedTime.textContent = formatDurationMs(countdownRemainingMs);
+  if (!elements.kimarijiDisplay) return;
+  const seconds = Math.ceil(countdownRemainingMs / 1000);
+  elements.kimarijiDisplay.textContent = `開始${seconds}秒前、札を覚えよう！`;
 }
 
 function startElapsedTimer() {
@@ -243,9 +244,6 @@ function startCountdown(durationMs) {
   renderCards();
   countdownRemainingMs = durationMs;
   updateCountdownDisplay();
-  if (elements.kimarijiDisplay) {
-    elements.kimarijiDisplay.textContent = '';
-  }
   if (elements.readingDisplay) {
     elements.readingDisplay.innerHTML = '';
   }
