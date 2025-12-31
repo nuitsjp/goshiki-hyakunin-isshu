@@ -8,7 +8,6 @@
  * 4. window.getFirestoreDebugLog() でログを確認
  */
 
-const LOG_KEY = 'firestore_debug_log';
 let isEnabled = false;
 let logEntries = [];
 
@@ -84,3 +83,4 @@ if (typeof window !== 'undefined') {
   window.clearFirestoreDebugLog = clearLog;
   window.exportFirestoreDebugLog = exportLog;
 }
+

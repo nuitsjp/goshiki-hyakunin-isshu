@@ -6,6 +6,8 @@ export const escapeHtml = (str = '') =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 
-export const toRubyHtml = (text = '') => escapeHtml(text.replace(/\[([^\[\]]+)\]/g, ''));
+export const toRubyHtml = (text = '') => escapeHtml(text.replace(/\[([^\][]+)\]/g, ''));
 
-export const toAriaLabel = (text = '') => text.replace(/\[([^\[\]]+)\]/g, '');
+export const toAriaLabel = (text = '') => text.replace(/\[([^\][]+)\]/g, '');
+
+

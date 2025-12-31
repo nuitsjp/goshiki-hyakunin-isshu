@@ -14,7 +14,7 @@ const normalizeAuthConfig = () => {
   return FIREBASE_CONFIG;
 };
 
-const setAuthStatus = (elements, { isSignedIn, photoUrl, userText }) => {
+const setAuthStatus = (elements, { isSignedIn, photoUrl }) => {
   if (elements.authAvatar && elements.authAvatarFallback) {
     if (photoUrl) {
       elements.authAvatar.src = photoUrl;
@@ -224,3 +224,4 @@ export const initAuthUI = async ({
     if (elements.authLogout) elements.authLogout.disabled = true;
   }
 };
+
