@@ -22,6 +22,7 @@ const karutaState = {
   locked: false,
   pendingHideCards: [],
   pendingResetCards: [],
+  countdownActive: false,
 };
 
 // DOM elements
@@ -70,11 +71,19 @@ const elements = {
 };
 
 let elapsedTimerId = null;
+let countdownTimerId = null;
+let countdownRemainingMs = 0;
 const DEFAULT_RESULT_DELAY_MS = 500;
+const DEFAULT_PREPARE_DELAY_MS = 20000;
 
 function getResultDelayMs() {
   const value = Number(window.__KARUTA_RESULT_DELAY_MS__);
   return Number.isFinite(value) && value >= 0 ? value : DEFAULT_RESULT_DELAY_MS;
+}
+
+function getPrepareDelayMs() {
+  const value = Number(window.__KARUTA_PREPARE_MS__);
+  return Number.isFinite(value) && value >= 0 ? value : DEFAULT_PREPARE_DELAY_MS;
 }
 
 function readLocalSetting(key, fallback) {
@@ -171,6 +180,11 @@ function setElapsedVisibility(isVisible) {
   elements.elapsedTime.classList.toggle('hidden', !isVisible);
 }
 
+function updateCountdownDisplay() {
+  if (!elements.elapsedTime) return;
+  elements.elapsedTime.textContent = formatDurationMs(countdownRemainingMs);
+}
+
 function startElapsedTimer() {
   if (!elements.elapsedTime || !karutaState.measureTime) return;
   clearElapsedTimer();
@@ -188,6 +202,73 @@ function finalizeSessionTiming() {
   karutaState.sessionEndTime = performance.now();
   updateElapsedTime();
   clearElapsedTimer();
+}
+
+function clearCountdownTimer() {
+  if (countdownTimerId) {
+    clearInterval(countdownTimerId);
+    countdownTimerId = null;
+  }
+}
+
+function startSessionClock() {
+  if (!karutaState.measureTime) {
+    clearElapsedTimer();
+    setElapsedVisibility(false);
+    return;
+  }
+  karutaState.sessionStartTime = performance.now();
+  karutaState.sessionEndTime = null;
+  setElapsedVisibility(true);
+  startElapsedTimer();
+}
+
+function finishCountdown() {
+  if (!karutaState.countdownActive) return;
+  clearCountdownTimer();
+  karutaState.countdownActive = false;
+  karutaState.locked = false;
+  renderCards();
+  if (elements.toggleHint) {
+    elements.toggleHint.disabled = false;
+  }
+  displayReading();
+  startSessionClock();
+}
+
+function startCountdown(durationMs) {
+  clearCountdownTimer();
+  karutaState.countdownActive = true;
+  karutaState.locked = true;
+  renderCards();
+  countdownRemainingMs = durationMs;
+  updateCountdownDisplay();
+  if (elements.kimarijiDisplay) {
+    elements.kimarijiDisplay.textContent = '';
+  }
+  if (elements.readingDisplay) {
+    elements.readingDisplay.innerHTML = '';
+  }
+  if (elements.toggleHint) {
+    elements.toggleHint.disabled = true;
+  }
+  if (elements.nextReading) {
+    elements.nextReading.disabled = true;
+  }
+  if (elements.passReading) {
+    elements.passReading.disabled = false;
+  }
+  setElapsedVisibility(karutaState.measureTime);
+  countdownTimerId = setInterval(() => {
+    countdownRemainingMs -= 1000;
+    if (countdownRemainingMs <= 0) {
+      countdownRemainingMs = 0;
+      updateCountdownDisplay();
+      finishCountdown();
+      return;
+    }
+    updateCountdownDisplay();
+  }, 1000);
 }
 
 function updateResultTime(durationMs) {
@@ -284,6 +365,15 @@ function displayReading() {
 function updateReadingDisplay() {
   const reading = karutaState.readings[karutaState.currentIndex];
   if (!reading) return;
+  if (karutaState.countdownActive) {
+    if (elements.kimarijiDisplay) {
+      elements.kimarijiDisplay.textContent = '';
+    }
+    if (elements.readingDisplay) {
+      elements.readingDisplay.innerHTML = '';
+    }
+    return;
+  }
   if (elements.kimarijiDisplay) {
     elements.kimarijiDisplay.textContent = karutaState.showHint
       ? (reading.hint || '')
@@ -537,6 +627,10 @@ function handleCardClick(cardIndex) {
 }
 
 function handlePass() {
+  if (karutaState.countdownActive) {
+    finishCountdown();
+    return;
+  }
   if (karutaState.locked) return;
   const reading = karutaState.readings[karutaState.currentIndex];
   if (!reading) return;
@@ -689,7 +783,7 @@ function showResult() {
   showScreen('result');
 }
 
-async function startGame(color) {
+async function startGame(color, options = {}) {
   if (karutaState.allPoems.length === 0) {
     alert('データの読み込みに失敗しました。ページを再読み込みしてください。');
     return;
@@ -701,9 +795,13 @@ async function startGame(color) {
   karutaState.results = [];
   karutaState.measureTime = elements.measureTimeToggle ? elements.measureTimeToggle.checked : true;
   karutaState.flipCards = elements.flipCardsToggle ? elements.flipCardsToggle.checked : false;
-  karutaState.sessionStartTime = karutaState.measureTime ? performance.now() : 0;
+  karutaState.sessionStartTime = null;
   karutaState.sessionEndTime = null;
   karutaState.showHint = false;
+  karutaState.locked = false;
+  karutaState.countdownActive = false;
+  clearElapsedTimer();
+  clearCountdownTimer();
 
   try {
     // Build deck and readings
@@ -719,13 +817,10 @@ async function startGame(color) {
 
     setAccentColor(color);
     updateProgress();
-    displayReading();
     renderCards();
-    if (elements.elapsedTime && !karutaState.measureTime) {
+    if (elements.elapsedTime && karutaState.measureTime) {
       elements.elapsedTime.textContent = formatDurationMs(0);
     }
-    setElapsedVisibility(karutaState.measureTime);
-    startElapsedTimer();
 
     // Disable next button initially
     if (elements.nextReading) {
@@ -736,6 +831,15 @@ async function startGame(color) {
     }
 
     showScreen('game');
+    const prepareMs = Number.isFinite(options.prepareMs)
+      ? Math.max(0, options.prepareMs)
+      : getPrepareDelayMs();
+    if (prepareMs > 0) {
+      startCountdown(prepareMs);
+    } else {
+      displayReading();
+      startSessionClock();
+    }
   } catch (error) {
     console.error('Failed to start game:', error);
     alert(error.message || 'ゲームの開始に失敗しました。');
@@ -766,6 +870,9 @@ function initEventListeners() {
   if (elements.cancelGame) {
     elements.cancelGame.addEventListener('click', () => {
       clearElapsedTimer();
+      clearCountdownTimer();
+      karutaState.countdownActive = false;
+      karutaState.locked = false;
       if (elements.elapsedTime) {
         elements.elapsedTime.textContent = formatDurationMs(0);
       }

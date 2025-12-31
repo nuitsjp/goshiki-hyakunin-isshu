@@ -45,7 +45,14 @@ vi.mock('../src/js/storage.js', () => ({
   clearAllKarutaHistory: (...args) => clearAllKarutaHistoryMock(...args),
 }));
 
-const flushPromises = () => new Promise(resolve => setTimeout(resolve, 0));
+const flushPromises = async () => {
+  if (vi.isFakeTimers()) {
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(0);
+    return;
+  }
+  await new Promise(resolve => setTimeout(resolve, 0));
+};
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const createPoems = (count, color = '黄') => Array.from({ length: count }, (_, i) => ({
@@ -92,6 +99,7 @@ const setupDom = () => {
     <div id="reading-display"></div>
     <button id="toggle-hint" type="button"><span class="hint-button-label"></span></button>
     <div id="karuta-grid"></div>
+    <button id="pass-reading"></button>
     <button id="next-reading"></button>
     <div id="elapsed-time"></div>
     <input id="measure-time-toggle" type="checkbox" checked>
@@ -143,6 +151,7 @@ beforeEach(() => {
   document.body.innerHTML = '';
   document.documentElement.style.cssText = '';
   window.__KARUTA_RESULT_DELAY_MS__ = 0;
+  window.__KARUTA_PREPARE_MS__ = 0;
   const alertMock = vi.fn();
   const confirmMock = vi.fn(() => true);
   vi.stubGlobal('alert', alertMock);
@@ -180,6 +189,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllGlobals();
   delete window.__KARUTA_RESULT_DELAY_MS__;
+  delete window.__KARUTA_PREPARE_MS__;
 });
 
 describe('karuta-app', () => {
@@ -985,5 +995,72 @@ describe('karuta-app', () => {
     expect(document.documentElement.style.getPropertyValue('--karuta-card-width-current')).not.toBe('');
 
     document.body.getBoundingClientRect = originalRect;
+  });
+
+  it('開始時はカウントダウン中で札が押せず決まり字を表示しない', async () => {
+    vi.useFakeTimers();
+    setupDom();
+    loadCsvMock.mockResolvedValue(createPoems(1));
+    buildKarutaDeckMock.mockReturnValue(createDeck(1));
+    buildKarutaReadingsMock.mockReturnValue(createReadings(1));
+    window.__KARUTA_PREPARE_MS__ = 1000;
+    const importPromise = importApp();
+    vi.runOnlyPendingTimers();
+    await importPromise;
+
+    document.querySelector('.color-button[data-color="黄"]').click();
+
+    const card = document.querySelector('.karuta-card');
+    expect(card.disabled).toBe(true);
+    expect(document.getElementById('kimariji-display').textContent).toBe('');
+    expect(document.getElementById('elapsed-time').textContent).toBe('0:01');
+    expect(document.getElementById('toggle-hint').disabled).toBe(true);
+
+    vi.useRealTimers();
+  });
+
+  it('カウントダウン終了後に札を押せて決まり字を表示する', async () => {
+    vi.useFakeTimers();
+    setupDom();
+    loadCsvMock.mockResolvedValue(createPoems(1));
+    buildKarutaDeckMock.mockReturnValue(createDeck(1));
+    buildKarutaReadingsMock.mockReturnValue(createReadings(1));
+    window.__KARUTA_PREPARE_MS__ = 1000;
+    const importPromise = importApp();
+    vi.runOnlyPendingTimers();
+    await importPromise;
+
+    document.querySelector('.color-button[data-color="黄"]').click();
+    vi.advanceTimersByTime(1000);
+
+    const card = document.querySelector('.karuta-card');
+    expect(card.disabled).toBe(false);
+    expect(document.getElementById('kimariji-display').textContent).toBe('き0');
+    expect(document.getElementById('toggle-hint').disabled).toBe(false);
+    expect(document.getElementById('elapsed-time').textContent).toBe('0:00');
+
+    vi.useRealTimers();
+  });
+
+  it('パスでカウントダウンをスキップできる', async () => {
+    vi.useFakeTimers();
+    setupDom();
+    loadCsvMock.mockResolvedValue(createPoems(1));
+    buildKarutaDeckMock.mockReturnValue(createDeck(1));
+    buildKarutaReadingsMock.mockReturnValue(createReadings(1));
+    window.__KARUTA_PREPARE_MS__ = 1000;
+    const importPromise = importApp();
+    vi.runOnlyPendingTimers();
+    await importPromise;
+
+    document.querySelector('.color-button[data-color="黄"]').click();
+    document.getElementById('pass-reading').click();
+
+    const card = document.querySelector('.karuta-card');
+    expect(card.disabled).toBe(false);
+    expect(document.getElementById('kimariji-display').textContent).toBe('き0');
+    expect(document.getElementById('elapsed-time').textContent).toBe('0:00');
+
+    vi.useRealTimers();
   });
 });
