@@ -286,6 +286,85 @@ function updateResultTime(durationMs) {
   }
 }
 
+let selectedColor = null;
+
+async function renderDetailedColorStats(color, history) {
+  const container = elements.colorDetailContainer;
+  if (!container) return;
+
+  const colorSessions = history.filter(s => s.color === color).sort((a, b) => b.timestamp - a.timestamp);
+
+  const colorClass = {
+    '青': 'color-blue',
+    'ピンク': 'color-pink',
+    '黄': 'color-yellow',
+    '緑': 'color-green',
+    'オレンジ': 'color-orange'
+  }[color] || '';
+
+  let html = `
+    <div class="color-detail-panel">
+      <div class="detail-header">
+        <h4><span class="color-badge-mini ${colorClass}"></span> 【${color}】の詳細統計</h4>
+        <button id="close-detail-panel" class="btn btn-sm btn-outline-secondary">閉じる</button>
+      </div>
+  `;
+
+  // セッション履歴
+  html += `
+    <div class="detail-section">
+      <h5>セッション履歴</h5>
+  `;
+
+  if (colorSessions.length === 0) {
+    html += `<p class="text-muted">まだプレイ履歴がありません</p>`;
+  } else {
+    html += `<div class="session-history-list">`;
+
+    colorSessions.forEach(session => {
+      const date = new Date(session.timestamp);
+      const dateStr = `${date.getMonth() + 1}/${date.getDate()}`;
+      const timeStr = date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+
+      html += `
+        <div class="session-item" data-session-id="${session.sessionId}">
+          <div class="session-header">
+            <div>
+              <div class="fw-semibold">${dateStr} ${timeStr}</div>
+            </div>
+            <div class="session-result">
+              ${formatDurationMs(session.durationMs)} - ${session.correctCount}/${session.questionCount} (${session.accuracyRate}%)
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    html += `</div>`;
+  }
+
+  html += `</div>`;
+  html += `</div>`;
+
+  container.innerHTML = html;
+
+  const closeButton = document.getElementById('close-detail-panel');
+  if (closeButton) {
+    closeButton.addEventListener('click', () => {
+      selectedColor = null;
+      container.innerHTML = '';
+      const tbody = elements.colorStatsBody;
+      if (tbody) {
+        tbody.querySelectorAll('tr').forEach(row => row.classList.remove('selected'));
+      }
+    });
+  }
+
+  if (container.scrollIntoView) {
+    container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
 async function renderStatsScreen() {
   if (!screens.stats) return;
   const history = await loadKarutaHistory();
@@ -308,7 +387,7 @@ async function renderStatsScreen() {
         'オレンジ': 'row-orange',
       }[stats.color] || '';
       return `
-        <tr class="stats-row ${rowClass}">
+        <tr data-color="${stats.color}" class="stats-row ${rowClass} ${selectedColor === stats.color ? 'selected' : ''}">
           <td class="stats-cell">${stats.totalQuizzes}</td>
           <td class="stats-cell">${stats.totalQuestions}</td>
           <td class="stats-cell">${stats.totalCorrect}</td>
@@ -319,6 +398,26 @@ async function renderStatsScreen() {
         </tr>
       `;
     }).join('');
+
+    elements.colorStatsBody.querySelectorAll('tr').forEach(row => {
+      row.addEventListener('click', async () => {
+        const color = row.getAttribute('data-color');
+        if (!color) return;
+
+        if (selectedColor === color) {
+          selectedColor = null;
+          if (elements.colorDetailContainer) {
+            elements.colorDetailContainer.innerHTML = '';
+          }
+          elements.colorStatsBody.querySelectorAll('tr').forEach(r => r.classList.remove('selected'));
+        } else {
+          selectedColor = color;
+          elements.colorStatsBody.querySelectorAll('tr').forEach(r => r.classList.remove('selected'));
+          row.classList.add('selected');
+          await renderDetailedColorStats(color, history);
+        }
+      });
+    });
   }
 
   if (elements.colorDetailContainer) {

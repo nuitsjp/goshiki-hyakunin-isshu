@@ -1094,4 +1094,40 @@ describe('karuta-app', () => {
 
     vi.useRealTimers();
   });
+
+  it('統計画面で色をクリックして詳細統計を表示する', async () => {
+    setupDomWithStats();
+    loadCsvMock.mockResolvedValue(createPoems(20, '黄'));
+    loadKarutaHistoryMock.mockResolvedValue([
+      {
+        sessionId: 'k1',
+        timestamp: 1700000000000,
+        date: '2024-01-01',
+        color: '黄',
+        questionCount: 20,
+        correctCount: 15,
+        wrongCount: 5,
+        passCount: 0,
+        accuracyRate: 75,
+        hintType: null,
+        displayMode: null,
+        orderMode: 'karuta',
+        durationMs: 120000,
+        answers: [],
+      },
+    ]);
+    await importApp();
+
+    document.getElementById('view-stats').click();
+    await flushPromises();
+
+    const row = document.querySelector('#color-stats-tbody tr[data-color="黄"]');
+    expect(row).toBeTruthy();
+    row.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flushPromises();
+
+    const detail = document.getElementById('color-detail-container');
+    expect(detail.innerHTML).toMatch(/詳細統計/);
+    expect(detail.innerHTML).toMatch(/セッション履歴/);
+  });
 });

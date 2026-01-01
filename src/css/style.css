@@ -832,6 +832,7 @@ h6,
   font-weight: 600;
   font-size: 1rem;
   color: var(--color-text);
+  text-align: right;
 }
 
 .kimariji-text {
