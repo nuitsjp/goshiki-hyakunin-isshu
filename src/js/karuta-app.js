@@ -16,6 +16,7 @@ const karutaState = {
   results: [],        // Array of {kimariji, isCorrect, cardState}
   measureTime: true,
   flipCards: false,
+  hintType: 'kami',  // 'shoku' (初句) or 'kami' (決まり字)
   sessionStartTime: null,
   sessionEndTime: null,
   showHint: false,
@@ -42,6 +43,7 @@ const elements = {
   elapsedTime: document.getElementById('elapsed-time'),
   measureTimeToggle: document.getElementById('measure-time-toggle'),
   flipCardsToggle: document.getElementById('flip-cards-toggle'),
+  hintTypeSelect: document.getElementById('hint-type'),
   selectedColorLabel: document.getElementById('selected-color-label'),
   kimarijiDisplay: document.getElementById('kimariji-display'),
   readingDisplay: document.getElementById('reading-display'),
@@ -55,6 +57,7 @@ const elements = {
   resultComment: document.getElementById('result-comment'),
   resultList: document.getElementById('result-list'),
   retrySame: document.getElementById('retry-same'),
+  retryIncorrect: document.getElementById('retry-incorrect'),
   chooseColor: document.getElementById('choose-color'),
   appVersion: document.getElementById('app-version'),
   viewStats: document.getElementById('view-stats'),
@@ -141,6 +144,12 @@ function loadStartSettings() {
   if (elements.flipCardsToggle) {
     const savedFlip = readLocalSetting(STORAGE_KEYS.KARUTA_FLIP, null);
     elements.flipCardsToggle.checked = savedFlip === null ? false : savedFlip === 'true';
+  }
+  if (elements.hintTypeSelect) {
+    const savedHint = readLocalSetting(STORAGE_KEYS.HINT_TYPE, null);
+    const hintValue = savedHint === 'shoku' ? 'shoku' : 'kami';
+    karutaState.hintType = hintValue;
+    elements.hintTypeSelect.value = hintValue;
   }
 }
 
@@ -349,7 +358,10 @@ function displayReading() {
 
   if (!reading) return;
 
-  karutaState.showHint = false;
+  // Set showHint based on hintType setting
+  // 'shoku' (初句) -> showHint = true (show hint)
+  // 'kami' (決まり字) -> showHint = false (show kimariji)
+  karutaState.showHint = karutaState.hintType === 'shoku';
   updateReadingDisplay();
   updateHintButton();
   if (elements.nextReading) {
@@ -778,6 +790,19 @@ function showResult() {
     });
   }
 
+  // Show or hide "retry incorrect" button when there are wrong answers
+  {
+    const retryBtn = document.getElementById('retry-incorrect');
+    if (retryBtn) {
+      let hasIncorrect = karutaState.results.some(r => !r.isCorrect);
+      // Fallback: if state doesn't reflect correctly, inspect rendered result list
+      if (!hasIncorrect && elements.resultList) {
+        hasIncorrect = !!elements.resultList.querySelector('.icon-wrong');
+      }
+      retryBtn.classList.toggle('hidden', !hasIncorrect);
+    }
+  }
+
   showScreen('result');
 }
 
@@ -793,6 +818,7 @@ async function startGame(color, options = {}) {
   karutaState.results = [];
   karutaState.measureTime = elements.measureTimeToggle ? elements.measureTimeToggle.checked : true;
   karutaState.flipCards = elements.flipCardsToggle ? elements.flipCardsToggle.checked : false;
+  karutaState.hintType = elements.hintTypeSelect ? elements.hintTypeSelect.value : 'kami';
   karutaState.sessionStartTime = null;
   karutaState.sessionEndTime = null;
   karutaState.showHint = false;
@@ -863,6 +889,13 @@ function initEventListeners() {
       writeLocalSetting(STORAGE_KEYS.KARUTA_FLIP, String(elements.flipCardsToggle.checked));
     });
   }
+  if (elements.hintTypeSelect) {
+    elements.hintTypeSelect.addEventListener('change', () => {
+      const hintValue = elements.hintTypeSelect.value;
+      karutaState.hintType = hintValue;
+      writeLocalSetting(STORAGE_KEYS.HINT_TYPE, hintValue);
+    });
+  }
 
   // Cancel game
   if (elements.cancelGame) {
@@ -901,6 +934,69 @@ function initEventListeners() {
   if (elements.retrySame) {
     elements.retrySame.addEventListener('click', () => {
       startGame(karutaState.selectedColor);
+    });
+  }
+
+  // Retry only incorrect cards
+  if (elements.retryIncorrect) {
+    elements.retryIncorrect.addEventListener('click', async () => {
+      // Collect incorrect poems by matching `shimoNoKu`
+      const incorrectKeys = new Set(karutaState.results.filter(r => !r.isCorrect).map(r => r.shimoNoKu));
+      const incorrectPoems = karutaState.allPoems.filter(p => incorrectKeys.has(p.shimoNoKu));
+      if (!incorrectPoems.length) return;
+
+      // Start a new game using only the incorrect poems
+      karutaState.selectedColor = karutaState.selectedColor || '';
+      karutaState.currentIndex = 0;
+      karutaState.score = 0;
+      karutaState.results = [];
+      karutaState.measureTime = elements.measureTimeToggle ? elements.measureTimeToggle.checked : true;
+      karutaState.flipCards = elements.flipCardsToggle ? elements.flipCardsToggle.checked : false;
+      karutaState.hintType = elements.hintTypeSelect ? elements.hintTypeSelect.value : 'kami';
+      karutaState.sessionStartTime = null;
+      karutaState.sessionEndTime = null;
+      karutaState.showHint = false;
+      karutaState.locked = false;
+      karutaState.countdownActive = false;
+
+      // Build deck/readings from incorrect subset.
+      // If there are fewer than 20 incorrect poems, create a smaller deck/readings directly.
+      if (incorrectPoems.length >= 20) {
+        karutaState.deck = buildKarutaDeck({ poems: incorrectPoems, color: karutaState.selectedColor });
+        karutaState.readings = buildKarutaReadings({ poems: incorrectPoems, color: karutaState.selectedColor });
+      } else {
+        const shuffled = incorrectPoems.slice().sort(() => Math.random() - 0.5);
+        karutaState.deck = shuffled.map(poem => ({
+          kimariji: poem.kimarijiLong || poem.kimarijiShort || '決まり字なし',
+          shimoNoKu: poem.shimoNoKu,
+          shimoReading: poem.shimoReading,
+          kamiNoKu: poem.kamiNoKu,
+          kamiReading: poem.kamiReading,
+          state: 'active',
+        }));
+        karutaState.readings = shuffled.map(poem => ({
+          kimariji: poem.kimarijiLong || poem.kimarijiShort || '決まり字なし',
+          kamiNoKu: poem.kamiNoKu,
+          kamiReading: poem.kamiReading,
+          hint: poem.hint,
+        }));
+      }
+
+      setAccentColor(karutaState.selectedColor);
+      updateProgress();
+      renderCards();
+      if (elements.elapsedTime && karutaState.measureTime) {
+        elements.elapsedTime.textContent = formatDurationMs(0);
+      }
+
+      showScreen('game');
+      const prepareMs = getPrepareDelayMs();
+      if (prepareMs > 0) {
+        startCountdown(prepareMs);
+      } else {
+        displayReading();
+        startSessionClock();
+      }
     });
   }
 
