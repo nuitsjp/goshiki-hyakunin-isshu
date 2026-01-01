@@ -43,7 +43,6 @@ const elements = {
   elapsedTime: document.getElementById('elapsed-time'),
   measureTimeToggle: document.getElementById('measure-time-toggle'),
   flipCardsToggle: document.getElementById('flip-cards-toggle'),
-  hintTypeSelect: document.getElementById('hint-type'),
   selectedColorLabel: document.getElementById('selected-color-label'),
   kimarijiDisplay: document.getElementById('kimariji-display'),
   readingDisplay: document.getElementById('reading-display'),
@@ -145,12 +144,10 @@ function loadStartSettings() {
     const savedFlip = readLocalSetting(STORAGE_KEYS.KARUTA_FLIP, null);
     elements.flipCardsToggle.checked = savedFlip === null ? false : savedFlip === 'true';
   }
-  if (elements.hintTypeSelect) {
-    const savedHint = readLocalSetting(STORAGE_KEYS.HINT_TYPE, null);
-    const hintValue = savedHint === 'shoku' ? 'shoku' : 'kami';
-    karutaState.hintType = hintValue;
-    elements.hintTypeSelect.value = hintValue;
-  }
+  // クイズ機能と同じヒント設定を共有
+  const savedHint = readLocalSetting(STORAGE_KEYS.HINT_TYPE, null);
+  const hintValue = savedHint === 'kami' ? 'kami' : 'shoku';
+  karutaState.hintType = hintValue;
 }
 
 function updateProgress() {
@@ -358,10 +355,9 @@ function displayReading() {
 
   if (!reading) return;
 
-  // Set showHint based on hintType setting
-  // 'shoku' (初句) -> showHint = true (show hint)
-  // 'kami' (決まり字) -> showHint = false (show kimariji)
-  karutaState.showHint = karutaState.hintType === 'shoku';
+  // クイズ仕様に統一: デフォルトで決まり字を表示
+  // ヒントボタンを押すと、hintType に応じて初句または上の句を表示
+  karutaState.showHint = false;
   updateReadingDisplay();
   updateHintButton();
   if (elements.nextReading) {
@@ -385,9 +381,18 @@ function updateReadingDisplay() {
     return;
   }
   if (elements.kimarijiDisplay) {
-    elements.kimarijiDisplay.textContent = karutaState.showHint
-      ? (reading.hint || '')
-      : reading.kimariji;
+    if (karutaState.showHint) {
+      // ヒント表示: hintType に応じて初句または上の句を表示
+      if (karutaState.hintType === 'shoku') {
+        elements.kimarijiDisplay.textContent = reading.hint || '';
+      } else {
+        // 'kami' の場合は上の句を表示
+        elements.kimarijiDisplay.innerHTML = toRubyHtml(reading.kamiReading || reading.kamiNoKu || '');
+      }
+    } else {
+      // デフォルト: 決まり字を表示
+      elements.kimarijiDisplay.textContent = reading.kimariji;
+    }
   }
   if (elements.readingDisplay) {
     elements.readingDisplay.innerHTML = '';
@@ -818,7 +823,9 @@ async function startGame(color, options = {}) {
   karutaState.results = [];
   karutaState.measureTime = elements.measureTimeToggle ? elements.measureTimeToggle.checked : true;
   karutaState.flipCards = elements.flipCardsToggle ? elements.flipCardsToggle.checked : false;
-  karutaState.hintType = elements.hintTypeSelect ? elements.hintTypeSelect.value : 'kami';
+  // クイズ機能と同じヒント設定を共有
+  const savedHint = readLocalSetting(STORAGE_KEYS.HINT_TYPE, null);
+  karutaState.hintType = savedHint === 'kami' ? 'kami' : 'shoku';
   karutaState.sessionStartTime = null;
   karutaState.sessionEndTime = null;
   karutaState.showHint = false;
@@ -889,13 +896,6 @@ function initEventListeners() {
       writeLocalSetting(STORAGE_KEYS.KARUTA_FLIP, String(elements.flipCardsToggle.checked));
     });
   }
-  if (elements.hintTypeSelect) {
-    elements.hintTypeSelect.addEventListener('change', () => {
-      const hintValue = elements.hintTypeSelect.value;
-      karutaState.hintType = hintValue;
-      writeLocalSetting(STORAGE_KEYS.HINT_TYPE, hintValue);
-    });
-  }
 
   // Cancel game
   if (elements.cancelGame) {
@@ -952,7 +952,9 @@ function initEventListeners() {
       karutaState.results = [];
       karutaState.measureTime = elements.measureTimeToggle ? elements.measureTimeToggle.checked : true;
       karutaState.flipCards = elements.flipCardsToggle ? elements.flipCardsToggle.checked : false;
-      karutaState.hintType = elements.hintTypeSelect ? elements.hintTypeSelect.value : 'kami';
+      // クイズ機能と同じヒント設定を共有
+      const savedHint = readLocalSetting(STORAGE_KEYS.HINT_TYPE, null);
+      karutaState.hintType = savedHint === 'kami' ? 'kami' : 'shoku';
       karutaState.sessionStartTime = null;
       karutaState.sessionEndTime = null;
       karutaState.showHint = false;
