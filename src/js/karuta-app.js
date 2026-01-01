@@ -16,7 +16,7 @@ const karutaState = {
   results: [],        // Array of {kimariji, isCorrect, cardState}
   measureTime: true,
   flipCards: false,
-  hintType: 'shoku',  // 'shoku' (初句) or 'kami' (決まり字)
+  hintType: 'kami',  // 'shoku' (初句) or 'kami' (決まり字)
   sessionStartTime: null,
   sessionEndTime: null,
   showHint: false,
@@ -147,7 +147,7 @@ function loadStartSettings() {
   }
   if (elements.hintTypeSelect) {
     const savedHint = readLocalSetting(STORAGE_KEYS.HINT_TYPE, null);
-    const hintValue = savedHint === 'kami' ? 'kami' : 'shoku';
+    const hintValue = savedHint === 'shoku' ? 'shoku' : 'kami';
     karutaState.hintType = hintValue;
     elements.hintTypeSelect.value = hintValue;
   }
@@ -820,7 +820,7 @@ async function startGame(color, options = {}) {
   karutaState.results = [];
   karutaState.measureTime = elements.measureTimeToggle ? elements.measureTimeToggle.checked : true;
   karutaState.flipCards = elements.flipCardsToggle ? elements.flipCardsToggle.checked : false;
-  karutaState.hintType = elements.hintTypeSelect ? elements.hintTypeSelect.value : 'shoku';
+  karutaState.hintType = elements.hintTypeSelect ? elements.hintTypeSelect.value : 'kami';
   karutaState.sessionStartTime = null;
   karutaState.sessionEndTime = null;
   karutaState.showHint = false;
@@ -954,7 +954,7 @@ function initEventListeners() {
       karutaState.results = [];
       karutaState.measureTime = elements.measureTimeToggle ? elements.measureTimeToggle.checked : true;
       karutaState.flipCards = elements.flipCardsToggle ? elements.flipCardsToggle.checked : false;
-      karutaState.hintType = elements.hintTypeSelect ? elements.hintTypeSelect.value : 'shoku';
+      karutaState.hintType = elements.hintTypeSelect ? elements.hintTypeSelect.value : 'kami';
       karutaState.sessionStartTime = null;
       karutaState.sessionEndTime = null;
       karutaState.showHint = false;
