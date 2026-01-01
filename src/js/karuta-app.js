@@ -16,6 +16,7 @@ const karutaState = {
   results: [],        // Array of {kimariji, isCorrect, cardState}
   measureTime: true,
   flipCards: false,
+  hintType: 'shoku',  // 'shoku' (初句) or 'kami' (決まり字)
   sessionStartTime: null,
   sessionEndTime: null,
   showHint: false,
@@ -42,6 +43,7 @@ const elements = {
   elapsedTime: document.getElementById('elapsed-time'),
   measureTimeToggle: document.getElementById('measure-time-toggle'),
   flipCardsToggle: document.getElementById('flip-cards-toggle'),
+  hintTypeSelect: document.getElementById('hint-type'),
   selectedColorLabel: document.getElementById('selected-color-label'),
   kimarijiDisplay: document.getElementById('kimariji-display'),
   readingDisplay: document.getElementById('reading-display'),
@@ -142,6 +144,12 @@ function loadStartSettings() {
   if (elements.flipCardsToggle) {
     const savedFlip = readLocalSetting(STORAGE_KEYS.KARUTA_FLIP, null);
     elements.flipCardsToggle.checked = savedFlip === null ? false : savedFlip === 'true';
+  }
+  if (elements.hintTypeSelect) {
+    const savedHint = readLocalSetting(STORAGE_KEYS.HINT_TYPE, null);
+    const hintValue = savedHint === 'kami' ? 'kami' : 'shoku';
+    karutaState.hintType = hintValue;
+    elements.hintTypeSelect.value = hintValue;
   }
 }
 
@@ -352,7 +360,10 @@ function displayReading() {
 
   if (!reading) return;
 
-  karutaState.showHint = false;
+  // Set showHint based on hintType setting
+  // 'shoku' (初句) -> showHint = true (show hint)
+  // 'kami' (決まり字) -> showHint = false (show kimariji)
+  karutaState.showHint = karutaState.hintType === 'shoku';
   updateReadingDisplay();
   updateHintButton();
   if (elements.nextReading) {
@@ -809,6 +820,7 @@ async function startGame(color, options = {}) {
   karutaState.results = [];
   karutaState.measureTime = elements.measureTimeToggle ? elements.measureTimeToggle.checked : true;
   karutaState.flipCards = elements.flipCardsToggle ? elements.flipCardsToggle.checked : false;
+  karutaState.hintType = elements.hintTypeSelect ? elements.hintTypeSelect.value : 'shoku';
   karutaState.sessionStartTime = null;
   karutaState.sessionEndTime = null;
   karutaState.showHint = false;
@@ -879,6 +891,13 @@ function initEventListeners() {
       writeLocalSetting(STORAGE_KEYS.KARUTA_FLIP, String(elements.flipCardsToggle.checked));
     });
   }
+  if (elements.hintTypeSelect) {
+    elements.hintTypeSelect.addEventListener('change', () => {
+      const hintValue = elements.hintTypeSelect.value;
+      karutaState.hintType = hintValue;
+      writeLocalSetting(STORAGE_KEYS.HINT_TYPE, hintValue);
+    });
+  }
 
   // Cancel game
   if (elements.cancelGame) {
@@ -935,6 +954,7 @@ function initEventListeners() {
       karutaState.results = [];
       karutaState.measureTime = elements.measureTimeToggle ? elements.measureTimeToggle.checked : true;
       karutaState.flipCards = elements.flipCardsToggle ? elements.flipCardsToggle.checked : false;
+      karutaState.hintType = elements.hintTypeSelect ? elements.hintTypeSelect.value : 'shoku';
       karutaState.sessionStartTime = null;
       karutaState.sessionEndTime = null;
       karutaState.showHint = false;
