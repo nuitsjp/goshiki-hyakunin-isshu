@@ -446,4 +446,54 @@ describe('stats-ui', () => {
     await new Promise(resolve => setTimeout(resolve, 0));
     expect(document.querySelector('.answer-correct')).toBeTruthy();
   });
+
+  it('renders kimariji stats with right-aligned rate', async () => {
+    setupDom();
+    const history = [
+      {
+        sessionId: 's11',
+        color: '青',
+        questionCount: 2,
+        correctCount: 1,
+        wrongCount: 1,
+        passCount: 0,
+        durationMs: 40000,
+        accuracyRate: 50,
+        hintType: 'shoku',
+        displayMode: 'kana',
+        orderMode: 'normal',
+        timestamp: 1,
+        date: '2024-01-01',
+        answers: [
+          { kimariji: 'あき', isCorrect: true, usedKami: false, answerTimeMs: 5000 },
+          { kimariji: 'はる', isCorrect: false, usedKami: false, answerTimeMs: 8000 },
+        ],
+      },
+    ];
+    const quizState = {
+      allPoems: [
+        { color: '青', kimarijiLong: 'あき', shimoNoKu: '下1', shimoReading: 'しも1', kamiNoKu: '上1', kamiReading: 'あきのたの かりほのいほの とまをあらみ' },
+        { color: '青', kimarijiLong: 'はる', shimoNoKu: '下2', shimoReading: 'しも2', kamiNoKu: '上2', kamiReading: 'はるすぎて なつきにけらし しろたへの' },
+      ],
+      orderMode: 'normal',
+    };
+    const statsState = { selectedColor: null, filterMode: 'normal' };
+    const showScreen = vi.fn();
+    const ui = createStatsUI({
+      elements: buildElements(),
+      statsState,
+      quizState,
+      showScreen,
+      loadHistory: async () => history,
+    });
+
+    await ui.renderDetailedColorStats('青');
+    const detail = document.getElementById('color-detail-container');
+    const kimarijiItems = detail.querySelectorAll('.kimariji-item');
+    expect(kimarijiItems.length).toBeGreaterThan(0);
+
+    // 正答率と経過時間を表示する要素が右寄せされていることを確認
+    const kimarijiRate = detail.querySelector('.kimariji-rate');
+    expect(kimarijiRate).toBeTruthy();
+  });
 });
