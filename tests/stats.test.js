@@ -299,4 +299,41 @@ describe('stats', () => {
     expect(stats.totalQuestions).toBe(45);
     expect(stats.totalCorrect).toBe(41);
   });
+
+  it('calculateKimarijiPerformance includes kamiReading and shimoReading', () => {
+    const poems = [
+      {
+        color: '青',
+        kimarijiLong: 'あき',
+        kamiReading: 'あきのたの かりほのいほの とまをあらみ',
+        shimoReading: 'わがころもでは つゆにぬれつつ'
+      },
+      {
+        color: '青',
+        kimarijiLong: 'はる',
+        kamiReading: 'はるすぎて なつきにけらし しろたへの',
+        shimoReading: 'ころもほすてふ あまのかぐやま'
+      },
+    ];
+    const history = [
+      {
+        color: '青',
+        answers: [
+          { kimariji: 'あき', isCorrect: false, answerTimeMs: 2000 },
+          { kimariji: 'はる', isCorrect: true, answerTimeMs: 1000 },
+        ],
+      },
+    ];
+
+    const result = calculateKimarijiPerformance('青', poems, history);
+    expect(result).toHaveLength(2);
+    expect(result[0].kimariji).toBe('あき');
+    expect(result[0].rate).toBe(0);
+    expect(result[0].kamiReading).toBe('あきのたの かりほのいほの とまをあらみ');
+    expect(result[0].shimoReading).toBe('わがころもでは つゆにぬれつつ');
+    expect(result[1].kimariji).toBe('はる');
+    expect(result[1].rate).toBe(100);
+    expect(result[1].kamiReading).toBe('はるすぎて なつきにけらし しろたへの');
+    expect(result[1].shimoReading).toBe('ころもほすてふ あまのかぐやま');
+  });
 });

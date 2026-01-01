@@ -84,7 +84,14 @@ export function calculateKimarijiPerformance(color, poems, history) {
   colorPoems.forEach(poem => {
     const kimariji = poem.kimarijiLong || '決まり字なし';
     if (kimariji && !kimarijiMap.has(kimariji)) {
-      kimarijiMap.set(kimariji, { correct: 0, total: 0, totalTimeMs: 0, timeCount: 0 });
+      kimarijiMap.set(kimariji, {
+        correct: 0,
+        total: 0,
+        totalTimeMs: 0,
+        timeCount: 0,
+        kamiReading: poem.kamiReading || '',
+        shimoReading: poem.shimoReading || ''
+      });
     }
   });
 
@@ -111,7 +118,9 @@ export function calculateKimarijiPerformance(color, poems, history) {
     correct: stats.correct,
     total: stats.total,
     rate: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
-    avgTimeMs: stats.timeCount > 0 ? Math.round(stats.totalTimeMs / stats.timeCount) : null
+    avgTimeMs: stats.timeCount > 0 ? Math.round(stats.totalTimeMs / stats.timeCount) : null,
+    kamiReading: stats.kamiReading,
+    shimoReading: stats.shimoReading
   }));
 
   kimarijiStats.sort((a, b) => {
