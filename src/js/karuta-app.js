@@ -588,7 +588,13 @@ function renderCards() {
       cardElement.classList.add('is-upside-down');
     }
 
-    if (card.state === 'hidden') {
+    if (card.state === 'placeholder') {
+      // プレースホルダー札（非表示だがレイアウト上の場所は確保）
+      cardElement.classList.add('is-placeholder');
+      cardElement.disabled = true;
+      cardElement.style.visibility = 'hidden';
+      cardElement.appendChild(contentElement);
+    } else if (card.state === 'hidden') {
       // 非表示の札（配置は維持）
       cardElement.classList.add('is-taken');
       cardElement.disabled = true;
@@ -1081,6 +1087,19 @@ function initEventListeners() {
           kamiReading: poem.kamiReading,
           hint: poem.hint,
         }));
+
+        // 20枚未満の場合、プレースホルダー札を追加して5列4行のグリッドレイアウトを維持
+        const placeholderCount = 20 - incorrectPoems.length;
+        for (let i = 0; i < placeholderCount; i++) {
+          karutaState.deck.push({
+            kimariji: '',
+            shimoNoKu: '',
+            shimoReading: '',
+            kamiNoKu: '',
+            kamiReading: '',
+            state: 'placeholder',
+          });
+        }
       }
 
       setAccentColor(karutaState.selectedColor);
