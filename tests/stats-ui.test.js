@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createStatsUI } from '../src/js/stats-ui.js';
+import { createStatsUI, highlightKimariji } from '../src/js/stats-ui.js';
 
 const buildElements = () => ({
   totalQuizzes: document.getElementById('total-quizzes'),
@@ -36,6 +36,33 @@ const setupDom = () => {
 };
 
 describe('stats-ui', () => {
+  describe('highlightKimariji', () => {
+    it('highlights kimariji in text', () => {
+      const text = 'あきのたの かりほのいほの とまをあらみ';
+      const kimariji = 'あき';
+      const result = highlightKimariji(text, kimariji);
+      expect(result).toBe('<span class="kimariji-highlight">あき</span>のたの かりほのいほの とまをあらみ');
+    });
+
+    it('returns original text when kimariji is not found', () => {
+      const text = 'あきのたの かりほのいほの とまをあらみ';
+      const kimariji = 'はる';
+      const result = highlightKimariji(text, kimariji);
+      expect(result).toBe(text);
+    });
+
+    it('returns original text when text is empty', () => {
+      const result = highlightKimariji('', 'あき');
+      expect(result).toBe('');
+    });
+
+    it('returns original text when kimariji is empty', () => {
+      const text = 'あきのたの かりほのいほの とまをあらみ';
+      const result = highlightKimariji(text, '');
+      expect(result).toBe(text);
+    });
+  });
+
   it('renders empty summaries when no history', async () => {
     setupDom();
     const quizState = { allPoems: [], orderMode: 'normal' };

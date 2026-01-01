@@ -6,6 +6,18 @@ import {
   formatDurationMs,
 } from './stats.js';
 
+export function highlightKimariji(text, kimariji) {
+  if (!text || !kimariji) return text;
+  const index = text.indexOf(kimariji);
+  if (index === -1) return text;
+
+  const before = text.substring(0, index);
+  const highlighted = text.substring(index, index + kimariji.length);
+  const after = text.substring(index + kimariji.length);
+
+  return `${before}<span class="kimariji-highlight">${highlighted}</span>${after}`;
+}
+
 export function createStatsUI({
   elements,
   statsState,
@@ -177,9 +189,13 @@ export function createStatsUI({
     } else {
       kimarijiList.forEach(k => {
         const avgTimeText = k.avgTimeMs !== null ? ` / 平均${formatDurationMs(k.avgTimeMs)}` : '';
+        const kamiReadingWithHighlight = highlightKimariji(k.kamiReading, k.kimariji);
         html += `
           <div class="kimariji-item">
-            <div class="kimariji-text">${k.kimariji}</div>
+            <div class="kimariji-text">
+              <div class="kimariji-reading">${kamiReadingWithHighlight}</div>
+              <div class="kimariji-reading">${k.shimoReading}</div>
+            </div>
             <div class="kimariji-rate">${k.rate}% (${k.correct}/${k.total})${avgTimeText}</div>
           </div>
         `;
