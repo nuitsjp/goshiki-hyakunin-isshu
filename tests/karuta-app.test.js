@@ -13,6 +13,7 @@ const mockConfig = vi.hoisted(() => ({
   STORAGE_KEYS: {
     MEASURE_TIME: 'goshiki_measure_time',
     KARUTA_FLIP: 'goshiki_karuta_flip',
+    HINT_TYPE: 'goshiki_hint_type',
   },
 }));
 
@@ -337,23 +338,53 @@ describe('karuta-app', () => {
     expect(document.getElementById('score-text').textContent).toBe('正解: 1枚');
   });
 
-  it('ヒントボタンで読み札の上の句を表示する', async () => {
+  it('ヒントボタンで初句を表示する（hintType=shoku）', async () => {
     setupDom();
+    localStorage.setItem('goshiki_hint_type', 'shoku');
     loadCsvMock.mockResolvedValue(createPoems(1));
     buildKarutaDeckMock.mockReturnValue(createDeck(1));
     buildKarutaReadingsMock.mockReturnValue(createReadings(1));
     await importApp();
 
     document.querySelector('.color-button[data-color="黄"]').click();
+    // デフォルトで決まり字を表示
+    expect(document.getElementById('kimariji-display').textContent).toBe('き0');
     expect(document.querySelector('#toggle-hint .hint-button-label').textContent).toBe('ヒント');
-    document.getElementById('toggle-hint').click();
 
+    // ヒントボタンを押すと初句を表示
+    document.getElementById('toggle-hint').click();
     expect(document.getElementById('kimariji-display').textContent).toBe('ひ0');
     expect(document.getElementById('toggle-hint').getAttribute('aria-pressed')).toBe('true');
     expect(document.querySelector('#toggle-hint .hint-button-label').textContent).toBe('決まり字');
 
+    // もう一度押すと決まり字に戻る
     document.getElementById('toggle-hint').click();
+    expect(document.getElementById('kimariji-display').textContent).toBe('き0');
+    expect(document.getElementById('toggle-hint').getAttribute('aria-pressed')).toBe('false');
+    expect(document.querySelector('#toggle-hint .hint-button-label').textContent).toBe('ヒント');
+  });
 
+  it('ヒントボタンで上の句を表示する（hintType=kami）', async () => {
+    setupDom();
+    localStorage.setItem('goshiki_hint_type', 'kami');
+    loadCsvMock.mockResolvedValue(createPoems(1));
+    buildKarutaDeckMock.mockReturnValue(createDeck(1));
+    buildKarutaReadingsMock.mockReturnValue(createReadings(1));
+    await importApp();
+
+    document.querySelector('.color-button[data-color="黄"]').click();
+    // デフォルトで決まり字を表示
+    expect(document.getElementById('kimariji-display').textContent).toBe('き0');
+    expect(document.querySelector('#toggle-hint .hint-button-label').textContent).toBe('ヒント');
+
+    // ヒントボタンを押すと上の句を表示
+    document.getElementById('toggle-hint').click();
+    expect(document.getElementById('kimariji-display').innerHTML).toBe('<span>かみ0</span>');
+    expect(document.getElementById('toggle-hint').getAttribute('aria-pressed')).toBe('true');
+    expect(document.querySelector('#toggle-hint .hint-button-label').textContent).toBe('決まり字');
+
+    // もう一度押すと決まり字に戻る
+    document.getElementById('toggle-hint').click();
     expect(document.getElementById('kimariji-display').textContent).toBe('き0');
     expect(document.getElementById('toggle-hint').getAttribute('aria-pressed')).toBe('false');
     expect(document.querySelector('#toggle-hint .hint-button-label').textContent).toBe('ヒント');
