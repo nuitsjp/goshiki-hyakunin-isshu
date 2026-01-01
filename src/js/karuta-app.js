@@ -894,6 +894,13 @@ function initEventListeners() {
       const hintValue = elements.hintTypeSelect.value;
       karutaState.hintType = hintValue;
       writeLocalSetting(STORAGE_KEYS.HINT_TYPE, hintValue);
+
+      // ゲーム中の場合、現在の札の表示を即座に更新
+      if (!screens.game?.classList.contains('hidden') && !karutaState.countdownActive) {
+        karutaState.showHint = karutaState.hintType === 'shoku';
+        updateReadingDisplay();
+        updateHintButton();
+      }
     });
   }
 
