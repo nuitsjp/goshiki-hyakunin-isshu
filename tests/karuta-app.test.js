@@ -1012,8 +1012,8 @@ describe('karuta-app', () => {
 
     const card = document.querySelector('.karuta-card');
     expect(card.disabled).toBe(true);
-    expect(document.getElementById('kimariji-display').textContent).toBe('');
-    expect(document.getElementById('elapsed-time').textContent).toBe('0:01');
+    expect(document.getElementById('kimariji-display').textContent).toBe('開始1秒前、札を覚えよう！');
+    expect(document.getElementById('elapsed-time').textContent).toBe('0:00');
     expect(document.getElementById('toggle-hint').disabled).toBe(true);
 
     vi.useRealTimers();
